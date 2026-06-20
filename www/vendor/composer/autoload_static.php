@@ -60,6 +60,21 @@ class ComposerStaticInit6a6772df2521c6860a448e9115f2793a
     );
 
     public static $classMap = array (
+        'Admin\\AIController' => __DIR__ . '/../..' . '/admin/app/controllers/AIController.php',
+        'Admin\\App' => __DIR__ . '/../..' . '/admin/app/core/App.php',
+        'Admin\\AuthController' => __DIR__ . '/../..' . '/admin/app/controllers/AuthController.php',
+        'Admin\\BaseController' => __DIR__ . '/../..' . '/admin/app/controllers/BaseController.php',
+        'Admin\\CacheController' => __DIR__ . '/../..' . '/admin/app/controllers/CacheController.php',
+        'Admin\\Core\\AuthMiddleware' => __DIR__ . '/../..' . '/admin/app/core/AuthMiddleware.php',
+        'Admin\\Core\\BaseAdminController' => __DIR__ . '/../..' . '/admin/app/core/BaseAdminController.php',
+        'Admin\\FileManagerController' => __DIR__ . '/../..' . '/admin/app/controllers/FileManagerController.php',
+        'Admin\\HomeController' => __DIR__ . '/../..' . '/admin/app/controllers/HomeController.php',
+        'Admin\\NotificationsController' => __DIR__ . '/../..' . '/admin/app/controllers/NotificationsController.php',
+        'Admin\\PluginAdminController' => __DIR__ . '/../..' . '/admin/app/controllers/PluginAdminController.php',
+        'Admin\\SettingsController' => __DIR__ . '/../..' . '/admin/app/controllers/SettingsController.php',
+        'Admin\\StatsController' => __DIR__ . '/../..' . '/admin/app/controllers/StatsController.php',
+        'Admin\\TableController' => __DIR__ . '/../..' . '/admin/app/controllers/TableController.php',
+        'Admin\\TemplateController' => __DIR__ . '/../..' . '/admin/app/controllers/TemplateController.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
     );
 

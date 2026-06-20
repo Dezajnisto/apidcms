@@ -233,4 +233,9 @@ if (count($tables) > 0) {
     echo "[OK] Устаревшая таблица settings удалена\n";
 }
 
+// 9. Статистика посещений (таблица + индексы)
+if (class_exists('Core\VisitStats')) {
+    Core\VisitStats::initTable($db);
+    echo "[OK] visit_stats\n";
+}
 echo "\n=== Инициализация завершена ===\n";

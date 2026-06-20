@@ -138,7 +138,16 @@ if (strpos($uri, 'admin') === 0 || $uri === 'admin') {
     $_SERVER['REQUEST_URI'] = '/' . $adminPath;
     
     try {
-        $config = require ADMIN_CONFIG_PATH;
+        $adminCoreConfig = CORE_PATH . "/admin/config/config.php";
+        if (file_exists($adminCoreConfig)) {
+            $config = require $adminCoreConfig;
+            if (file_exists(ADMIN_CONFIG_PATH)) {
+                $projectCfg = require ADMIN_CONFIG_PATH;
+                $config = array_replace_recursive($config, $projectCfg);
+            }
+        } else {
+            $config = require ADMIN_CONFIG_PATH;
+        }
         $app = new \Admin\App($config);
         $app->run();
         exit;  // App должен exit, но на всякий случай

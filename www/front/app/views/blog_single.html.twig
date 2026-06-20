@@ -1,0 +1,168 @@
+{% extends "base.html.twig" %}
+
+{% block content %}
+<article class="blog-single">
+    <header class="blog-single-header">
+        <h1 class="blog-single-title">{{ item.title }}</h1>
+
+        <div class="blog-single-meta">
+            {% if item.published_at %}
+            <time class="blog-single-date" datetime="{{ item.published_at }}">
+                {{ item.published_at|date('d.m.Y') }}
+            </time>
+            {% elseif item.created_at %}
+            <time class="blog-single-date" datetime="{{ item.created_at }}">
+                {{ item.created_at|date('d.m.Y') }}
+            </time>
+            {% endif %}
+        </div>
+    </header>
+
+    {% if item.featured_image %}
+    <div class="blog-single-image">
+        <img src="{{ url('storage/uploads/' ~ item.featured_image) }}" alt="{{ item.title }}">
+    </div>
+    {% endif %}
+
+    <div class="blog-single-content">
+        {{ item.content|raw }}
+    </div>
+
+    <nav class="blog-single-nav">
+        {% if prev_item %}
+        <a href="{{ url(nav_item.url ~ '/' ~ prev_item.slug) }}" class="blog-single-nav-link prev">
+            ← {{ prev_item.title }}
+        </a>
+        {% endif %}
+
+        {% if next_item %}
+        <a href="{{ url(nav_item.url ~ '/' ~ next_item.slug) }}" class="blog-single-nav-link next">
+            {{ next_item.title }} →
+        </a>
+        {% endif %}
+    </nav>
+
+    <div class="blog-single-back">
+        <a href="{{ url(nav_item.url) }}" class="blog-single-back-link">← Все записи</a>
+    </div>
+</article>
+
+<style>
+.blog-single {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.blog-single-header {
+    margin-bottom: 2rem;
+}
+
+.blog-single-title {
+    font-size: 2.2rem;
+    line-height: 1.3;
+    color: #1a1a1a;
+    margin: 0 0 1rem;
+}
+
+.blog-single-meta {
+    color: #888;
+    font-size: 0.95rem;
+}
+
+.blog-single-image {
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.blog-single-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    max-height: 500px;
+    object-fit: cover;
+}
+
+.blog-single-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #333;
+    margin-bottom: 3rem;
+}
+
+.blog-single-content p {
+    margin-bottom: 1.2rem;
+}
+
+.blog-single-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+}
+
+.blog-single-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 2rem 0;
+    border-top: 1px solid #e5e7eb;
+    margin-bottom: 1.5rem;
+}
+
+.blog-single-nav-link {
+    text-decoration: none;
+    color: #007bff;
+    font-weight: 500;
+    max-width: 45%;
+    transition: color 0.2s;
+}
+
+.blog-single-nav-link:hover {
+    color: #0056b3;
+}
+
+.blog-single-nav-link.next {
+    text-align: right;
+    margin-left: auto;
+}
+
+.blog-single-back {
+    text-align: center;
+    padding-bottom: 3rem;
+}
+
+.blog-single-back-link {
+    color: #666;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.blog-single-back-link:hover {
+    color: #007bff;
+}
+
+@media (max-width: 768px) {
+    .blog-single {
+        padding: 0 15px;
+    }
+
+    .blog-single-title {
+        font-size: 1.6rem;
+    }
+
+    .blog-single-content {
+        font-size: 1rem;
+    }
+
+    .blog-single-nav {
+        flex-direction: column;
+    }
+
+    .blog-single-nav-link {
+        max-width: 100%;
+    }
+}
+</style>
+{% endblock %}

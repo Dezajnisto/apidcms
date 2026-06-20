@@ -1,0 +1,218 @@
+{# twig #}
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Заголовок и кнопки управления -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
+            <p class="text-sm text-gray-500 mt-1">Путь к файлу: {{ templatePath }}</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            {% set pageType = 'list' %}
+            {% if templateName starts with 'blog' or templateName == 'list.html.twig' %}
+                {% set pageType = 'blog_list' %}
+            {% elseif templateName starts with 'single' or templateName ends with '_single.html.twig' %}
+                {% set pageType = 'single' %}
+            {% elseif templateName starts with 'page' %}
+                {% set pageType = 'page' %}
+            {% elseif templateName starts with 'home' or templateName starts with 'glavnaya' %}
+                {% set pageType = 'home' %}
+            {% elseif templateName starts with 'form' %}
+                {% set pageType = 'form' %}
+            {% elseif templateName == 'base.html.twig' %}
+                {% set pageType = 'base' %}
+            {% elseif templateName == '404.html.twig' or templateName == 'success.html.twig' %}
+                {% set pageType = 'utility' %}
+            {% endif %}
+            <a href="/admin/templates/preview/{{ templateName|url_encode }}" 
+               target="_blank"
+               class="inline-flex items-center space-x-2 px-4 py-2 border border-blue-300 text-blue-700 rounded-md hover:bg-blue-50 transition">
+                <i class="fas fa-eye"></i>
+                <span>Предпросмотр</span>
+            </a>
+            <button type="button" onclick="AIAssistant.init({mode:'template',textareaId:'templateContent',pageType:'{{ pageType }}',existingContent:document.getElementById('templateContent').value});AIAssistant.open()" class="inline-flex items-center space-x-2 px-4 py-2 border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 transition"><i class="fas fa-magic"></i><span>AI</span></button>
+            <a href="/admin/templates" 
+               class="inline-flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
+                <i class="fas fa-arrow-left"></i>
+                <span>Назад к списку</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Сообщения об ошибках -->
+    {% if error %}
+        <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>{{ error }}</span>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Форма редактирования -->
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="px-6 py-4 border-b">
+            <h2 class="text-lg font-semibold text-gray-900">Редактирование: {{ templateName }}</h2>
+        </div>
+        
+        <div class="p-6">
+            <form method="post" class="space-y-6">
+                <!-- Поле редактирования кода -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Содержимое шаблона <span class="text-red-500">*</span>
+                    </label>
+                    <textarea name="content" 
+                              id="templateContent" 
+                              rows="25" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                              placeholder="Введите Twig код...">{{ content }}</textarea>
+                </div>
+
+                <!-- Подсказка по синтаксису -->
+                <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+                        <div class="text-sm text-blue-700">
+                            <strong class="font-medium">Подсказка:</strong>
+                            <p>Используйте синтаксис Twig. Базовый шаблон: 
+                                <code class="bg-blue-100 px-1 rounded">{% verbatim %}{% extends "base.html.twig" %}{% endverbatim %}</code>
+                            </p>
+                            <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                                <div><code class="bg-blue-100 px-1 rounded">{% verbatim %}{{ variable }}{% endverbatim %}</code> - вывод переменной</div>
+                                <div><code class="bg-blue-100 px-1 rounded">{% verbatim %}{% for item in items %}{% endverbatim %}</code> - цикл</div>
+                                <div><code class="bg-blue-100 px-1 rounded">{% verbatim %}{% if condition %}{% endverbatim %}</code> - условие</div>
+                                <div><code class="bg-blue-100 px-1 rounded">{% verbatim %}{% block content %}{% endverbatim %}</code> - блок</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Статистика кода -->
+                <div class="flex items-center justify-between text-sm text-gray-500">
+                    <div class="flex items-center space-x-4">
+                        <span id="lineCount">Строк: {{ content|split('\n')|length }}</span>
+                        <span id="charCount">Символов: {{ content|length }}</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" 
+                                onclick="formatCode()"
+                                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 transition">
+                            <i class="fas fa-code mr-1"></i>
+                            Форматировать
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Кнопки действий -->
+                <div class="flex items-center justify-end space-x-4 pt-6 border-t">
+            <a href="/admin/templates" 
+            <a href="/admin/templates" 
+                       class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
+                        Отмена
+                    </a>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center space-x-2">
+                        <i class="fas fa-save"></i>
+                        <span>Сохранить изменения</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+{% verbatim %}
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('templateContent');
+    
+    if (textarea) {
+        // Автоматическое увеличение высоты при фокусе
+        textarea.addEventListener('focus', function() {
+            this.style.minHeight = '600px';
+            this.style.transition = 'min-height 0.3s ease';
+        });
+
+        // Подсчет статистики при вводе
+        textarea.addEventListener('input', function() {
+            updateStats(this.value);
+        });
+
+        // Инициализация статистики
+        updateStats(textarea.value);
+    }
+
+    function updateStats(content) {
+        const lineCount = document.getElementById('lineCount');
+        const charCount = document.getElementById('charCount');
+        
+        if (lineCount && charCount) {
+            const lines = content.split('\n').length;
+            const chars = content.length;
+            
+            lineCount.textContent = 'Строк: ' + lines;
+            charCount.textContent = 'Символов: ' + chars;
+        }
+    }
+
+    // Горячие клавиши
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            document.querySelector('button[type="submit"]').click();
+        }
+    });
+});
+
+// Простое форматирование кода
+function formatCode() {
+    const textarea = document.getElementById('templateContent');
+    if (!textarea) return;
+
+    let content = textarea.value;
+    
+    // Базовая очистка - можно расширить для Twig
+    content = content
+        .replace(/\{\%\s+/g, '{% ')  
+        .replace(/\s+\%\}/g, ' %}')  
+        .replace(/\{\{\s+/g, '{{ ') 
+        .replace(/\s+\}\}/g, ' }}') 
+        .replace(/\n\s*\n\s*\n/g, '\n\n'); // Убираем лишние пустые строки
+
+    textarea.value = content;
+    
+    // Показываем уведомление
+    const notification = document.createElement('div');
+    notification.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg';
+    notification.textContent = 'Код отформатирован!';
+    document.body.appendChild(notification);
+    
+    setTimeout(function() {
+        notification.remove();
+    }, 2000);
+}
+
+// Автосохранение каждые 30 секунд (опционально)
+let autoSaveTimer;
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('templateContent');
+    if (textarea) {
+        textarea.addEventListener('input', function() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(function() {
+                // Можно добавить автосохранение через AJAX
+                console.log('Автосохранение...');
+            }, 30000);
+        });
+    }
+});
+{% endverbatim %}
+</script>
+{% endblock %}

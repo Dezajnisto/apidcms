@@ -1,0 +1,244 @@
+{# twig #}
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Навигация (responsive) -->
+    <div class="mb-4 md:mb-6 flex flex-wrap items-center gap-3">
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '?page=' ~ (currentPage|default(1))) }}" 
+           class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition text-sm">
+            <i class="fas fa-arrow-left"></i>
+            <span>Назад к таблице</span>
+        </a>
+        <a href="{{ admin_url('') }}" 
+           class="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition text-sm">
+            <i class="fas fa-table"></i>
+            <span>Список таблиц</span>
+        </a>
+    </div>
+
+    <!-- Заголовок -->
+    <div class="mb-4 md:mb-6">
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900">{{ title }}</h1>
+        <p class="text-sm text-gray-600 mt-1">Таблица: <code class="bg-gray-100 px-2 py-1 rounded">{{ tableName }}</code></p>
+    </div>
+
+    <!-- Ошибки -->
+    {% if error is defined %}
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong class="font-medium">Ошибка:</strong>
+                    <span>{{ error }}</span>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Подсказка -->
+    <div class="mb-4 md:mb-6 p-3 md:p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+        <div class="flex items-start space-x-3">
+            <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+            <div class="text-blue-700">
+                <strong class="font-medium">Подсказка:</strong>
+                <p>Поля с <span class="text-red-500">*</span> обязательны для заполнения.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Форма -->
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="px-4 md:px-6 py-3 md:py-4 border-b">
+            <h2 class="text-base md:text-lg font-semibold text-gray-900">
+                {{ action == 'create' ? 'Создание новой записи' : 'Редактирование записи #' ~ itemId }}
+            </h2>
+        </div>
+        
+        <div class="p-4 md:p-6">
+            <!-- AI: заполнение полей -->
+            <button type="button" onclick="AIAssistant.init({mode:'fill-form',tableName:'{{ tableName|e('js') }}',structure:JSON.parse(document.getElementById('ai-structure-data').textContent)});AIAssistant.open()" 
+                    class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 transition text-sm mb-4">
+                <i class="fas fa-magic"></i>
+                <span>AI — Заполнить поля</span>
+            </button>
+
+            <script id="ai-structure-data" type="application/json">
+            [{% for column in structure %}{"name":"{{ column.name|e('js') }}","type":"{{ column.type|e('js') }}","pk":{{ column.pk }},"notnull":{{ column.notnull }},"dflt_value":"{{ (column.dflt_value ?? '')|e('js') }}"}{% if not loop.last %},{% endif %}{% endfor %}]
+            </script>
+
+            <form method="POST" action="{{ admin_url('table/' ~ tableName|url_encode ~ '/' ~ (action == 'create' ? 'store' : 'update/' ~ itemId) ~ '?page=' ~ (currentPage|default(1))) }}" class="space-y-4 md:space-y-6">
+                {% for column in structure %}
+                    {% if (action == 'create' and column.pk == 1) or (action == 'create' and column.name == 'created_at') %}
+                    {% else %}
+                        <div class="space-y-2">
+                            <!-- Заголовок поля -->
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <label for="{{ column.name }}" class="block text-sm font-medium text-gray-700">
+                                    {{ column.name }}
+                                    {% if column.notnull == 1 and column.pk == 0 %}
+                                        <span class="text-red-500">*</span>
+                                    {% endif %}
+                                </label>
+                                
+                                <!-- Бейджи (stack on small) -->
+                                <div class="flex items-center space-x-2">
+                                    {% if column.pk == 1 %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <i class="fas fa-key mr-1"></i>
+                                            Первичный ключ
+                                        </span>
+                                    {% endif %}
+                                    {% if column.notnull == 1 and column.pk == 0 %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            Обязательное
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Поле ввода -->
+                            {% if column.pk == 1 and 'INTEGER' in column.type|upper %}
+                                <input type="text" id="{{ column.name }}" 
+                                       value="{{ item[column.name] ?? 'Автоматически' }}" readonly 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed text-sm">
+                                <p class="text-xs text-gray-500">
+                                    <i class="fas fa-info-circle mr-1"></i> Заполняется автоматически
+                                </p>
+                            {% elseif 'TEXT' in column.type|upper %}
+                                <textarea id="{{ column.name }}" name="{{ column.name }}" rows="5"
+                                          {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical text-sm"
+                                          placeholder="Введите текст...">{{ item[column.name] ?? '' }}</textarea>
+                            {% elseif 'INT' in column.type|upper or 'INTEGER' in column.type|upper %}
+                                <input type="number" id="{{ column.name }}" name="{{ column.name }}" 
+                                       value="{{ item[column.name] ?? '' }}"
+                                       {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                       placeholder="Введите число...">
+                            {% elseif 'DATE' in column.type|upper or 'TIME' in column.type|upper %}
+                                <input type="datetime-local" id="{{ column.name }}" name="{{ column.name }}" 
+                                       value="{{ item[column.name] ?? '' }}"
+                                       {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                            {% elseif 'BOOLEAN' in column.type|upper %}
+                                <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border">
+                                    <input type="checkbox" id="{{ column.name }}" name="{{ column.name }}" value="1"
+                                           {% if item[column.name] %}checked{% endif %}
+                                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <label for="{{ column.name }}" class="text-sm font-medium text-gray-700">{{ column.name }}</label>
+                                </div>
+                            {% else %}
+                                <input type="text" id="{{ column.name }}" name="{{ column.name }}" 
+                                       value="{{ item[column.name] ?? '' }}"
+                                       {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                       placeholder="Введите значение...">
+                            {% endif %}
+
+                            <!-- Информация о поле -->
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-500 gap-1">
+                                <span>Тип: <code class="bg-gray-100 px-1 rounded">{{ column.type }}</code></span>
+                                {% if column.dflt_value is not null %}
+                                    <span>По умолчанию: <code class="bg-gray-100 px-1 rounded">{{ column.dflt_value }}</code></span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Кнопки действий -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 md:pt-6 border-t">
+                    <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '?page=' ~ (currentPage|default(1))) }}" 
+                       class="px-4 md:px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition text-sm text-center">
+                        Отмена
+                    </a>
+                    <button type="submit" 
+                            class="px-4 md:px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center justify-center space-x-2 text-sm">
+                        <i class="fas {{ action == 'create' ? 'fa-plus' : 'fa-save' }}"></i>
+                        <span>{{ action == 'create' ? 'Создать запись' : 'Сохранить изменения' }}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Статистика формы -->
+    <div class="mt-4 md:mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
+        <div class="bg-gray-50 p-3 md:p-4 rounded-lg border">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-list text-gray-500"></i>
+                <div>
+                    <p class="text-xs text-gray-700 font-medium">Всего полей</p>
+                    <p class="text-lg md:text-2xl font-bold text-gray-900">{{ structure|length }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-blue-50 p-3 md:p-4 rounded-lg border border-blue-200">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-edit text-blue-500"></i>
+                <div>
+                    <p class="text-xs text-blue-700 font-medium">Можно редактировать</p>
+                    <p class="text-lg md:text-2xl font-bold text-blue-700">
+                        {{ structure|filter(col => not (action == 'create' and (col.pk == 1 or col.name == 'created_at')))|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-red-50 p-3 md:p-4 rounded-lg border border-red-200">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-exclamation-circle text-red-500"></i>
+                <div>
+                    <p class="text-xs text-red-700 font-medium">Обязательных</p>
+                    <p class="text-lg md:text-2xl font-bold text-red-700">
+                        {{ structure|filter(col => col.notnull == 1 and col.pk == 0)|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const firstInput = document.querySelector('input:not([readonly]), textarea:not([readonly])');
+    if (firstInput) firstInput.focus();
+
+    const textareas = document.querySelectorAll('textarea');
+    textareas.forEach(textarea => {
+        const counter = document.createElement('div');
+        counter.className = 'text-xs text-gray-500 mt-1 text-right';
+        counter.textContent = `Символов: ${textarea.value.length}`;
+        textarea.parentNode.appendChild(counter);
+        
+        textarea.addEventListener('input', function() {
+            counter.textContent = `Символов: ${this.value.length}`;
+        });
+    });
+
+    const numberInputs = document.querySelectorAll('input[type="number"]');
+    numberInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            if (this.value && isNaN(this.value)) {
+                this.setCustomValidity('Пожалуйста, введите корректное число');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    });
+
+    const dateInputs = document.querySelectorAll('input[type="datetime-local"]');
+    dateInputs.forEach(input => {
+        if (!input.value) {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            input.value = now.toISOString().slice(0, 16);
+        }
+    });
+});
+</script>
+{% endblock %}

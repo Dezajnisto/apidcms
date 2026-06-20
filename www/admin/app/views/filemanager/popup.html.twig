@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .file-item { transition: all 0.2s ease; }
+        .file-item:hover { transform: translateY(-2px); }
+        .file-item.selected { ring: 2px solid #3b82f6; background-color: #eff6ff; }
+        .file-name { word-break: break-all; }
+        .file-item-table { transition: background-color 0.15s ease; }
+        .file-item-table td { vertical-align: middle; }
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            transition: all 0.3s ease;
+        }
+        .upload-area.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .progress-bar { transition: width 0.3s ease; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="max-w-7xl mx-auto p-4">
+    <!-- Заголовок и кнопки -->
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-xl font-bold text-gray-900">{{ title }}</h1>
+        <div class="flex items-center space-x-2">
+            <button onclick="toggleUploadForm()"
+                    class="inline-flex items-center space-x-1 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm">
+                <i class="fas fa-upload"></i>
+                <span>Загрузить</span>
+            </button>
+            <button onclick="window.close()"
+                    class="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition text-sm">
+                <i class="fas fa-times mr-1"></i>Закрыть
+            </button>
+        </div>
+    </div>
+
+    <!-- Хлебные крошки -->
+    <div class="bg-white rounded-lg shadow-sm border p-3 mb-4">
+        <nav class="flex" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm">
+                <li>
+                    <a href="?callback={{ callback }}" class="text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-home"></i>
+                    </a>
+                </li>
+                {% for crumb in breadcrumbs %}
+                    <li class="flex items-center">
+                        <span class="mx-2 text-gray-400">/</span>
+                        <a href="?callback={{ callback }}&path={{ crumb.path|url_encode }}"
+                           class="text-blue-600 hover:text-blue-800 {{ loop.last ? 'font-medium text-gray-900' : '' }}">
+                            {{ crumb.name }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Панель управления -->
+    <div class="bg-white rounded-lg shadow-sm border p-3 mb-4">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-500">Вид:</span>
+                <button onclick="setViewMode('grid')" id="btn-grid"
+                        class="p-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
+                        title="Сетка">
+                    <i class="fas fa-th-large"></i>
+                </button>
+                <button onclick="setViewMode('table')" id="btn-table"
+                        class="p-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
+                        title="Таблица">
+                    <i class="fas fa-list"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-500">Колонок:</span>
+                <select id="colsSelect" onchange="changeCols(this.value)"
+                        class="border border-gray-300 rounded-md text-sm px-2 py-1 bg-white focus:ring-2 focus:ring-blue-500">
+                    <option value="2" {{ cols == 2 ? 'selected' : '' }}>2</option>
+                    <option value="3" {{ cols == 3 ? 'selected' : '' }}>3</option>
+                    <option value="4" {{ cols == 4 ? 'selected' : '' }}>4</option>
+                    <option value="6" {{ cols == 6 ? 'selected' : '' }}>6</option>
+                </select>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-500">Показывать:</span>
+                <select id="perPageSelect" onchange="changePerPage(this.value)"
+                        class="border border-gray-300 rounded-md text-sm px-2 py-1 bg-white focus:ring-2 focus:ring-blue-500">
+                    <option value="10" {{ pagination.per_page == 10 ? 'selected' : '' }}>10</option>
+                    <option value="20" {{ pagination.per_page == 20 ? 'selected' : '' }}>20</option>
+                    <option value="50" {{ pagination.per_page == 50 ? 'selected' : '' }}>50</option>
+                </select>
+            </div>
+
+            <div class="text-sm text-gray-500">
+                {% if pagination.total > 0 %}
+                    {{ pagination.from }}–{{ pagination.to }} из {{ pagination.total }}
+                {% else %}
+                    Нет файлов
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Контент: сетка или таблица -->
+    <div class="bg-white rounded-lg shadow-sm border">
+        {% if items is empty %}
+            <div class="p-12 text-center">
+                <i class="fas fa-folder-open text-gray-300 text-5xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Папка пуста</h3>
+                <p class="text-gray-500 mb-4">Загрузите файлы или выберите другую папку</p>
+                <button onclick="toggleUploadForm()"
+                        class="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
+                    <i class="fas fa-upload"></i>
+                    <span>Загрузить первый файл</span>
+                </button>
+            </div>
+        {% else %}
+            {# ===== Режим СЕТКИ ===== #}
+            <div id="view-grid" class="hidden">
+                {% set grid_class = cols == 2 ? 'grid-cols-1 sm:grid-cols-2' : (cols == 3 ? 'grid-cols-2 sm:grid-cols-3' : (cols == 4 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-4 lg:grid-cols-6')) %}
+                {% set thumb_size = cols == 2 ? 400 : (cols == 3 ? 320 : (cols == 4 ? 240 : 160)) %}
+                {% set thumb_class = cols == 2 ? 'mx-auto w-80 h-80 object-cover rounded' : (cols == 3 ? 'mx-auto w-64 h-64 object-cover rounded' : (cols == 4 ? 'mx-auto w-48 h-48 object-cover rounded' : 'mx-auto w-32 h-32 object-cover rounded')) %}
+                <div class="grid {{ grid_class }} gap-4 p-6">
+                    {% for item in items %}
+                        <div class="file-item group relative bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition cursor-pointer"
+                             data-name="{{ item.name }}"
+                             data-path="{{ item.path }}"
+                             data-type="{{ item.is_dir ? 'folder' : 'file' }}">
+
+                            {% if item.is_dir %}
+                                <div class="text-center" onclick="navigateToFolder(event, '{{ item.name|e('js') }}')">
+                                    <i class="fas fa-folder text-yellow-500 text-4xl mb-2"></i>
+                                    <div class="file-name text-sm font-medium text-gray-900 truncate" title="{{ item.name }}">
+                                        {{ item.name }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">Папка</div>
+                                </div>
+                            {% else %}
+                                <div class="text-center" onclick="selectFile(event, '{{ item.name|e('js') }}', '{{ item.path|e('js') }}')">
+                                    {% if item.is_image %}
+                                        <div class="relative mb-2">
+                                            <img src="/admin/filemanager/thumb?path={{ item.path|url_encode }}&amp;w={{ thumb_size }}&amp;h={{ thumb_size }}&amp;v={{ item.modified }}"
+                                                 alt="{{ item.name }}"
+                                                 loading="lazy"
+                                                 class="{{ thumb_class }}">
+                                        </div>
+                                    {% else %}
+                                        <i class="fas fa-file text-blue-500 text-4xl mb-2"></i>
+                                    {% endif %}
+                                    <div class="file-name text-sm font-medium text-gray-900 truncate" title="{{ item.name }}">
+                                        {{ item.name }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">{{ item.size }}</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# ===== Режим ТАБЛИЦЫ ===== #}
+            <div id="view-table" class="hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b">
+                            <tr>
+                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
+                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Размер</th>
+                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Изменён</th>
+                                <th class="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Выбор</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for item in items %}
+                                <tr class="file-item-table hover:bg-gray-50 transition cursor-pointer"
+                                    data-name="{{ item.name }}"
+                                    data-path="{{ item.path }}"
+                                    data-type="{{ item.is_dir ? 'folder' : 'file' }}">
+
+                                    <td class="py-3 px-4">
+                                        <div class="flex items-center space-x-3">
+                                            {% if item.is_dir %}
+                                                <i class="fas fa-folder text-yellow-500 text-lg"></i>
+                                            {% elseif item.is_image %}
+                                                <img src="/admin/filemanager/thumb?path={{ item.path|url_encode }}&amp;w=64&amp;h=64&amp;v={{ item.modified }}"
+                                                     alt="" loading="lazy" class="w-8 h-8 object-cover rounded">
+                                            {% else %}
+                                                <i class="fas fa-file text-blue-500 text-lg"></i>
+                                            {% endif %}
+                                            <span class="text-sm font-medium text-gray-900 truncate max-w-[200px] sm:max-w-xs"
+                                                  title="{{ item.name }}">{{ item.name }}</span>
+                                        </div>
+                                    </td>
+
+                                    <td class="py-3 px-4 text-sm text-gray-500 hidden sm:table-cell">
+                                        {{ item.is_dir ? '—' : item.size }}
+                                    </td>
+
+                                    <td class="py-3 px-4 text-sm text-gray-500 hidden md:table-cell">
+                                        {{ item.modified_formatted }}
+                                    </td>
+
+                                    <td class="py-3 px-4 text-right">
+                                        {% if not item.is_dir %}
+                                            <button onclick="event.stopPropagation(); selectFileTable('{{ item.name|e('js') }}', '{{ item.path|e('js') }}')"
+                                                    class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm transition">
+                                                <i class="fas fa-check mr-1"></i>Выбрать
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    {# ===== ПАГИНАЦИЯ ===== #}
+    {% if pagination.total_pages > 1 %}
+    <div class="mt-4 flex items-center justify-between">
+        <div class="text-sm text-gray-500">
+            Страница {{ pagination.page }} из {{ pagination.total_pages }}
+        </div>
+        <nav class="flex items-center space-x-1">
+            {% if pagination.page > 1 %}
+                <a href="?callback={{ callback }}&path={{ currentPath|url_encode }}&page=1&per_page={{ pagination.per_page }}&cols={{ cols }}"
+                   class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50 transition"
+                   title="Первая">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?callback={{ callback }}&path={{ currentPath|url_encode }}&page={{ pagination.page - 1 }}&per_page={{ pagination.per_page }}&cols={{ cols }}"
+                   class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50 transition"
+                   title="Предыдущая">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            {% else %}
+                <span class="px-3 py-2 text-sm border border-gray-200 rounded-md text-gray-300 cursor-not-allowed">
+                    <i class="fas fa-angle-double-left"></i>
+                </span>
+                <span class="px-3 py-2 text-sm border border-gray-200 rounded-md text-gray-300 cursor-not-allowed">
+                    <i class="fas fa-angle-left"></i>
+                </span>
+            {% endif %}
+
+            {% set startPage = max(1, pagination.page - 2) %}
+            {% set endPage = min(pagination.total_pages, pagination.page + 2) %}
+
+            {% if startPage > 1 %}
+                <span class="px-2 text-gray-400">…</span>
+            {% endif %}
+
+            {% for p in range(startPage, endPage) %}
+                {% if p == pagination.page %}
+                    <span class="px-3 py-2 text-sm bg-blue-600 text-white rounded-md font-medium">{{ p }}</span>
+                {% else %}
+                    <a href="?callback={{ callback }}&path={{ currentPath|url_encode }}&page={{ p }}&per_page={{ pagination.per_page }}&cols={{ cols }}"
+                       class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition">
+                        {{ p }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+
+            {% if endPage < pagination.total_pages %}
+                <span class="px-2 text-gray-400">…</span>
+            {% endif %}
+
+            {% if pagination.page < pagination.total_pages %}
+                <a href="?callback={{ callback }}&path={{ currentPath|url_encode }}&page={{ pagination.page + 1 }}&per_page={{ pagination.per_page }}&cols={{ cols }}"
+                   class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50 transition"
+                   title="Следующая">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="?callback={{ callback }}&path={{ currentPath|url_encode }}&page={{ pagination.total_pages }}&per_page={{ pagination.per_page }}&cols={{ cols }}"
+                   class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50 transition"
+                   title="Последняя">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% else %}
+                <span class="px-3 py-2 text-sm border border-gray-200 rounded-md text-gray-300 cursor-not-allowed">
+                    <i class="fas fa-angle-right"></i>
+                </span>
+                <span class="px-3 py-2 text-sm border border-gray-200 rounded-md text-gray-300 cursor-not-allowed">
+                    <i class="fas fa-angle-double-right"></i>
+                </span>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+
+    <!-- Форма загрузки (скрыта) -->
+    <div id="uploadForm" class="bg-white rounded-lg shadow-sm p-4 mb-4 hidden">
+        <h3 class="text-lg font-semibold mb-3">Загрузка файлов</h3>
+
+        <div id="uploadArea" class="upload-area rounded-lg p-6 text-center mb-3">
+            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+            <p class="text-gray-600 mb-2">Перетащите файлы сюда или</p>
+            <input type="file" id="fileInput" multiple class="hidden">
+            <button onclick="document.getElementById('fileInput').click()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                Выбрать файлы
+            </button>
+            <p class="text-sm text-gray-500 mt-2">Максимальный размер: 5MB</p>
+        </div>
+
+        <div id="uploadProgress" class="hidden">
+            <div class="flex justify-between text-sm text-gray-600 mb-1">
+                <span>Загрузка...</span>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="progressBar" class="progress-bar bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div id="fileList" class="mt-3 space-y-2 hidden"></div>
+
+        <div class="flex justify-end space-x-2 mt-4">
+            <button onclick="hideUploadForm()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
+                Отмена
+            </button>
+            <button onclick="startUpload()" id="uploadButton"
+                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    disabled>
+                <i class="fas fa-upload mr-1"></i> Начать загрузку
+            </button>
+        </div>
+    </div>
+
+    <!-- Выбранный файл -->
+    <div id="selectedFile" class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 hidden">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-blue-800">Выбранный файл:</p>
+                <p id="selectedFileName" class="text-blue-600 font-mono text-sm"></p>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="copyFilePath()" class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm transition">
+                    <i class="fas fa-copy mr-1"></i>Копировать
+                </button>
+                <button onclick="useSelectedFile()" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm transition">
+                    <i class="fas fa-check mr-1"></i>Выбрать
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// === ИНИЦИАЛИЗАЦИЯ ===
+let selectedFile = null;
+let selectedFiles = [];
+
+(function() {
+    const savedMode = localStorage.getItem('filemanager_popup_view_mode') || 'grid';
+    applyViewMode(savedMode);
+})();
+
+function setViewMode(mode) {
+    localStorage.setItem('filemanager_popup_view_mode', mode);
+    applyViewMode(mode);
+}
+
+function applyViewMode(mode) {
+    const gridView = document.getElementById('view-grid');
+    const tableView = document.getElementById('view-table');
+    const btnGrid = document.getElementById('btn-grid');
+    const btnTable = document.getElementById('btn-table');
+
+    if (!gridView || !tableView) return;
+
+    if (mode === 'table') {
+        gridView.classList.add('hidden');
+        tableView.classList.remove('hidden');
+        btnGrid.classList.remove('bg-blue-100', 'text-blue-700', 'border-blue-300');
+        btnTable.classList.add('bg-blue-100', 'text-blue-700', 'border-blue-300');
+    } else {
+        tableView.classList.add('hidden');
+        gridView.classList.remove('hidden');
+        btnTable.classList.remove('bg-blue-100', 'text-blue-700', 'border-blue-300');
+        btnGrid.classList.add('bg-blue-100', 'text-blue-700', 'border-blue-300');
+    }
+}
+
+// === НАВИГАЦИЯ ===
+function navigateToFolder(event, folderName) {
+    event.stopPropagation();
+    const currentPath = '{{ currentPath }}';
+    const newPath = currentPath ? currentPath + '/' + folderName : folderName;
+    const callback = '{{ callback }}';
+    window.location.href = '?callback=' + encodeURIComponent(callback) + '&path=' + encodeURIComponent(newPath);
+}
+
+function selectFile(event, name, path) {
+    event.stopPropagation();
+    setSelectedFile(name, path);
+    // Подсветка
+    document.querySelectorAll('#view-grid .file-item').forEach(i => i.classList.remove('ring-2', 'ring-blue-500', 'selected'));
+    const item = event.currentTarget.closest('.file-item');
+    if (item) item.classList.add('ring-2', 'ring-blue-500', 'selected');
+}
+
+function selectFileTable(name, path) {
+    setSelectedFile(name, path);
+    document.querySelectorAll('#view-table .file-item-table').forEach(r => r.classList.remove('bg-blue-50'));
+    const row = event.currentTarget.closest('.file-item-table');
+    if (row) row.classList.add('bg-blue-50');
+}
+
+function setSelectedFile(name, path) {
+    selectedFile = {
+        name: name,
+        path: '/storage/uploads/' + path,
+        url: '/storage/uploads/' + path
+    };
+    document.getElementById('selectedFileName').textContent = '/storage/uploads/' + path;
+    document.getElementById('selectedFile').classList.remove('hidden');
+}
+
+// === ПАГИНАЦИЯ ===
+function changeCols(cols) {
+    localStorage.setItem('filemanager_popup_cols', cols);
+    window.location.href = buildUrl({ cols: cols });
+}
+
+function changePerPage(perPage) {
+    window.location.href = buildUrl({ per_page: perPage, page: 1 });
+}
+
+function buildUrl(overrides) {
+    const params = new URLSearchParams();
+    const callback = '{{ callback }}';
+    const currentPath = '{{ currentPath }}';
+
+    params.set('callback', callback);
+    if (currentPath) params.set('path', currentPath);
+    if (overrides.path !== undefined) {
+        if (overrides.path) params.set('path', overrides.path);
+        else params.delete('path');
+    }
+    if (overrides.page !== undefined) params.set('page', overrides.page);
+    if (overrides.per_page !== undefined) params.set('per_page', overrides.per_page);
+    if (overrides.cols !== undefined) params.set('cols', overrides.cols);
+
+    return '?' + params.toString();
+}
+
+// === ВЫБОР ФАЙЛА ===
+function copyFilePath() {
+    if (selectedFile) {
+        navigator.clipboard.writeText(selectedFile.path).then(function() {
+            alert('Путь скопирован: ' + selectedFile.path);
+        }).catch(function() {
+            const tempInput = document.createElement('input');
+            tempInput.value = selectedFile.path;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            alert('Путь скопирован: ' + selectedFile.path);
+        });
+    }
+}
+
+function useSelectedFile() {
+    if (selectedFile) {
+        const callback = '{{ callback }}';
+        if (window.opener && typeof window.opener[callback] === 'function') {
+            window.opener[callback](selectedFile);
+        }
+        window.close();
+    }
+}
+
+// Клики по строкам таблицы
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('#view-table .file-item-table').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('button')) return;
+            const type = this.dataset.type;
+            const name = this.dataset.name;
+            const path = this.dataset.path;
+            if (type === 'folder') {
+                navigateToFolder(e, name);
+            }
+        });
+        row.addEventListener('dblclick', function(e) {
+            if (e.target.closest('button')) return;
+            const type = this.dataset.type;
+            const name = this.dataset.name;
+            const path = this.dataset.path;
+            if (type === 'file') {
+                selectFileTable(name, path);
+                useSelectedFile();
+            }
+        });
+    });
+});
+
+// === ЗАГРУЗКА ===
+function toggleUploadForm() {
+    document.getElementById('uploadForm').classList.toggle('hidden');
+}
+
+function hideUploadForm() {
+    document.getElementById('uploadForm').classList.add('hidden');
+    resetUploadForm();
+}
+
+function resetUploadForm() {
+    document.getElementById('fileInput').value = '';
+    document.getElementById('fileList').classList.add('hidden');
+    document.getElementById('fileList').innerHTML = '';
+    document.getElementById('uploadButton').disabled = true;
+    document.getElementById('uploadProgress').classList.add('hidden');
+    selectedFiles = [];
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    handleFileSelection(e.target.files);
+});
+
+const uploadArea = document.getElementById('uploadArea');
+uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', function(e) { e.preventDefault(); uploadArea.classList.remove('dragover'); });
+uploadArea.addEventListener('drop', function(e) { e.preventDefault(); uploadArea.classList.remove('dragover'); handleFileSelection(e.dataTransfer.files); });
+
+function handleFileSelection(files) {
+    if (files.length === 0) return;
+    selectedFiles = Array.from(files);
+    const fileList = document.getElementById('fileList');
+    fileList.innerHTML = '';
+    selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'flex items-center justify-between p-2 bg-gray-50 rounded';
+        fileItem.innerHTML = `
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-file text-gray-400"></i>
+                <span class="text-sm">${file.name}</span>
+                <span class="text-xs text-gray-500">(${formatFileSize(file.size)})</span>
+            </div>
+            <button onclick="removeFile(${index})" class="text-red-500 hover:text-red-700">
+                <i class="fas fa-times"></i>
+            </button>`;
+        fileList.appendChild(fileItem);
+    });
+    fileList.classList.remove('hidden');
+    document.getElementById('uploadButton').disabled = false;
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    handleFileSelection(selectedFiles);
+    if (selectedFiles.length === 0) document.getElementById('uploadButton').disabled = true;
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+async function startUpload() {
+    if (selectedFiles.length === 0) return;
+    const uploadProgress = document.getElementById('uploadProgress');
+    const uploadButton = document.getElementById('uploadButton');
+    uploadProgress.classList.remove('hidden');
+    uploadButton.disabled = true;
+
+    const currentPath = '{{ currentPath }}';
+    const formData = new FormData();
+    selectedFiles.forEach(file => formData.append('files[]', file));
+    formData.append('path', currentPath);
+
+    try {
+        const response = await fetch('/admin/filemanager/upload-popup', { method: 'POST', body: formData });
+        const result = await response.json();
+        if (result.success) {
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            alert('Ошибка загрузки: ' + result.message);
+            resetUploadForm();
+        }
+    } catch (error) {
+        alert('Ошибка сети: ' + error.message);
+        resetUploadForm();
+    }
+}
+
+// Закрытие по Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        if (!document.getElementById('uploadForm').classList.contains('hidden')) {
+            hideUploadForm();
+        } else {
+            window.close();
+        }
+    }
+});
+
+window.focus();
+</script>
+</body>
+</html>

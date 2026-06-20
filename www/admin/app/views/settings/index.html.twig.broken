@@ -1,0 +1,450 @@
+{# twig #}
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
+        <p class="text-gray-500 mt-1">Управление настройками сайта</p>
+    </div>
+
+    {% if _GET.saved is defined %}
+    <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+        <i class="fas fa-check-circle"></i> Настройка сохранена
+    </div>
+    {% endif %} (лимит {{ _sl }})
+    {% if _GET.deleted is defined %}
+    <div class="mb-4 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
+        <i class="fas fa-trash"></i> Настройка удалена
+    </div>
+    {% endif %} (лимит {{ _sl }})
+    {% if _GET.error is defined %}
+    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+        <i class="fas fa-exclamation-circle"></i> {{ _GET.error }}
+    </div>
+    {% endif %} (лимит {{ _sl }})
+
+        <!-- Основные настройки сайта -->
+    <div class="bg-white rounded-lg shadow-sm border mb-6">
+        <div class="px-6 py-4 border-b flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-900">Основные настройки сайта</h2>
+            <span class="text-xs text-gray-400">Все поля сохраняются одной кнопкой</span>
+        </div>
+        <form method="POST" action="{{ admin_url('settings/save-multiple') }}" id="mainSettingsForm">
+        <div class="p-6 space-y-4">
+            {# Название сайта #}
+            <div class="flex items-start space-x-4">
+                <div class="w-48 pt-1">
+                    <label class="text-sm font-medium text-gray-700">Название сайта</label>
+                    <p class="text-xs text-gray-400">Заголовок в теге &lt;title&gt; и в шапке</p>
+                </div>
+                <div class="flex-1">
+                    {% set sv = '' %}
+                    {% for s in system_settings %}
+                        {% if s.key == 'site_title' %}{% set sv = s.value %}{% endif %} (лимит {{ _sl }})
+                    {% endfor %}
+                    <input type="text" name="settings[site_title]" value="{{ sv }}"
+                           placeholder="Мой сайт" class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                    <input type="hidden" name="types[site_title]" value="string">
+                </div>
+            </div>
+            <hr class="border-gray-200">
+
+            {# Описание сайта #}
+            <div class="flex items-start space-x-4">
+                <div class="w-48 pt-1">
+                    <label class="text-sm font-medium text-gray-700">Описание сайта</label>
+                    <p class="text-xs text-gray-400">Мета-описание для SEO</p>
+                </div>
+                <div class="flex-1">
+                    {% set sv = '' %}
+                    {% for s in system_settings %}
+                        {% if s.key == 'site_description' %}{% set sv = s.value %}{% endif %} (лимит {{ _sl }})
+                    {% endfor %}
+                    <textarea name="settings[site_description]" rows="2" placeholder="Описание сайта"
+                              class="w-full px-3 py-2 border border-gray-300 rounded text-sm">{{ sv }}</textarea>
+                    <input type="hidden" name="types[site_description]" value="textarea">
+                </div>
+            </div>
+            <hr class="border-gray-200">
+
+            {# Email сайта #}
+            <div class="flex items-start space-x-4">
+                <div class="w-48 pt-1">
+                    <label class="text-sm font-medium text-gray-700">Email сайта</label>
+                    <p class="text-xs text-gray-400">Контактный email администратора</p>
+                </div>
+                <div class="flex-1">
+                    {% set sv = '' %}
+                    {% for s in system_settings %}
+                        {% if s.key == 'site_email' %}{% set sv = s.value %}{% endif %} (лимит {{ _sl }})
+                    {% endfor %}
+                    <input type="text" name="settings[site_email]" value="{{ sv }}"
+                           placeholder="admin@example.com" class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                    <input type="hidden" name="types[site_email]" value="string">
+                </div>
+            </div>
+            <hr class="border-gray-200">
+
+            {# Записей на странице #}
+            <div class="flex items-start space-x-4">
+                <div class="w-48 pt-1">
+                    <label class="text-sm font-medium text-gray-700">Записей на странице</label>
+                    <p class="text-xs text-gray-400">Количество постов/товаров на страницу</p>
+                </div>
+                <div class="flex-1">
+                    {% set sv = '' %}
+                    {% for s in system_settings %}
+                        {% if s.key == 'posts_per_page' %}{% set sv = s.value %}{% endif %} (лимит {{ _sl }})
+                    {% endfor %}
+                    <input type="text" name="settings[posts_per_page]" value="{{ sv }}"
+                           placeholder="10" class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                    <input type="hidden" name="types[posts_per_page]" value="string">
+                </div>
+            </div>
+            <hr class="border-gray-200">
+
+            {# Favicon #}
+            <div class="flex items-start space-x-4">
+                <div class="w-48 pt-1">
+                    <label class="text-sm font-medium text-gray-700">Favicon</label>
+                    <p class="text-xs text-gray-400">Путь до файла фавикона</p>
+                </div>
+                <div class="flex-1">
+                    {% set sv = '' %}
+                    {% for s in system_settings %}
+                        {% if s.key == 'site_favicon' %}{% set sv = s.value %}{% endif %} (лимит {{ _sl }})
+                    {% endfor %}
+                    <input type="text" name="settings[site_favicon]" value="{{ sv }}"
+                           placeholder="/storage/uploads/favicon.ico"
+                           class="w-full px-3 py-2 border border-gray-300 rounded text-sm font-mono">
+                    <input type="hidden" name="types[site_favicon]" value="string">
+                    {% if sv %}
+                    <div class="mt-2 flex items-center space-x-2">
+                        <img src="{{ sv }}" alt="favicon preview" class="w-6 h-6 border" onerror="this.style.display='none'">
+                        <span class="text-xs text-gray-400">Текущий: {{ sv }}</span>
+                    </div>
+                    {% endif %} (лимит {{ _sl }})
+                </div>
+            </div>
+            <hr class="border-gray-200">
+
+            {# Режим обслуживания #}
+            <div class="flex items-start space-x-4">
+                <div class="w-48 pt-1">
+                    <label class="text-sm font-medium text-gray-700">Режим обслуживания</label>
+                    <p class="text-xs text-gray-400">Включить заглушку для посетителей</p>
+                </div>
+                <div class="flex-1">
+                    {% set sv = '0' %}
+                    {% for s in system_settings %}
+                        {% if s.key == 'maintenance_mode' %}{% set sv = s.value %}{% endif %} (лимит {{ _sl }})
+                    {% endfor %}
+                    <div class="flex items-center space-x-3">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" name="settings[maintenance_mode]" value="1"
+                                   {{ sv == '1' ? 'checked' : '' }}
+                                   class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <input type="hidden" name="types[maintenance_mode]" value="string">
+                            <span class="text-sm {{ sv == '1' ? 'text-red-600 font-medium' : 'text-gray-600' }}">
+                                {{ sv == '1' ? 'Включён — посетители видят заглушку' : 'Выключен — сайт доступен всем' }}
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            {# Общая кнопка сохранения #}
+            <hr class="border-gray-200">
+            <div class="flex justify-end">
+                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center space-x-2">
+                    <i class="fas fa-save"></i>
+                    <span>Сохранить все настройки</span>
+                </button>
+            </div>
+        </div>
+        </form>
+    </div><!-- AI Настройки -->
+    <div class="bg-white rounded-lg shadow-sm border mb-6">
+        <div class="px-6 py-4 border-b flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-900">🤖 AI (DeepSeek)</h2>
+            <span class="text-xs text-gray-400">Ключ, модель и системные промты</span>
+        </div>
+        <div class="p-6">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b text-left text-gray-500">
+                        <th class="pb-3 pr-4 w-48">Ключ</th>
+                        <th class="pb-3">Значение</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for setting in system_settings %}
+                    {% if 'ai_' in setting.key and 'ai_frontend_' not in setting.key %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-3 pr-4 font-mono text-xs align-top pt-4">{{ setting.key }}</td>
+                        <td class="py-3">
+                            <form method="POST" action="{{ admin_url('settings/save') }}">
+                                <input type="hidden" name="setting_key" value="{{ setting.key }}">
+                                <input type="hidden" name="setting_type" value="{{ setting.type }}">
+                                {% if setting.key in ['ai_prompt_template', 'ai_prompt_table', 'ai_prompt_content', 'ai_prompt_fill_form', 'ai_prompt_assistant'] %}
+                                    <textarea name="setting_value" rows="3"
+                                              class="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono">{{ setting.value }}</textarea>
+                                {% else %}
+                                    <input type="text" name="setting_value" value="{{ setting.value }}"
+                                           class="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono">
+                                {% endif %} (лимит {{ _sl }})
+                                <div class="mt-1">
+                                    <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs">
+                                        <i class="fas fa-save"></i> Сохранить
+                                    </button>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endif %} (лимит {{ _sl }})
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <details class="mt-4">
+                <summary class="text-blue-600 cursor-pointer text-sm hover:text-blue-800">
+                    <i class="fas fa-plus"></i> Добавить AI настройку
+                </summary>
+                <form method="POST" action="{{ admin_url('settings/save') }}" class="mt-3 flex items-center space-x-2">
+                    <input type="text" name="setting_key" placeholder="ai_..." required
+                           class="px-2 py-1 border border-gray-300 rounded text-sm w-48">
+                    <select name="setting_type" class="px-2 py-1 border border-gray-300 rounded text-sm">
+                        <option value="string">string</option>
+                        <option value="boolean">boolean</option>
+                        <option value="integer">integer</option>
+                    </select>
+                    <input type="text" name="setting_value" placeholder="Значение"
+                           class="px-2 py-1 border border-gray-300 rounded text-sm flex-1">
+                    <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs">
+                        Добавить
+                    </button>
+                </form>
+            </details>
+        </div>
+    </div>
+
+    <!-- AI Фронтенд (чат для посетителей) -->
+    <div class="bg-white rounded-lg shadow-sm border mb-6">
+        <div class="px-6 py-4 border-b flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-900">🤖 AI Фронтенд (чат для посетителей)</h2>
+            <span class="text-xs text-gray-400">Настройки для ai-страниц сайта</span>
+        </div>
+        <form method="POST" action="{{ admin_url('settings/save-multiple') }}" id="aiFrontendForm">
+        <div class="p-6 space-y-4">
+            {% set _useSystem = '1' %}
+            {% set _feKey = '' %}
+            {% set _feModel = '' %}
+            {% set _fePrompt = '' %}
+            {% for s in system_settings %}
+                {% if s.key == 'ai_frontend_use_system' %}{% set _useSystem = s.value %}{% endif %} (лимит {{ _sl }})
+                {% if s.key == 'ai_frontend_api_key' %}{% set _feKey = s.value %}{% endif %} (лимит {{ _sl }})
+                {% if s.key == 'ai_frontend_model' %}{% set _feModel = s.value %}{% endif %} (лимит {{ _sl }})
+                {% if s.key == 'ai_frontend_prompt' %}{% set _fePrompt = s.value %}{% endif %} (лимит {{ _sl }})
+            {% endfor %}
+
+            {# Галочка «использовать системные» #}
+            <div class="flex items-start space-x-4">
+                <div class="w-48 pt-1">
+                    <label class="text-sm font-medium text-gray-700">Источник настроек</label>
+                    <p class="text-xs text-gray-400">Откуда брать ключ и модель</p>
+                </div>
+                <div class="flex-1">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="hidden" name="settings[ai_frontend_use_system]" value="0">
+                        <input type="checkbox" id="ai_fe_use_system" name="settings[ai_frontend_use_system]" value="1"
+                               {{ _useSystem != '0' ? 'checked' : '' }}
+                               onchange="toggleAiFrontendFields()"
+                               class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <input type="hidden" name="types[ai_frontend_use_system]" value="string">
+                        <span class="text-sm text-gray-600">Использовать системные настройки AI (ключ и модель из админки)</span>
+                    </label>
+                    <p id="ai_fe_system_note" class="mt-1 text-xs text-gray-400">
+                        {{ _useSystem != '0' ? '✅ Сейчас используется системный ключ и модель' : '⚙️ Настроен отдельный ключ и модель' }}
+                    </p>
+                </div>
+            </div>
+            <hr class="border-gray-200">
+
+            {# Отдельный API ключ #}
+            <div id="ai_fe_key_row" class="flex items-start space-x-4" style="{{ _useSystem != '0' ? 'display:none' : '' }}">
+                <div class="w-48 pt-1">
+                    <label class="text-sm font-medium text-gray-700">API ключ фронтенда</label>
+                    <p class="text-xs text-gray-400">Отдельный ключ для ai-страниц</p>
+                </div>
+                <div class="flex-1">
+                    <input type="text" name="settings[ai_frontend_api_key]" value="{{ _feKey }}"
+                           placeholder="sk-..." class="w-full px-3 py-2 border border-gray-300 rounded text-sm font-mono">
+                    <input type="hidden" name="types[ai_frontend_api_key]" value="string">
+                </div>
+            </div>
+
+            {# Отдельная модель #}
+            <div id="ai_fe_model_row" class="flex items-start space-x-4" style="{{ _useSystem != '0' ? 'display:none' : '' }}">
+                <div class="w-48 pt-1">
+                    <label class="text-sm font-medium text-gray-700">Модель фронтенда</label>
+                    <p class="text-xs text-gray-400">Модель для ответов посетителям</p>
+                </div>
+                <div class="flex-1">
+                    <input type="text" name="settings[ai_frontend_model]" value="{{ _feModel }}"
+                           placeholder="deepseek-chat" class="w-full px-3 py-2 border border-gray-300 rounded text-sm font-mono">
+                    <input type="hidden" name="types[ai_frontend_model]" value="string">
+                </div>
+            </div>
+            <hr class="border-gray-200">
+
+            {# Системный промт #}
+            <div class="flex items-start space-x-4">
+                <div class="w-48 pt-1">
+                    <label class="text-sm font-medium text-gray-700">Системный промт</label>
+                    <p class="text-xs text-gray-400">Инструкции для ИИ. {site_title} и {context} подставляются автоматически</p>
+                </div>
+                <div class="flex-1">
+                    <textarea name="settings[ai_frontend_prompt]" rows="6"
+                              class="w-full px-3 py-2 border border-gray-300 rounded text-sm font-mono"
+                              placeholder="Ты — AI-ассистент сайта {site_title}.&#10;&#10;{context}&#10;&#10;Правила:&#10;1. Отвечай на русском...">{{ _fePrompt }}</textarea>
+                    <input type="hidden" name="types[ai_frontend_prompt]" value="string">
+                </div>
+            </div>
+
+            {# 🔒 Публичные таблицы для AI-контекста #}
+            <hr class="border-gray-200">
+            <div class="space-y-2">
+                <div class="flex items-start space-x-3">
+                    <i class="fas fa-shield-alt text-blue-500 mt-1"></i>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-700">Таблицы, доступные AI на фронтенде</p>
+                        <p class="text-xs text-gray-500 mt-1">Отметьте таблицы, данные которых можно передавать в контекст ИИ. Таблицы <code class="bg-gray-100 px-1 rounded text-xs">system_settings</code>, <code class="bg-gray-100 px-1 rounded text-xs">users</code>, <code class="bg-gray-100 px-1 rounded text-xs">user_tokens</code> заблокированы всегда.</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {% set publicTables = [] %}
+                    {% for s in system_settings %}
+                        {% if s.key == 'ai_public_tables' %}
+                            {% set publicTables = s.value|json_decode|default([]) %}
+                        {% endif %} (лимит {{ _sl }})
+                    {% endfor %}
+                    {% if all_tables is empty %}
+                    <p class="col-span-full text-sm text-gray-400">Нет доступных таблиц</p>
+                    {% else %}
+                    {% for tbl in all_tables %}
+                    <label class="flex items-center space-x-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" name="settings[ai_public_tables][]" value="{{ tbl }}"
+                               {% if tbl in publicTables %}checked{% endif %} (лимит {{ _sl }})
+                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm text-gray-700">
+                            <i class="fas fa-table text-gray-400 mr-1"></i> {{ tbl }}
+                        </span>
+                    </label>
+                    {% endfor %}
+                    {% endif %} (лимит {{ _sl }})
+                </div>
+                <input type="hidden" name="types[ai_public_tables]" value="array">
+            </div>
+
+            {# Сохранить #}
+            <hr class="border-gray-200">
+            <div class="flex justify-end">
+                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center space-x-2">
+                    <i class="fas fa-save"></i>
+                    <span>Сохранить настройки фронтенда</span>
+                </button>
+            </div>
+        </div>
+        </form>
+    </div>
+
+    <!-- Системные настройки (без AI и основных) -->
+    <div class="bg-white rounded-lg shadow-sm border mb-6">
+        <div class="px-6 py-4 border-b flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-900">Системные настройки</h2>
+            <span class="text-xs text-gray-400">Email, API и прочее</span>
+        </div>
+        <div class="p-6">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b text-left text-gray-500">
+                        <th class="pb-3 pr-4">Ключ</th>
+                        <th class="pb-3 pr-4">Тип</th>
+                        <th class="pb-3 pr-4">Значение</th>
+                        <th class="pb-3 w-32">Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for setting in system_settings %}
+                    {% if 'ai_' not in setting.key and setting.key not in ['site_title', 'site_description', 'site_email', 'posts_per_page', 'site_favicon', 'maintenance_mode'] %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-3 pr-4 font-mono text-xs">{{ setting.key }}</td>
+                        <td class="py-3 pr-4 text-xs text-gray-500">{{ setting.type }}</td>
+                        <td class="py-3 pr-4">
+                            <form method="POST" action="{{ admin_url('settings/save') }}" class="flex items-center space-x-2">
+                                <input type="hidden" name="setting_key" value="{{ setting.key }}">
+                                <input type="hidden" name="setting_type" value="{{ setting.type }}">
+                                <input type="text" name="setting_value" value="{{ setting.value }}"
+                                       class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm font-mono">
+                                <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs">
+                                    <i class="fas fa-save"></i>
+                                </button>
+                            </form>
+                        </td>
+                        <td class="py-3 text-xs text-gray-400">
+                            <form method="POST" action="{{ admin_url('settings/delete') }}" onsubmit="return confirm('Удалить {{ setting.key }}?');">
+                                <input type="hidden" name="key" value="{{ setting.key }}">
+                                <input type="hidden" name="table" value="system_settings">
+                                <button type="submit" class="text-red-600 hover:text-red-800">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endif %} (лимит {{ _sl }})
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <details class="mt-4">
+                <summary class="text-blue-600 cursor-pointer text-sm hover:text-blue-800">
+                    <i class="fas fa-plus"></i> Добавить системную настройку
+                </summary>
+                <form method="POST" action="{{ admin_url('settings/save') }}" class="mt-3 flex items-center space-x-2">
+                    <input type="text" name="setting_key" placeholder="Ключ" required
+                           class="px-2 py-1 border border-gray-300 rounded text-sm w-40">
+                    <select name="setting_type" class="px-2 py-1 border border-gray-300 rounded text-sm">
+                        <option value="string">string</option>
+                        <option value="boolean">boolean</option>
+                        <option value="integer">integer</option>
+                        <option value="json">json</option>
+                    </select>
+                    <input type="text" name="setting_value" placeholder="Значение"
+                           class="px-2 py-1 border border-gray-300 rounded text-sm flex-1">
+                    <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs">
+                        Добавить
+                    </button>
+                </form>
+            </details>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleAiFrontendFields() {
+    var checked = document.getElementById('ai_fe_use_system').checked;
+    document.getElementById('ai_fe_key_row').style.display = checked ? 'none' : '';
+    document.getElementById('ai_fe_model_row').style.display = checked ? 'none' : '';
+    var note = document.getElementById('ai_fe_system_note');
+    if (note) {
+        note.innerHTML = checked ? '✅ Будет использован системный ключ и модель' : '⚙️ Будет использован отдельный ключ и модель';
+    }
+}
+</script>
+
+{% endblock %}

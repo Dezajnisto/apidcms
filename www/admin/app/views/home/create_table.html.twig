@@ -1,0 +1,221 @@
+{# twig #}
+{% extends "base.html.twig" %}
+
+{% block title %}Создать таблицу - {{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Кнопка назад -->
+    <div class="mb-6">
+        <a href="{{ admin_url('') }}" 
+           class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition">
+            <i class="fas fa-arrow-left"></i>
+            <span>Назад к списку таблиц</span>
+        </a>
+    </div>
+
+    <!-- Заголовок -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
+    </div>
+
+    <!-- Сообщения об ошибках -->
+    {% if error is defined %}
+        <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong class="font-medium">Ошибка:</strong>
+                    <span>{{ error }}</span>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Подсказка -->
+    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div class="flex items-start space-x-3">
+            <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+            <div>
+                <strong class="font-medium">Подсказка:</strong>
+                <p class="text-blue-700">Создайте новую таблицу с необходимыми колонками. Первая колонка будет автоматически установлена как первичный ключ.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Форма -->
+    <form method="POST" action="{{ admin_url('store-table') }}" id="createTableForm" class="space-y-6">
+        <!-- AI: создание таблицы по описанию -->
+        <button type="button" onclick="AIAssistant.init({mode:'table'});AIAssistant.open()" 
+                class="inline-flex items-center space-x-2 px-4 py-2 border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 transition">
+            <i class="fas fa-magic"></i>
+            <span>AI — Создать таблицу</span>
+        </button>
+
+        <!-- Название таблицы -->
+        <div class="bg-white rounded-lg border p-6">
+            <label for="table_name" class="block text-sm font-medium text-gray-700 mb-2">
+                Название таблицы <span class="text-red-500">*</span>
+            </label>
+            <input 
+                type="text" 
+                id="table_name" 
+                name="table_name" 
+                value="{{ formData.table_name ?? '' }}"
+                required
+                pattern="[a-zA-Z_][a-zA-Z0-9_]*"
+                title="Название таблицы может содержать только буквы, цифры и подчеркивания, и должно начинаться с буквы или подчеркивания"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="например: products, users, categories"
+            >
+            <p class="mt-1 text-sm text-gray-500">
+                Может содержать только буквы, цифры и подчеркивания. Должно начинаться с буквы или подчеркивания.
+            </p>
+        </div>
+
+        <!-- Колонки таблицы -->
+        <div class="bg-white rounded-lg border p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Колонки таблицы</h3>
+            
+            <div id="columnsList" class="space-y-4">
+                <!-- Колонки будут добавляться здесь динамически -->
+            </div>
+            
+            <button type="button" 
+                    onclick="addColumn()"
+                    class="mt-4 inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
+                <i class="fas fa-plus"></i>
+                <span>Добавить колонку</span>
+            </button>
+        </div>
+
+        <!-- Дополнительные опции -->
+        <div class="bg-white rounded-lg border p-6">
+            <div class="flex items-center space-x-3">
+                <input type="checkbox" 
+                       id="add_timestamps" 
+                       name="add_timestamps" 
+                       value="1" 
+                       checked
+                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <label for="add_timestamps" class="text-sm font-medium text-gray-700">
+                    Добавить поля created_at и updated_at
+                </label>
+            </div>
+            <p class="mt-1 text-sm text-gray-500">
+                Автоматически добавит поля для отслеживания времени создания и обновления записей
+            </p>
+        </div>
+        
+        <!-- Кнопки действий -->
+        <div class="flex items-center justify-end space-x-4 pt-6 border-t">
+            <a href="{{ admin_url('') }}" 
+               class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
+                Отмена
+            </a>
+            <button type="submit" 
+                    class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center space-x-2">
+                <i class="fas fa-plus"></i>
+                <span>Создать таблицу</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    let columnCount = 0;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        addColumn(); // Добавляем первую пользовательскую колонку
+    });
+
+    function addColumn() {
+        columnCount++;
+        const columnsList = document.getElementById('columnsList');
+        
+        const columnDiv = document.createElement('div');
+        columnDiv.className = 'bg-gray-50 p-4 rounded-lg border';
+        
+        columnDiv.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+                <span class="font-medium text-gray-900">Колонка #${columnCount}</span>
+                <button type="button" 
+                        onclick="removeColumn(this)"
+                        class="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition">
+                    <i class="fas fa-times mr-1"></i>
+                    Удалить
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Название колонки <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" 
+                           name="columns[${columnCount}][name]" 
+                           required 
+                           pattern="[a-zA-Z_][a-zA-Z0-9_]*"
+                           title="Название колонки может содержать только буквы, цифры и подчеркивания"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="название_колонки">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Тип данных <span class="text-red-500">*</span>
+                    </label>
+                    <select name="columns[${columnCount}][type]" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="TEXT">TEXT</option>
+                        <option value="VARCHAR(255)">VARCHAR(255)</option>
+                        <option value="INTEGER">INTEGER</option>
+                        <option value="REAL">REAL</option>
+                        <option value="NUMERIC">NUMERIC</option>
+                        <option value="BOOLEAN">BOOLEAN</option>
+                        <option value="DATE">DATE</option>
+                        <option value="DATETIME">DATETIME</option>
+                        <option value="BLOB">BLOB</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <div class="flex items-center space-x-2 h-10">
+                        <input type="checkbox" 
+                               name="columns[${columnCount}][nullable]" 
+                               checked
+                               class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label class="text-sm font-medium text-gray-700">NULL</label>
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Значение по умолчанию
+                    </label>
+                    <input type="text" 
+                           name="columns[${columnCount}][default]" 
+                           placeholder="Необязательно"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+        `;
+        
+        columnsList.appendChild(columnDiv);
+    }
+
+    function removeColumn(button) {
+        const columnItem = button.closest('.bg-gray-50');
+        columnItem.remove();
+        columnCount--;
+        
+        // Обновляем номера колонок
+        const columns = document.querySelectorAll('.bg-gray-50');
+        columns.forEach((col, index) => {
+            const title = col.querySelector('span');
+            if (title) {
+                title.textContent = `Колонка #${index + 1}`;
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
+            <p class="text-gray-600">Форма: {{ form_info.title }}</p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{{ admin_url('notifications/form/' ~ table_name) }}" 
+               class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                ← Назад к списку
+            </a>
+            <a href="{{ admin_url('notifications/delete/' ~ table_name ~ '/id/' ~ submission.id) }}" 
+               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+               onclick="return confirm('Удалить эту заявку?')">
+                Удалить
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Основная информация -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow-sm border">
+                <div class="px-6 py-4 border-b">
+                    <h2 class="text-lg font-semibold text-gray-900">Данные заявки</h2>
+                </div>
+                <div class="p-6">
+                    <dl class="grid grid-cols-1 gap-6">
+                        {% for field in structure %}
+                        {% if field.name not in ['id'] and submission[field.name] %}
+                        <div class="bg-gray-50 px-4 py-3 rounded-lg">
+                            <dt class="text-sm font-medium text-gray-600 capitalize">
+                                {{ field.name|replace({'_': ' '}) }}
+                            </dt>
+                            <dd class="mt-1 text-sm text-gray-900 whitespace-pre-wrap">
+                                {% if field.name == 'created_at' %}
+                                    {% if submission[field.name] is not empty and submission[field.name] != 'CURRENT_TIMESTAMP' %}
+                                        {# Пытаемся отформатировать дату, если она валидна #}
+                                        {% set date_value = submission[field.name] %}
+                                        {% if date_value is iterable %}
+                                            {# Если это массив (например, из JSON), преобразуем в строку #}
+                                            {% set date_value = date_value|join(' ') %}
+                                        {% endif %}
+                                        {% if date_value matches '/^\\d{4}-\\d{2}-\\d{2}/' %}
+                                            {{ date_value|date('d.m.Y H:i:s') }}
+                                        {% else %}
+                                            {{ date_value }}
+                                        {% endif %}
+                                    {% else %}
+                                        {# Если дата пустая или CURRENT_TIMESTAMP, показываем как есть #}
+                                        {{ submission[field.name] }}
+                                    {% endif %}
+                                {% else %}
+                                    {{ submission[field.name] }}
+                                {% endif %}
+                            </dd>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Мета-информация -->
+        <div class="space-y-6">
+            <!-- Статус -->
+            <div class="bg-white rounded-lg shadow-sm border">
+                <div class="px-6 py-4 border-b">
+                    <h2 class="text-lg font-semibold text-gray-900">Статус</h2>
+                </div>
+                <div class="p-6">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-600">Статус:</span>
+                        {% if submission.read_status == 'read' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Прочитано
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            Новый
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="mt-4">
+                        <span class="text-sm font-medium text-gray-600">Создано:</span>
+                            <p class="text-sm text-gray-900">
+                                {% if submission.created_at is not empty and submission.created_at != 'CURRENT_TIMESTAMP' and submission.created_at matches '/^\\d{4}-\\d{2}-\\d{2}/' %}
+                                    {{ submission.created_at|date('d.m.Y H:i:s') }}
+                                {% else %}
+                                    {{ submission.created_at }}
+                                {% endif %}
+                            </p>
+                    </div>
+                    <div class="mt-4">
+                        <span class="text-sm font-medium text-gray-600">ID:</span>
+                        <p class="text-sm text-gray-900">{{ submission.id }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Действия -->
+            <div class="bg-white rounded-lg shadow-sm border">
+                <div class="px-6 py-4 border-b">
+                    <h2 class="text-lg font-semibold text-gray-900">Действия</h2>
+                </div>
+                <div class="p-6 space-y-3">
+                    <a href="{{ admin_url('notifications/form/' ~ table_name) }}" 
+                       class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Все заявки этой формы
+                    </a>
+                    {% if submission.email %}
+                    <a href="mailto:{{ submission.email }}" 
+                       class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        Ответить по email
+                    </a>
+                    {% endif %}
+                    {% if submission.phone %}
+                    <a href="tel:{{ submission.phone }}" 
+                       class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                        Позвонить
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Информация о форме -->
+            <div class="bg-white rounded-lg shadow-sm border">
+                <div class="px-6 py-4 border-b">
+                    <h2 class="text-lg font-semibold text-gray-900">О форме</h2>
+                </div>
+                <div class="p-6">
+                    <div class="mb-3">
+                        <span class="text-sm font-medium text-gray-600">Название:</span>
+                        <p class="text-sm text-gray-900">{{ form_info.title }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-sm font-medium text-gray-600">URL:</span>
+                        <p class="text-sm text-gray-900">{{ form_info.url }}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-gray-600">Таблица:</span>
+                        <p class="text-sm text-gray-900">{{ table_name }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

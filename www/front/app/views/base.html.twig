@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ site_title }}{% endblock %}</title>
+    <meta name="description" content="{% block description %}{% endblock %}">
+    {% set favicon_path = get_setting('site_favicon') %}
+    {% if favicon_path %}
+    <link rel="icon" href="{{ asset(favicon_path) }}" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ asset(favicon_path) }}" type="image/x-icon">
+    {% endif %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html { scroll-behavior: smooth; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #fafaf9; color: #0c0a09; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+        header { background: #fff; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 50; }
+        header .container { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; }
+        nav a { margin: 0 0.75rem; text-decoration: none; font-weight: 500; }
+        nav a:hover { color: #dc2626; }
+        footer { background: #fff; border-top: 1px solid #e5e7eb; padding: 2rem 0; margin-top: 4rem; text-align: center; color: #6b7280; font-size: 0.875rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <a href="/" style="font-weight:700; font-size:1.25rem; text-decoration:none">{{ site_name is defined ? site_name : 'Мой сайт' }}</a>
+            <nav>
+                {% if navigation is defined %}
+                {% for item in navigation %}
+                <a href="/{{ item.url == '/' ? '' : item.url }}">{{ item.title }}</a>
+                {% endfor %}
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        &copy; {{ 'now'|date('Y') }} {{ site_name is defined ? site_name : 'Все права защищены' }}
+    </footer>
+</body>
+</html>

@@ -1,0 +1,218 @@
+{# twig #}
+{% extends base_template %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Заголовок -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">
+                🔌 {{ plugin.name }}
+                <span class="text-sm font-normal text-gray-500 ml-2">v{{ plugin.version }}</span>
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">{{ plugin.description }}</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{{ admin_url('plugins') }}" class="inline-flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
+                <i class="fas fa-arrow-left"></i>
+                <span>К списку</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash -->
+    {% if flash %}
+    <div class="mb-4 px-4 py-3 rounded-md {% if flash.type == 'success' %}bg-green-50 border border-green-200 text-green-700{% else %}bg-red-50 border border-red-200 text-red-700{% endif %}">
+        {{ flash.message }}
+    </div>
+    {% endif %}
+
+    <!-- Табы -->
+    <div class="mb-6">
+        <nav class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+            <a href="?tab=info" class="flex-1 text-center px-4 py-2 rounded-md text-sm font-medium transition {{ tab == 'info' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-800' }}">
+                <i class="fas fa-info-circle mr-1"></i> Инфо
+            </a>
+            <a href="?tab=templates" class="flex-1 text-center px-4 py-2 rounded-md text-sm font-medium transition {{ tab == 'templates' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-800' }}">
+                <i class="fas fa-file-code mr-1"></i> Шаблоны
+                <span class="ml-1 text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">{{ templates|length }}</span>
+            </a>
+            <a href="?tab=settings" class="flex-1 text-center px-4 py-2 rounded-md text-sm font-medium transition {{ tab == 'settings' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-800' }}">
+                <i class="fas fa-sliders-h mr-1"></i> Настройки
+                <span class="ml-1 text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">{{ settings|length }}</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Вкладка: Инфо -->
+    {% if tab == 'info' %}
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="px-6 py-4 border-b">
+            <h2 class="text-lg font-semibold">Информация о плагине</h2>
+        </div>
+        <div class="p-6">
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Название</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ plugin.name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Версия</dt>
+                    <dd class="mt-1 text-sm text-gray-900">v{{ plugin.version }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Статус</dt>
+                    <dd class="mt-1">
+                        {% if plugin.enabled %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Активен</span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Отключён</span>
+                        {% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Путь</dt>
+                    <dd class="mt-1 text-sm text-gray-900 font-mono text-xs">{{ plugin.path }}</dd>
+                </div>
+                <div class="md:col-span-2">
+                    <dt class="text-sm font-medium text-gray-500">Описание</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ plugin.description }}</dd>
+                </div>
+                {% if plugin.dependencies is not empty %}
+                <div class="md:col-span-2">
+                    <dt class="text-sm font-medium text-gray-500">Зависимости</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        {% for dep in plugin.dependencies %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-1">{{ dep }}</span>
+                        {% endfor %}
+                    </dd>
+                </div>
+                {% endif %}
+            </dl>
+
+            <div class="mt-6 pt-6 border-t">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">Содержимое plugin.json</h3>
+                <pre class="bg-gray-50 border rounded-lg p-4 text-xs font-mono overflow-x-auto">{{ raw_config }}</pre>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Вкладка: Шаблоны -->
+    {% if tab == 'templates' %}
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="px-6 py-4 border-b flex justify-between items-center">
+            <h2 class="text-lg font-semibold">Шаблоны плагина</h2>
+            <span class="text-sm text-gray-500">{{ plugin.path }}/views/</span>
+        </div>
+        <div class="p-6">
+            {% if templates is empty %}
+            <div class="text-center py-12 text-gray-500">
+                <i class="fas fa-file-code text-4xl mb-3 block"></i>
+                <p>У плагина нет шаблонов</p>
+                <p class="text-sm mt-1">Создайте файлы <code class="bg-gray-100 px-1 rounded">.twig</code> в директории <code class="bg-gray-100 px-1 rounded">views/</code> плагина</p>
+            </div>
+            {% else %}
+            <div class="overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Файл</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Размер</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">Изменён</th>
+                            <th class="px-4 py-3 text-right text-sm font-medium text-gray-500">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tpl in templates %}
+                        <tr class="border-t hover:bg-gray-50">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-file-code text-blue-500"></i>
+                                    <span class="font-mono text-sm">{{ tpl.name }}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500">{{ (tpl.size / 1024)|round(1) }} KB</td>
+                            <td class="px-4 py-3 text-sm text-gray-500">{{ tpl.modified|date('d.m.Y H:i') }}</td>
+                            <td class="px-4 py-3 text-right">
+                                <a href="{{ admin_url('plugins/' ~ plugin_name ~ '/templates/' ~ tpl.name) }}"
+                                   class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                    <i class="fas fa-edit mr-1"></i> Редактировать
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Вкладка: Настройки -->
+    {% if tab == 'settings' %}
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="px-6 py-4 border-b">
+            <h2 class="text-lg font-semibold">Настройки плагина</h2>
+        </div>
+        <div class="p-6">
+            {% if settings is empty %}
+            <div class="text-center py-12 text-gray-500">
+                <i class="fas fa-sliders-h text-4xl mb-3 block"></i>
+                <p>У плагина нет настраиваемых параметров</p>
+                <p class="text-sm mt-1">Добавьте секцию <code class="bg-gray-100 px-1 rounded">"settings"</code> в plugin.json</p>
+            </div>
+            {% else %}
+            <form method="post" class="space-y-6">
+                <input type="hidden" name="_action" value="save_settings">
+
+                {% for setting in settings %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ setting.label|default(setting.key) }}
+                    </label>
+
+                    {% if setting.type == 'textarea' %}
+                    <textarea name="setting_{{ setting.key }}" rows="4"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">{{ setting.value|default(setting.default)|default('') }}</textarea>
+                    {% elseif setting.type == 'number' %}
+                    <input type="number" name="setting_{{ setting.key }}"
+                           value="{{ setting.value|default(setting.default)|default(0) }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    {% elseif setting.type == 'checkbox' %}
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="setting_{{ setting.key }}" value="1"
+                               {% if setting.value|default(setting.default) %}checked{% endif %}
+                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm text-gray-600">{{ setting.description|default('') }}</span>
+                    </label>
+                    {% else %}
+                    <input type="text" name="setting_{{ setting.key }}"
+                           value="{{ setting.value|default(setting.default)|default('') }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    {% endif %}
+
+                    {% if setting.description and setting.type != 'checkbox' %}
+                    <p class="mt-1 text-xs text-gray-500">{{ setting.description }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="pt-4 border-t flex justify-end space-x-3">
+                    <a href="{{ admin_url('plugins/' ~ plugin_name) }}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition text-sm">
+                        Отмена
+                    </a>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm">
+                        <i class="fas fa-save mr-1"></i> Сохранить настройки
+                    </button>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

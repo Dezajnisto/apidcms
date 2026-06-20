@@ -1,0 +1,508 @@
+{# twig #}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% if site_favicon is defined and site_favicon %}
+    <link rel="icon" href="{{ site_favicon }}" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ site_favicon }}" type="image/x-icon">
+    {% endif %}
+    <title>{% block title %}Панель управления{% endblock %}</title>
+    
+    <!-- Tailwind CSS via CDN (для разработки) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome для иконок -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Плавные переходы */
+        .sidebar-transition {
+            transition: all 0.3s ease;
+        }
+        
+        /* Скрываем текст когда сайдбар свернут на десктопе */
+        .sidebar-collapsed .nav-text {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+
+        /* Off-canvas sidebar на мобильных */
+        @media (max-width: 767px) {
+            #sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                z-index: 9999;
+                transform: translateX(-100%);
+                width: 280px !important;
+                transition: transform 0.3s ease;
+            }
+            #sidebar.open {
+                transform: translateX(0);
+            }
+            #sidebar-backdrop {
+                position: fixed;
+                inset: 0;
+                z-index: 9998;
+                background: rgba(0,0,0,0.5);
+                display: none;
+            }
+            #sidebar-backdrop.open {
+                display: block;
+            }
+            body.sidebar-open {
+                overflow: hidden;
+            }
+        }
+
+        /* Mobile card layout for data tables */
+        @media (max-width: 767px) {
+            .data-table thead {
+                display: none;
+            }
+            .data-table tbody tr {
+                display: block;
+                border: 1px solid #e5e7eb;
+                border-radius: 0.5rem;
+                margin-bottom: 0.75rem;
+                padding: 0.75rem;
+                background: white;
+            }
+            .data-table tbody td {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                padding: 0.375rem 0;
+                border: none;
+                white-space: normal;
+                text-align: right;
+            }
+            .data-table tbody td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                font-size: 0.75rem;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                text-align: left;
+                margin-right: 0.5rem;
+                flex-shrink: 0;
+            }
+            .data-table tbody td[data-col="actions"] {
+                display: flex;
+                justify-content: flex-end;
+                gap: 0.5rem;
+                border-top: 1px solid #f3f4f6;
+                padding-top: 0.75rem;
+                margin-top: 0.5rem;
+            }
+            .data-table tbody td[data-col="actions"]::before {
+                display: none;
+            }
+        }
+
+        /* Column toggle on mobile */
+        @media (max-width: 767px) {
+            #column-toggles label {
+                font-size: 0.7rem;
+                padding: 0.125rem 0.375rem;
+            }
+        }
+
+        /* Pagination on mobile */
+        @media (max-width: 767px) {
+            .pagination-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.75rem;
+            }
+            .pagination-pages {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+
+        /* Stat cards on small screens */
+        @media (max-width: 480px) {
+            .stat-card-grid {
+                grid-template-columns: 1fr 1fr !important;
+            }
+        }
+
+        /* Fix long words and tables */
+        .break-word {
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Backdrop for mobile sidebar -->
+    <div id="sidebar-backdrop"></div>
+
+    <div class="flex h-screen">
+        <!-- Сайдбар -->
+        <aside id="sidebar" class="sidebar-transition bg-gray-800 text-white flex flex-col overflow-y-auto">
+            <!-- Логотип + Close (mobile) -->
+            <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-cogs text-blue-400 text-xl"></i>
+                    <span class="nav-text font-bold text-lg">CMS Admin</span>
+                </div>
+                <button id="sidebarClose" class="md:hidden text-gray-400 hover:text-white p-1">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Навигация -->
+            <nav class="flex-1 p-4 space-y-2">
+                <!-- Главная -->
+                <a href="{{ admin_url('') }}" 
+                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'home' ? 'bg-gray-700' : '' }}">
+                    <i class="fas fa-home w-5 text-center"></i>
+                    <span class="nav-text">Главная</span>
+                </a>
+
+                <!-- Шаблоны -->
+                <a href="{{ admin_url('templates') }}" 
+                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'templates' ? 'bg-gray-700' : '' }}">
+                    <i class="fas fa-file-code w-5 text-center"></i>
+                    <span class="nav-text">Шаблоны</span>
+                </a>
+
+                <!-- Файловый менеджер -->
+                <div class="flex items-center justify-between">
+                    <a href="{{ admin_url('filemanager') }}" 
+                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'filemanager' ? 'bg-gray-700' : '' }}">
+                        <i class="fas fa-folder-open w-5 text-center"></i>
+                        <span class="nav-text">Файлы</span>
+                    </a>
+                    <button onclick="FileManagerHelper.openFileManager()" 
+                            class="p-2 text-gray-400 hover:text-white transition"
+                            title="Открыть в popup">
+                        <i class="fas fa-external-link-alt text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Разделитель -->
+                <div class="border-t border-gray-700 my-2"></div>
+
+                <!-- Уведомления -->
+                <a href="{{ admin_url('notifications') }}" 
+                class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'notifications' ? 'bg-gray-700' : '' }}">
+                    <i class="fas fa-bell w-5 text-center"></i>
+                    <span class="nav-text">Уведомления</span>
+                    {% if total_unread > 0 %}
+                    <span class="ml-auto inline-block py-0.5 px-2 text-xs leading-4 font-medium bg-red-500 text-white rounded-full">
+                        {{ total_unread }}
+                    </span>
+                    {% endif %}
+                </a>
+
+                <!-- Разделитель -->
+                <div class="border-t border-gray-700 my-2"></div>
+
+                <!-- Таблицы - выпадающий список -->
+                <div class="relative">
+                    <button class="flex items-center justify-between w-full p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'tables' ? 'bg-gray-700' : '' }}">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-database w-5 text-center"></i>
+                            <span class="nav-text">Таблицы</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition transform"></i>
+                    </button>
+                    
+                    <!-- Выпадающее меню таблиц -->
+                    <div class="mt-1 ml-4 bg-gray-700 rounded-lg overflow-hidden hidden">
+                        {% if tables is defined and tables is not empty %}
+                            {% for table in tables %}
+                                <a href="{{ admin_url('table/' ~ table.name) }}" 
+                                   class="flex items-center justify-between p-2 text-sm hover:bg-gray-600 transition">
+                                    <div class="flex items-center space-x-2">
+                                        <i class="fas fa-table w-4 text-center"></i>
+                                        <span>{{ table.name }}</span>
+                                    </div>
+                                    <span class="bg-gray-600 text-xs px-1 rounded">{{ table.columns }}</span>
+                                </a>
+                            {% endfor %}
+                        {% else %}
+                            <div class="p-2 text-sm text-gray-400">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Нет таблиц
+                            </div>
+                        {% endif %}
+                        
+                        <div class="border-t border-gray-600 mt-1 pt-1">
+                            <a href="{{ admin_url('create-table') }}" 
+                               class="flex items-center space-x-2 p-2 text-sm hover:bg-gray-600 transition text-blue-400">
+                                <i class="fas fa-plus"></i>
+                                <span>Создать таблицу</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Разделитель -->
+                <div class="border-t border-gray-700 my-2"></div>
+
+                <!-- Плагины -->
+                <a href="{{ admin_url('plugins') }}" 
+                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'plugins' ? 'bg-gray-700' : '' }}">
+                    <i class="fas fa-puzzle-piece w-5 text-center"></i>
+                    <span class="nav-text">Плагины</span>
+                </a>
+
+                <!-- Статистика -->
+                <a href="{{ admin_url('stats') }}" 
+                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'stats' ? 'bg-gray-700' : '' }}">
+                    <i class="fas fa-chart-bar w-5 text-center"></i>
+                    <span class="nav-text">Статистика</span>
+                </a>
+
+                <!-- Очистка кэша -->
+                <a href="{{ admin_url('cache') }}" 
+                class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'cache' ? 'bg-gray-700' : '' }}">
+                    <i class="fas fa-broom w-5 text-center"></i>
+                    <span class="nav-text">Очистить кэш</span>
+                </a>
+
+                <!-- Настройки -->
+                <a href="{{ admin_url('settings') }}" 
+                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'settings' ? 'bg-gray-700' : '' }}">
+                    <i class="fas fa-cog w-5 text-center"></i>
+                    <span class="nav-text">Настройки</span>
+                </a>
+
+                <!-- Выход -->
+                <a href="{{ admin_url('logout') }}" 
+                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-red-600 transition bg-red-700 mt-auto"
+                   onclick="return confirm('Вы уверены, что хотите выйти?')">
+                    <i class="fas fa-sign-out-alt w-5 text-center"></i>
+                    <span class="nav-text">Выйти</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Основной контент -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <!-- Верхняя панель -->
+            <header class="bg-white shadow-sm border-b">
+                <div class="flex items-center justify-between p-3 md:p-4">
+                    <div class="flex items-center space-x-3">
+                        <button id="sidebarToggle" class="p-2 rounded-lg hover:bg-gray-100 transition">
+                            <i class="fas fa-bars text-gray-600"></i>
+                        </button>
+                        <h1 class="text-lg md:text-xl font-semibold text-gray-800">
+                            {% block page_title %}Панель управления{% endblock %}
+                        </h1>
+                    </div>
+                    <div class="flex items-center space-x-2 md:space-x-3">
+                        <a href="/" target="_blank" class="inline-flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-xs md:text-sm">
+                            <i class="fas fa-external-link-alt"></i>
+                            <span class="hidden sm:inline">Просмотр сайта</span>
+                            <span class="sm:hidden">Сайт</span>
+                        </a>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Контент -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-6">
+                {% if flash %}
+                    <div class="mb-4 md:mb-6 p-3 md:p-4 rounded-lg {{ 
+                        flash.type == 'success' ? 'bg-green-100 text-green-800 border border-green-300' : 
+                        flash.type == 'error' ? 'bg-red-100 text-red-800 border border-red-300' : 
+                        flash.type == 'warning' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : 
+                        'bg-blue-100 text-blue-800 border border-blue-300' 
+                    }}">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2 md:space-x-3">
+                                <i class="fas {{
+                                    flash.type == 'success' ? 'fa-check-circle' :
+                                    flash.type == 'error' ? 'fa-exclamation-circle' :
+                                    flash.type == 'warning' ? 'fa-exclamation-triangle' :
+                                    'fa-info-circle'
+                                }}"></i>
+                                <span>{{ flash.message }}</span>
+                            </div>
+                            <button onclick="this.parentElement.parentElement.remove()" class="text-gray-500 hover:text-gray-700 ml-2">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarClose = document.getElementById('sidebarClose');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        const dropdowns = document.querySelectorAll('.relative');
+
+        function isMobile() {
+            return window.innerWidth < 768;
+        }
+
+        function openSidebar() {
+            if (isMobile()) {
+                sidebar.classList.add('open');
+                backdrop.classList.add('open');
+                document.body.classList.add('sidebar-open');
+            } else {
+                sidebar.classList.toggle('w-64');
+                sidebar.classList.toggle('w-20');
+                document.body.classList.toggle('sidebar-collapsed');
+            }
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('open');
+            document.body.classList.remove('sidebar-open');
+        }
+
+        // Переключение сайдбара
+        sidebarToggle.addEventListener('click', function() {
+            if (isMobile()) {
+                openSidebar();
+            } else {
+                sidebar.classList.toggle('w-64');
+                sidebar.classList.toggle('w-20');
+                document.body.classList.toggle('sidebar-collapsed');
+            }
+        });
+
+        // Закрытие на мобильных
+        if (sidebarClose) {
+            sidebarClose.addEventListener('click', closeSidebar);
+        }
+        if (backdrop) {
+            backdrop.addEventListener('click', closeSidebar);
+        }
+
+        // Закрываем при клике на ссылку в сайдбаре (мобильные)
+        if (isMobile()) {
+            sidebar.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', closeSidebar);
+            });
+        }
+
+        // Выпадающие меню
+        dropdowns.forEach(dropdown => {
+            const button = dropdown.querySelector('button');
+            const menu = dropdown.querySelector('.hidden');
+            
+            if (button && menu) {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    menu.classList.toggle('hidden');
+                    if (this.querySelector('.fa-chevron-down')) {
+                        this.querySelector('.fa-chevron-down').classList.toggle('rotate-180');
+                    }
+                });
+            }
+        });
+
+        // Закрываем dropdowns при клике вне их
+        document.addEventListener('click', function() {
+            dropdowns.forEach(dropdown => {
+                const menu = dropdown.querySelector('.hidden');
+                const button = dropdown.querySelector('button');
+                if (menu && !menu.classList.contains('hidden')) {
+                    menu.classList.add('hidden');
+                    if (button) {
+                        const chevron = button.querySelector('.fa-chevron-down');
+                        if (chevron) chevron.classList.remove('rotate-180');
+                    }
+                }
+            });
+        });
+
+        // Handle resize - reset sidebar state on breakpoint crossing
+        let lastWidth = window.innerWidth;
+        window.addEventListener('resize', function() {
+            const width = window.innerWidth;
+            const crossed = (lastWidth < 768 && width >= 768) || (lastWidth >= 768 && width < 768);
+            if (crossed) {
+                closeSidebar();
+                if (width >= 768) {
+                    sidebar.classList.remove('w-20');
+                    sidebar.classList.add('w-64');
+                    document.body.classList.remove('sidebar-collapsed');
+                }
+            }
+            lastWidth = width;
+        });
+    });
+    </script>
+
+<!-- Подключение утилиты файлового менеджера -->
+<script src="/admin/storage/js/filemanager-helper.js"></script>
+
+
+<script src="/static/js/ai.js?v=1781247257"></script>
+<!-- AI Assistant Floating Button -->
+<button id="ai-fab" onclick="AIAssistant.init({});AIAssistant.open()" 
+  style="position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;
+         background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;
+         box-shadow:0 4px 20px rgba(99,102,241,0.5);cursor:pointer;z-index:9997;
+         display:flex;align-items:center;justify-content:center;font-size:24px;
+         transition:all 0.2s;" 
+  title="AI Ассистент"
+  onmouseover="this.style.transform='scale(1.1)'" 
+  onmouseout="this.style.transform='scale(1)'">
+  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+  </svg>
+</button>
+
+<script>
+class FileManagerHelper {
+    static openFileManager(callback, options) {
+        callback = callback || 'selectFile';
+        options = options || {};
+        const w = options.width || 1000;
+        const h = options.height || 700;
+        const l = (screen.width - w) / 2;
+        const t = (screen.height - h) / 2;
+        const url = '/admin/filemanager/popup?callback=' + callback;
+        window.open(url, 'fileManager', 'width=' + w + ',height=' + h + ',left=' + l + ',top=' + t + ',menubar=no,toolbar=no,location=no,status=no,scrollbars=yes,resizable=yes');
+    }
+    static selectFile(file) {
+        console.log('Selected:', file);
+    }
+    static createFileInput(inputId, options) {
+        var input = document.getElementById(inputId);
+        if (!input) return;
+        var container = document.createElement('div');
+        container.className = 'flex space-x-2';
+        input.parentNode.insertBefore(container, input);
+        container.appendChild(input);
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm';
+        button.innerHTML = '<i class="fas fa-folder-open mr-1"></i> Choose';
+        button.onclick = function() {
+            window.fileInputCallback = function(file) { input.value = file.path; };
+            FileManagerHelper.openFileManager('fileInputCallback');
+        };
+        container.appendChild(button);
+    }
+}
+window.FileManagerHelper = FileManagerHelper;
+window.openFileManager = FileManagerHelper.openFileManager;
+window.selectFile = FileManagerHelper.selectFile;
+</script>
+
+</body>
+</html>

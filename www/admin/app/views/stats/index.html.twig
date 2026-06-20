@@ -1,0 +1,216 @@
+{# twig #}
+{% extends base_template %}
+
+{% block page_title %}📊 {{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <!-- Переключатель периода -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">📊 Статистика посещений</h1>
+        <div class="flex items-center space-x-2 bg-gray-100 p-1 rounded-lg">
+            {% for d in [7, 30, 60, 90] %}
+            <a href="?days={{ d }}" class="px-3 py-1.5 rounded-md text-sm font-medium transition {{ days == d ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-800' }}">
+                {{ d }} дн.
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Карточки KPI -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-lg shadow-sm border p-5">
+            <p class="text-sm text-gray-500">👁 Хиты</p>
+            <p class="text-2xl font-bold text-gray-900">{{ summary.total_hits|number_format(0, '.', ' ') }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border p-5">
+            <p class="text-sm text-gray-500">👤 Уники</p>
+            <p class="text-2xl font-bold text-gray-900">{{ summary.total_unique|number_format(0, '.', ' ') }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border p-5">
+            <p class="text-sm text-gray-500">📱 Мобильные</p>
+            <p class="text-2xl font-bold text-gray-900">
+                {% set mt = summary.device_split.mobile|default(0) + summary.device_split.tablet|default(0) %}
+                {% set dt = summary.device_split.desktop|default(0) %}
+                {% set total = mt + dt %}
+                {{ total > 0 ? ((mt / total) * 100)|round ~ '%' : '—' }}
+            </p>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border p-5">
+            <p class="text-sm text-gray-500">🔗 Рефереры</p>
+            <p class="text-2xl font-bold text-gray-900">{{ summary.top_referrers|length }}</p>
+        </div>
+    </div>
+
+    <!-- График по дням -->
+    <div class="bg-white rounded-lg shadow-sm border p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Посещения по дням</h2>
+        {% if daily is empty %}
+        <p class="text-gray-400 text-center py-8">Нет данных за выбранный период</p>
+        {% else %}
+        <div class="flex items-end space-x-0.5 h-40">
+            {% for d in daily %}
+            {% set h = max_daily > 0 ? (d.hits / max_daily * 100)|round : 0 %}
+            <div class="flex-1 flex flex-col items-center justify-end h-full group relative" title="{{ d.visit_date }}: {{ d.hits }} хит.">
+                <span class="text-xs text-gray-400 mb-1 opacity-0 group-hover:opacity-100 transition">{{ d.hits }}</span>
+                <div class="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition cursor-pointer" style="height: {{ max(h, 1) }}%"></div>
+                <span class="text-xs text-gray-400 mt-1 hidden md:block">{{ d.visit_date|slice(5, 5) }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Сетка: источники, устройства, браузеры -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Источники трафика -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">🔗 Источники трафика</h3>
+            {% if summary.top_referrers is empty %}
+            <p class="text-gray-400 text-sm">Нет данных</p>
+            {% else %}
+            <div class="space-y-2">
+                {% set refTotal = 0 %}
+                {% for k,v in summary.top_referrers %}{% set refTotal = refTotal + v %}{% endfor %}
+                {% for name, count in summary.top_referrers|slice(0, 8) %}
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-700">{{ name }}</span>
+                        <span class="text-gray-500">{{ count }}</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: {{ refTotal > 0 ? (count / refTotal * 100)|round : 0 }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Устройства -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">📱 Устройства</h3>
+            {% if summary.device_split is empty %}
+            <p class="text-gray-400 text-sm">Нет данных</p>
+            {% else %}
+            <div class="space-y-2">
+                {% set devTotal = 0 %}
+                {% for k,v in summary.device_split %}{% set devTotal = devTotal + v %}{% endfor %}
+                {% for name, count in summary.device_split %}
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-700">
+                            {% if name == 'desktop' %}🖥 Десктоп{% elseif name == 'mobile' %}📱 Смартфон{% elseif name == 'tablet' %}📋 Планшет{% elseif name == 'bot' %}🤖 Бот{% else %}{{ name }}{% endif %}
+                        </span>
+                        <span class="text-gray-500">{{ devTotal > 0 ? ((count / devTotal) * 100)|round ~ '%' : '—' }}</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                        <div class="h-2 rounded-full {% if name == 'desktop' %}bg-blue-500{% elseif name == 'mobile' %}bg-green-500{% elseif name == 'tablet' %}bg-yellow-500{% else %}bg-gray-400{% endif %}" style="width: {{ devTotal > 0 ? (count / devTotal * 100)|round : 0 }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Браузеры -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">🌐 Браузеры</h3>
+            {% if summary.top_browsers is empty %}
+            <p class="text-gray-400 text-sm">Нет данных</p>
+            {% else %}
+            <div class="space-y-2">
+                {% set brTotal = 0 %}
+                {% for k,v in summary.top_browsers %}{% set brTotal = brTotal + v %}{% endfor %}
+                {% for name, count in summary.top_browsers|slice(0, 8) %}
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-gray-700">{{ name|capitalize }}</span>
+                        <span class="text-gray-500">{{ count }}</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                        <div class="bg-purple-500 h-2 rounded-full" style="width: {{ brTotal > 0 ? (count / brTotal * 100)|round : 0 }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Дни недели -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">📅 Дни недели</h3>
+            {% if summary.weekday_split is empty %}
+            <p class="text-gray-400 text-sm">Нет данных</p>
+            {% else %}
+            <div class="flex items-end space-x-1 h-24">
+                {% set wdMax = 0 %}
+                {% for k,v in summary.weekday_split %}{% if v > wdMax %}{% set wdMax = v %}{% endif %}{% endfor %}
+                {% for i in 1..7 %}
+                {% set v = summary.weekday_split[i]|default(0) %}
+                {% set h = wdMax > 0 ? (v / wdMax * 100)|round : 0 %}
+                <div class="flex-1 flex flex-col items-center justify-end h-full group relative">
+                    <span class="text-xs text-gray-400 mb-1 opacity-0 group-hover:opacity-100 transition">{{ v }}</span>
+                    <div class="w-full bg-indigo-400 rounded-t hover:bg-indigo-500 transition cursor-pointer" style="height: {{ max(h, 1) }}%"></div>
+                    <span class="text-xs text-gray-400 mt-1">{{ day_names[i] }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Топ страниц -->
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="px-6 py-4 border-b">
+            <h2 class="text-lg font-semibold text-gray-900">🔝 Топ страниц</h2>
+        </div>
+        <div class="p-6">
+            {% if top is empty %}
+            <p class="text-gray-400 text-center py-8">Нет данных</p>
+            {% else %}
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-gray-500 border-b">
+                        <th class="pb-2 w-8">#</th>
+                        <th class="pb-2">Страница</th>
+                        <th class="pb-2 text-right">Хиты</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in top %}
+                    <tr class="border-t hover:bg-gray-50">
+                        <td class="py-2 text-gray-400">{{ loop.index }}</td>
+                        <td class="py-2 font-mono text-xs text-blue-600">{{ row.page_url }}</td>
+                        <td class="py-2 text-right font-medium">{{ row.hit_count|number_format(0, '.', ' ') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Часы пик -->
+    {% if summary.peak_hours is not empty %}
+    <div class="bg-white rounded-lg shadow-sm border p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">⏰ Часы пик</h2>
+        <div class="flex items-end space-x-0.5 h-24">
+            {% set hrMax = 0 %}
+            {% for h, v in summary.peak_hours %}{% if v > hrMax %}{% set hrMax = v %}{% endif %}{% endfor %}
+            {% for h in 0..23 %}
+            {% set v = summary.peak_hours[h]|default(0) %}
+            {% set pct = hrMax > 0 ? (v / hrMax * 100)|round : 0 %}
+            <div class="flex-1 flex flex-col items-center justify-end h-full group relative" title="{{ h }}:00 — {{ v }} хит.">
+                <span class="text-xs text-gray-400 mb-1 opacity-0 group-hover:opacity-100 transition">{{ v }}</span>
+                <div class="w-full bg-orange-400 rounded-t hover:bg-orange-500 transition cursor-pointer" style="height: {{ max(pct, 1) }}%"></div>
+                {% if h % 3 == 0 %}
+                <span class="text-xs text-gray-400 mt-1">{{ h }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

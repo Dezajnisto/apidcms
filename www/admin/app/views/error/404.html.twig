@@ -1,0 +1,175 @@
+{# twig #}
+{% extends "base.html.twig" %}
+
+{% block title %}404 - Страница не найдена{% endblock %}
+
+{% block page_title %}404 - Страница не найдена{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Основное содержимое -->
+    <div class="text-center py-12">
+        <!-- Иконка ошибки -->
+        <div class="mb-8">
+            <div class="inline-flex items-center justify-center w-24 h-24 bg-red-100 rounded-full">
+                <i class="fas fa-exclamation-triangle text-red-500 text-4xl"></i>
+            </div>
+        </div>
+
+        <!-- Заголовок и описание -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">404</h1>
+            <h2 class="text-2xl font-semibold text-red-600 mb-4">Страница не найдена</h2>
+            <p class="text-lg text-gray-600 mb-6">
+                {{ message ?? 'Запрашиваемая страница не существует или была перемещена.' }}
+            </p>
+        </div>
+
+        <!-- Дополнительная информация -->
+        <div class="mb-8 p-6 bg-gray-50 rounded-lg border">
+            <div class="flex items-center justify-center space-x-4 text-sm text-gray-600">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-clock"></i>
+                    <span>{{ "now"|date("d.m.Y H:i") }}</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-user"></i>
+                    <span>Администратор</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Авторизован</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Быстрые действия -->
+        <div class="mb-8">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Быстрые действия</h3>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{{ admin_url('') }}" 
+                   class="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-home"></i>
+                    <span>Главная панель</span>
+                </a>
+                <a href="javascript:history.back()" 
+                   class="inline-flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Назад</span>
+                </a>
+                <button onclick="location.reload()" 
+                        class="inline-flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                    <i class="fas fa-redo"></i>
+                    <span>Обновить</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Полезные ссылки -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 class="font-medium text-blue-900 mb-2">Часто используемые разделы</h4>
+                <ul class="text-sm text-blue-700 space-y-1">
+                    <li><a href="{{ admin_url('') }}" class="hover:underline">Главная страница</a></li>
+                    <li><a href="{{ admin_url('templates') }}" class="hover:underline">Управление шаблонами</a></li>
+                    <li><a href="{{ admin_url('create-table') }}" class="hover:underline">Создать таблицу</a></li>
+                </ul>
+            </div>
+            <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h4 class="font-medium text-green-900 mb-2">Помощь и поддержка</h4>
+                <ul class="text-sm text-green-700 space-y-1">
+                    <li>Проверьте правильность URL адреса</li>
+                    <li>Убедитесь, что таблица существует</li>
+                    <li>Проверьте права доступа</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Техническая информация (для разработчиков) -->
+        <div class="p-4 bg-gray-100 rounded-lg border text-left">
+            <details class="cursor-pointer">
+                <summary class="font-medium text-gray-700 hover:text-gray-900">
+                    <i class="fas fa-code mr-2"></i>
+                    Техническая информация
+                </summary>
+                <div class="mt-3 p-3 bg-white rounded border font-mono text-sm text-gray-600">
+                    <div><strong>URL:</strong> {{ app.request.uri }}</div>
+                    <div><strong>Время:</strong> {{ "now"|date("Y-m-d H:i:s") }}</div>
+                    <div><strong>Метод:</strong> {{ app.request.method }}</div>
+                    {% if app.request.referrer %}
+                        <div><strong>Источник:</strong> {{ app.request.referrer }}</div>
+                    {% endif %}
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Автоматический скролл к верху страницы
+    window.scrollTo(0, 0);
+    
+    // Горячие клавиши для навигации
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            window.history.back();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+            e.preventDefault();
+            location.reload();
+        }
+        if (e.key === 'Home') {
+            window.location.href = "{{ admin_url('') }}";
+        }
+    });
+
+    // Показываем анимацию при загрузке
+    const icon = document.querySelector('.fa-exclamation-triangle');
+    if (icon) {
+        icon.style.transform = 'scale(0)';
+        icon.style.transition = 'transform 0.5s ease';
+        
+        setTimeout(() => {
+            icon.style.transform = 'scale(1)';
+        }, 100);
+    }
+});
+
+// Функция для поиска похожих страниц
+function searchSimilarPages() {
+    const currentPath = window.location.pathname;
+    const searchTerm = currentPath.split('/').pop(); // Берем последнюю часть пути
+    
+    if (searchTerm && searchTerm.length > 2) {
+        // Здесь можно добавить логику поиска похожих страниц
+        console.log('Поиск похожих страниц для:', searchTerm);
+        alert('Функция поиска похожих страниц будет реализована в будущем');
+    }
+}
+</script>
+
+<style>
+/* Дополнительные стили для анимаций */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.fa-exclamation-triangle {
+    animation: pulse 2s infinite;
+}
+
+/* Стили для details/summary */
+details > summary {
+    list-style: none;
+}
+details > summary::-webkit-details-marker {
+    display: none;
+}
+details[open] > summary {
+    margin-bottom: 10px;
+}
+</style>
+{% endblock %}

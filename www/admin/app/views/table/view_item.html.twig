@@ -1,0 +1,256 @@
+{# twig #}
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Навигация (responsive) -->
+    <div class="mb-4 md:mb-6 flex flex-wrap items-center gap-3">
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '?page=' ~ (currentPage|default(1))) }}" 
+           class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition text-sm">
+            <i class="fas fa-arrow-left"></i>
+            <span>Назад к таблице</span>
+        </a>
+        <a href="{{ admin_url('') }}" 
+           class="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition text-sm">
+            <i class="fas fa-table"></i>
+            <span>Список таблиц</span>
+        </a>
+    </div>
+
+    <!-- Заголовок -->
+    <div class="mb-4 md:mb-6">
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900">{{ title }}</h1>
+    </div>
+
+    <!-- Сообщения -->
+    {% if _GET.created == '1' %}
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-check-circle"></i>
+                <span>Запись успешно создана</span>
+            </div>
+        </div>
+    {% endif %}
+    {% if _GET.updated == '1' %}
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded-lg text-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-info-circle"></i>
+                <span>Запись успешно обновлена</span>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Информация о записи -->
+    <div class="mb-4 md:mb-6 p-3 md:p-4 bg-gray-50 rounded-lg border text-sm">
+        <div class="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2 md:gap-4">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-table"></i>
+                <span>Таблица: <code class="bg-gray-200 px-2 py-1 rounded">{{ tableName }}</code></span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-key"></i>
+                <span>ID: <code class="bg-gray-200 px-2 py-1 rounded">{{ item.id ?? 'N/A' }}</code></span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-clock"></i>
+                <span>{{ "now"|date("d.m.Y H:i") }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Действия -->
+    <div class="mb-4 md:mb-6 flex flex-wrap gap-2 md:gap-4">
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/edit/' ~ (item.id ?? '')) }}" 
+           class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm">
+            <i class="fas fa-edit"></i>
+            <span>Редактировать</span>
+        </a>
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/delete/' ~ (item.id ?? '')) }}" 
+           class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition text-sm"
+           onclick="return confirm('Вы уверены, что хотите удалить эту запись?')">
+            <i class="fas fa-trash"></i>
+            <span>Удалить</span>
+        </a>
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/create') }}" 
+           class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm">
+            <i class="fas fa-plus"></i>
+            <span>Создать новую</span>
+        </a>
+    </div>
+
+    <!-- Детали записи -->
+    {% if item is empty %}
+        <div class="bg-white rounded-lg shadow-sm border p-6 md:p-8 text-center">
+            <i class="fas fa-search text-gray-400 text-4xl md:text-5xl mb-4"></i>
+            <h2 class="text-lg md:text-xl font-semibold text-gray-900 mb-2">Запись не найдена</h2>
+            <p class="text-gray-500 mb-6 text-sm md:text-base">Запрошенная запись не существует.</p>
+            <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '?page=' ~ (currentPage|default(1))) }}" 
+               class="inline-flex items-center space-x-2 px-4 md:px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm">
+                <i class="fas fa-arrow-left"></i>
+                <span>Вернуться к таблице</span>
+            </a>
+        </div>
+    {% else %}
+        <!-- Карточка с деталями -->
+        <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="px-4 md:px-6 py-3 md:py-4 border-b bg-gray-50">
+                <h2 class="text-base md:text-lg font-semibold text-gray-900">Детали записи</h2>
+                <p class="text-xs md:text-sm text-gray-500 mt-1">Все поля и значения текущей записи</p>
+            </div>
+            
+            <div class="divide-y divide-gray-200">
+                {% for column in structure %}
+                <div class="px-4 md:px-6 py-3 md:py-4 hover:bg-gray-50 transition">
+                    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-2 md:gap-3">
+                        <!-- Заголовок поля -->
+                        <div class="flex-shrink-0 w-full md:w-auto">
+                            <div class="flex flex-wrap items-center gap-2 mb-1 md:mb-2">
+                                <span class="font-medium text-gray-900 text-sm">{{ column.name }}</span>
+                                {% if column.pk == 1 %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                        <i class="fas fa-key mr-1"></i> PK
+                                    </span>
+                                {% endif %}
+                                {% if column.notnull == 1 and column.pk == 0 %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        Обязательное
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                Тип: <code class="bg-gray-100 px-1 rounded">{{ column.type }}</code>
+                                {% if column.dflt_value %}
+                                    | По умолч.: <code class="bg-gray-100 px-1 rounded">{{ column.dflt_value }}</code>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Значение поля -->
+                        <div class="flex-1 w-full md:text-right break-word">
+                            {% set value = item[column.name] ?? '' %}
+                            <div class="text-gray-900 text-sm">
+                                {% if value is iterable %}
+                                    <pre class="bg-gray-900 text-gray-100 p-3 rounded text-xs overflow-x-auto max-w-full">{{ value|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_UNICODE')) }}</pre>
+                                {% elseif value is null or value == '' %}
+                                    <span class="text-gray-400 italic">NULL</span>
+                                {% elseif 'TEXT' in column.type|upper and value|length > 100 %}
+                                    <div class="relative">
+                                        <div id="short-{{ column.name }}" class="line-clamp-3 text-sm">
+                                            {{ value|nl2br }}
+                                        </div>
+                                        <button onclick="toggleFullText('{{ column.name }}')" 
+                                                class="mt-2 text-blue-600 hover:text-blue-800 text-xs">
+                                            Показать полностью
+                                        </button>
+                                        <div id="full-{{ column.name }}" class="hidden">
+                                            {{ value|nl2br }}
+                                            <button onclick="toggleFullText('{{ column.name }}')" 
+                                                    class="mt-2 text-blue-600 hover:text-blue-800 text-xs">
+                                                Свернуть
+                                            </button>
+                                        </div>
+                                    </div>
+                                {% elseif 'INT' in column.type|upper or 'INTEGER' in column.type|upper %}
+                                    <code class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">{{ value }}</code>
+                                {% elseif 'DATE' in column.type|upper or 'TIME' in column.type|upper %}
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">{{ value }}</span>
+                                {% elseif 'BOOLEAN' in column.type|upper %}
+                                    {% if value %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <i class="fas fa-check mr-1"></i> True
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            <i class="fas fa-times mr-1"></i> False
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="break-word">{{ value|nl2br }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Быстрые действия -->
+        <div class="mt-4 md:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+            <div class="bg-blue-50 p-3 md:p-4 rounded-lg border border-blue-200">
+                <h3 class="font-medium text-blue-900 text-sm mb-2">Действия с записью</h3>
+                <ul class="text-xs md:text-sm text-blue-700 space-y-1 md:space-y-2">
+                    <li class="flex items-center space-x-2"><i class="fas fa-edit text-blue-500"></i><span>Редактируйте запись для изменения данных</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-copy text-blue-500"></i><span>Создайте похожую запись</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-share text-blue-500"></i><span>Экспортируйте данные</span></li>
+                </ul>
+            </div>
+            <div class="bg-green-50 p-3 md:p-4 rounded-lg border border-green-200">
+                <h3 class="font-medium text-green-900 text-sm mb-2">Информация</h3>
+                <ul class="text-xs md:text-sm text-green-700 space-y-1 md:space-y-2">
+                    <li class="flex items-center space-x-2"><i class="fas fa-database text-green-500"></i><span>Таблица: <code class="bg-green-100 px-1 rounded">{{ tableName }}</code></span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-key text-green-500"></i><span>ID: <code class="bg-green-100 px-1 rounded">{{ item.id ?? 'N/A' }}</code></span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-columns text-green-500"></i><span>Колонок: <code class="bg-green-100 px-1 rounded">{{ structure|length }}</code></span></li>
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleFullText(columnName) {
+    const shortElement = document.getElementById('short-' + columnName);
+    const fullElement = document.getElementById('full-' + columnName);
+    if (shortElement && fullElement) {
+        shortElement.classList.toggle('hidden');
+        fullElement.classList.toggle('hidden');
+    }
+}
+
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        window.location.href = "{{ admin_url('table/' ~ tableName|url_encode ~ '?page=' ~ (currentPage|default(1))) }}";
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+        e.preventDefault();
+        window.location.href = "{{ admin_url('table/' ~ tableName|url_encode ~ '/edit/' ~ (item.id ?? '')) }}";
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const values = document.querySelectorAll('.text-gray-900 > :not(button)');
+    values.forEach(value => {
+        value.addEventListener('click', function() {
+            const text = this.textContent.trim();
+            if (text && text !== 'NULL') {
+                navigator.clipboard.writeText(text).then(() => {
+                    const notification = document.createElement('div');
+                    notification.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+                    notification.textContent = 'Значение скопировано!';
+                    document.body.appendChild(notification);
+                    setTimeout(() => notification.remove(), 2000);
+                });
+            }
+        });
+        if (value.textContent.trim() && value.textContent.trim() !== 'NULL') {
+            value.style.cursor = 'pointer';
+            value.title = 'Кликните для копирования значения';
+        }
+    });
+});
+</script>
+
+<style>
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+{% endblock %}

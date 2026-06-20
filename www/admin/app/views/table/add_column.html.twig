@@ -1,0 +1,180 @@
+{# twig #}
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Навигация -->
+    <div class="mb-4 md:mb-6 flex flex-wrap items-center gap-3">
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/structure') }}" 
+           class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition text-sm">
+            <i class="fas fa-arrow-left"></i>
+            <span>Назад к структуре</span>
+        </a>
+        <a href="{{ admin_url('table/' ~ tableName|url_encode) }}" 
+           class="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition text-sm">
+            <i class="fas fa-table"></i>
+            <span>Данные таблицы</span>
+        </a>
+    </div>
+
+    <div class="mb-4 md:mb-6">
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900">{{ title }}</h1>
+    </div>
+
+    {% if error is defined %}
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong class="font-medium">Ошибка:</strong>
+                    <span>{{ error }}</span>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="mb-4 md:mb-6 p-3 md:p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+        <div class="flex items-start space-x-3">
+            <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+            <div>
+                <strong class="font-medium">Подсказка:</strong>
+                <p class="text-blue-700">Добавьте новую колонку в таблицу "{{ tableName }}".</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="px-4 md:px-6 py-3 md:py-4 border-b">
+            <h2 class="text-base md:text-lg font-semibold text-gray-900">Новая колонка</h2>
+        </div>
+        
+        <div class="p-4 md:p-6">
+            <form method="POST" action="{{ admin_url('table/' ~ tableName|url_encode ~ '/store-column') }}" class="space-y-4 md:space-y-6">
+                <div>
+                    <label for="column_name" class="block text-sm font-medium text-gray-700 mb-2">
+                        Название колонки <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="column_name" name="column_name" value="{{ formData.column_name ?? '' }}"
+                           required pattern="[a-zA-Z_][a-zA-Z0-9_]*"
+                           title="Только буквы, цифры и подчеркивания"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                           placeholder="например: email, price">
+                    <p class="mt-1 text-xs text-gray-500">Только буквы, цифры и подчеркивания. Начинается с буквы.</p>
+                </div>
+
+                <div>
+                    <label for="column_type" class="block text-sm font-medium text-gray-700 mb-2">
+                        Тип данных <span class="text-red-500">*</span>
+                    </label>
+                    <select id="column_type" name="column_type" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        <option value="">-- Выберите тип --</option>
+                        <option value="INTEGER" {{ (formData.column_type ?? '') == 'INTEGER' ? 'selected' : '' }}>INTEGER (целое число)</option>
+                        <option value="TEXT" {{ (formData.column_type ?? '') == 'TEXT' ? 'selected' : '' }}>TEXT (текст)</option>
+                        <option value="VARCHAR(255)" {{ (formData.column_type ?? '') == 'VARCHAR(255)' ? 'selected' : '' }}>VARCHAR(255) (строка)</option>
+                        <option value="REAL" {{ (formData.column_type ?? '') == 'REAL' ? 'selected' : '' }}>REAL (вещественное)</option>
+                        <option value="BOOLEAN" {{ (formData.column_type ?? '') == 'BOOLEAN' ? 'selected' : '' }}>BOOLEAN</option>
+                        <option value="DATE" {{ (formData.column_type ?? '') == 'DATE' ? 'selected' : '' }}>DATE</option>
+                        <option value="DATETIME" {{ (formData.column_type ?? '') == 'DATETIME' ? 'selected' : '' }}>DATETIME</option>
+                    </select>
+                </div>
+
+                <div class="bg-gray-50 p-3 md:p-4 rounded-lg border">
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" id="nullable" name="nullable" 
+                               {{ (formData.nullable is defined ? formData.nullable : true) ? 'checked' : '' }}
+                               class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <div>
+                            <label for="nullable" class="text-sm font-medium text-gray-700">Разрешить NULL значения</label>
+                            <p class="text-xs text-gray-500 mt-1">Если отмечено, колонка может содержать пустые значения</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="default_value" class="block text-sm font-medium text-gray-700 mb-2">Значение по умолчанию</label>
+                    <input type="text" id="default_value" name="default_value" value="{{ formData.default_value ?? '' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                           placeholder="Например: 0, 'Новое значение'">
+                </div>
+
+                <div class="p-3 md:p-4 bg-green-50 border border-green-200 rounded-lg text-sm">
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-table text-green-500 mt-1"></i>
+                        <div class="text-green-700">
+                            <strong>Таблица:</strong> <code class="bg-green-100 px-1 rounded">{{ tableName }}</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 md:pt-6 border-t">
+                    <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/structure') }}" 
+                       class="px-4 md:px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition text-sm text-center">
+                        Отмена
+                    </a>
+                    <button type="submit" 
+                            class="px-4 md:px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center justify-center space-x-2 text-sm">
+                        <i class="fas fa-plus"></i>
+                        <span>Добавить колонку</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Быстрые подсказки -->
+    <div class="mt-4 md:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+        <div class="bg-purple-50 p-3 md:p-4 rounded-lg border border-purple-200">
+            <h3 class="font-medium text-purple-900 text-sm mb-2">Популярные типы данных</h3>
+            <ul class="text-xs md:text-sm text-purple-700 space-y-1">
+                <li class="flex items-center space-x-2"><code class="bg-purple-100 px-1 rounded text-xs">TEXT</code><span>— для текстовых полей</span></li>
+                <li class="flex items-center space-x-2"><code class="bg-purple-100 px-1 rounded text-xs">INTEGER</code><span>— для целых чисел</span></li>
+                <li class="flex items-center space-x-2"><code class="bg-purple-100 px-1 rounded text-xs">DATETIME</code><span>— для даты/времени</span></li>
+                <li class="flex items-center space-x-2"><code class="bg-purple-100 px-1 rounded text-xs">BOOLEAN</code><span>— для true/false</span></li>
+            </ul>
+        </div>
+        <div class="bg-orange-50 p-3 md:p-4 rounded-lg border border-orange-200">
+            <h3 class="font-medium text-orange-900 text-sm mb-2">Рекомендации</h3>
+            <ul class="text-xs md:text-sm text-orange-700 space-y-1">
+                <li class="flex items-center space-x-2"><i class="fas fa-lightbulb text-orange-500"></i><span>Понятные названия колонок</span></li>
+                <li class="flex items-center space-x-2"><i class="fas fa-lightbulb text-orange-500"></i><span>Правильный тип данных</span></li>
+                <li class="flex items-center space-x-2"><i class="fas fa-lightbulb text-orange-500"></i><span>Значения по умолчанию для важных полей</span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('column_name');
+    const typeSelect = document.getElementById('column_type');
+    
+    typeSelect.addEventListener('change', function() {
+        const defaultInput = document.getElementById('default_value');
+        if (!defaultInput.value) {
+            switch(this.value) {
+                case 'INTEGER': case 'REAL': case 'NUMERIC':
+                    defaultInput.placeholder = 'например: 0, 1, 100'; break;
+                case 'TEXT': case 'VARCHAR(255)':
+                    defaultInput.placeholder = 'например: "Новое значение"'; break;
+                case 'BOOLEAN':
+                    defaultInput.placeholder = '0 (false) или 1 (true)'; break;
+                case 'DATE':
+                    defaultInput.placeholder = 'CURRENT_DATE'; break;
+                case 'DATETIME':
+                    defaultInput.placeholder = 'CURRENT_TIMESTAMP'; break;
+            }
+        }
+    });
+    
+    nameInput.addEventListener('input', function() {
+        this.setCustomValidity(this.value && !/^[a-zA-Z_]/.test(this.value) 
+            ? 'Название должно начинаться с буквы или подчеркивания' : '');
+    });
+});
+</script>
+{% endblock %}

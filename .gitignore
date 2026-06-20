@@ -1,0 +1,16 @@
+# Зависимости
+www/core_lib/vendor/
+www/admin/storage/database/*.db
+www/admin/storage/database/*.sqlite
+www/storage/cache/
+www/storage/logs/
+*.log
+
+# Бэкапы
+*.backup
+*.bak
+*~
+
+# Временные файлы
+.DS_Store
+Thumbs.db

@@ -1,0 +1,33 @@
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-lg shadow-sm border p-6">
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ title }}</h1>
+        
+        {% if nav_item.description %}
+            <p class="text-gray-600 mb-6">{{ nav_item.description }}</p>
+        {% endif %}
+        
+        {# Показываем общие ошибки, если они есть #}
+        {% if errors is defined and errors.general %}
+            <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+                <div class="text-red-700">{{ errors.general }}</div>
+            </div>
+        {% endif %}
+        
+        {{ form_html|raw }}
+        
+        {# Отладочная информация (удалить после тестирования) #}
+        <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded text-sm">
+            <h3 class="font-bold mb-2 text-yellow-800">Отладочная информация:</h3>
+            <p><strong>Таблица:</strong> {{ config.source_table }}</p>
+            <p><strong>Session ID:</strong> {{ session_id() }}</p>
+            <p><strong>Ошибки валидации:</strong> {{ errors is defined ? errors|json_encode : 'нет' }}</p>
+            <p><strong>Данные формы:</strong> {{ form_data is defined ? form_data|json_encode : 'нет' }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -23,7 +23,7 @@ class TemplateController extends BaseController {
      */
     public function __construct($app) {
         parent::__construct($app);
-        $this->templatesPath = ROOT_PATH . '/front/app/views/';
+        $this->templatesPath = FRONT_APP_PATH . '/views/';
     }
     
     /**

@@ -1,0 +1,116 @@
+#!/bin/bash
+# sync-core — синхронизация apidcms-core в проекты
+set -e
+
+CORE_DIR=/home/c91469/apidcms-core/www
+
+if [ $# -eq 0 ]; then
+    echo "Использование: sync-core <project> [project2 ...]"
+    echo "               sync-core all"
+    exit 1
+fi
+
+if [ ! -d "$CORE_DIR" ]; then
+    echo "Ошибка: ядро не найдено в $CORE_DIR"
+    exit 1
+fi
+
+find_project_dir() {
+    local name="$1"
+    if [ -d "/home/c91469/$name/www/core_lib" ]; then
+        echo "$name"
+        return 0
+    fi
+    local found=$(find /home/c91469 -maxdepth 2 -name core_lib -type d 2>/dev/null |     while read dir; do
+            pdir=$(basename $(dirname $(dirname $dir)))
+            if echo "$pdir" | grep -qi "$name"; then
+                echo "$pdir"
+            fi
+        done | head -1)
+    if [ -n "$found" ]; then
+        echo "$found"
+        return 0
+    fi
+    return 1
+}
+
+if [ "$1" = "all" ]; then
+    PROJECTS=()
+    for dir in /home/c91469/*/www/core_lib; do
+        if [ -d "$dir" ]; then
+            name=$(basename $(dirname $(dirname $dir)))
+            PROJECTS+=("$name")
+        fi
+    done
+    # Добавляем bajto.ru (отдельный сервер) в список для all
+    PROJECTS+=("bajto.ru")
+    set -- "${PROJECTS[@]}"
+fi
+
+sync_bajto() {
+    echo -n "[*] bajto.ru (сервер 62.113.103.68)... "
+    if ssh -i ~/.ssh/id_ed25519 -o ConnectTimeout=5 root@62.113.103.68 "test -d /var/www/bajto/core_lib" 2>/dev/null; then
+        rsync -a --delete --exclude=.git -e "ssh -i ~/.ssh/id_ed25519" "$CORE_DIR/" root@62.113.103.68:/var/www/bajto/core_lib/ 2>/dev/null && echo "OK" || echo "FAIL"
+        ssh -i ~/.ssh/id_ed25519 root@62.113.103.68 "test -L /var/www/bajto/static || ln -s core_lib/static /var/www/bajto/static" 2>/dev/null
+        mkdir -p /tmp/scp-dummy 2>/dev/null; scp -i ~/.ssh/id_ed25519 "$CORE_DIR/admin/storage/js/filemanager-helper.js" root@62.113.103.68:/var/www/bajto/admin/storage/js/ 2>/dev/null
+    else
+        echo "SKIP (сервер недоступен)"
+    fi
+}
+
+for PROJECT in "$@"; do
+    # bajto.ru обрабатываем отдельно (другой сервер)
+    if [ "$PROJECT" = "bajto.ru" ]; then
+        sync_bajto
+        continue
+    fi
+
+    TARGET="/home/c91469/$PROJECT/www/core_lib"
+
+    if [ ! -d "$TARGET" ]; then
+        FOUND=$(find_project_dir "$PROJECT")
+        if [ -n "$FOUND" ]; then
+            PROJECT="$FOUND"
+            TARGET="/home/c91469/$PROJECT/www/core_lib"
+        else
+            echo "[FAIL] $PROJECT — проект с core_lib не найден"
+            continue
+        fi
+    fi
+
+    PROJECT_WWW=$(dirname "$TARGET")
+
+    # 1. Ядро
+    echo -n "[*] Синхронизация core_lib в $PROJECT... "
+    rsync -a --delete --exclude=.git "$CORE_DIR/" "$TARGET/" 2>/dev/null && echo "OK" || echo "FAIL"
+
+    # 2. Дефолтный front, если в проекте нет своего front/app
+    PROJECT_FRONT="$PROJECT_WWW/front"
+    if [ ! -d "$PROJECT_FRONT/app" ]; then
+        echo -n "[*] Дефолтный front в $PROJECT... "
+        if [ -d "$CORE_DIR/front" ]; then
+            rsync -a "$CORE_DIR/front/" "$PROJECT_FRONT/" 2>/dev/null && echo "OK" || echo "FAIL"
+        else
+            echo "SKIP"
+        fi
+    else
+        echo "[*] $PROJECT: свой front (пропускаем)"
+    fi
+
+    # 3. Симлинк static -> core_lib/static
+    if [ ! -L "$PROJECT_WWW/static" ]; then
+        echo -n "[*] Создание static -> core_lib/static в $PROJECT... "
+        ln -s core_lib/static "$PROJECT_WWW/static" 2>/dev/null && echo "OK" || echo "FAIL"
+    else
+        echo "[*] $PROJECT: static симлинк уже есть"
+    fi
+
+    # 4. filemanager-helper.js
+    if [ -f "$CORE_DIR/admin/storage/js/filemanager-helper.js" ]; then
+        echo -n "[*] filemanager-helper.js в $PROJECT... "
+        mkdir -p "$PROJECT_WWW/admin/storage/js"
+        cp "$CORE_DIR/admin/storage/js/filemanager-helper.js" "$PROJECT_WWW/admin/storage/js/" && echo "OK" || echo "FAIL"
+    fi
+done
+
+echo "Готово."

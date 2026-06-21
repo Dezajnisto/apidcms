@@ -1,0 +1,30 @@
+{# plugins/LastPost/LastPost.twig #}
+
+{% if lastPosts is defined and lastPosts is not empty %}
+    <div class="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-8">
+        <!-- Card -->            
+        {% for post in lastPosts %}
+            <div class="bg-white border rounded-lg overflow-hidden shadow-lg">
+                {% if post.Promo is defined and post.Promo is not empty %}
+                    {% set promo = post.Promo[0] %}
+                    <a href="/{{ post.Slug }}">
+                        <img src="{{ promo.thumbnails.card_cover.signedUrl }}" alt="Featured Article Image" class="w-full h-64 object-cover p-2.5">
+                    </a>
+                {% endif %}                        
+                <div class="p-4">
+                    <div class="flex justify-between items-center">
+                        <a href="/{{ post.Slug }}">
+                            <h3 class="text-red-600 font-bold text-lg uppercase">{{ post.Name }}</h3>
+                        </a>
+                        <a href="https://{{ post.Site }}" target="_blank" class="text-gray-500" rel="nofollow noindex">
+                            <i class="fas fa-link"></i>
+                        </a>
+                    </div>
+                    <p class="text-gray-700 text-base">{{ post.Title }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>No records found</p>
+{% endif %}

@@ -851,7 +851,25 @@ class FrontController {
 
         $config = $navItem->getPageConfig();
         $tableName = $config['source_table'];
-        
+
+        // Загружаем связанную страницу (page_id), если указана
+        // Контент страницы будет выведен ПЕРЕД формой
+        $pageContent = null;
+        $pageMeta = null;
+        if (!empty($navItem->page_id)) {
+            $page = $this->database->query(
+                "SELECT * FROM pages WHERE id = ? AND status = 'active'",
+                [$navItem->page_id]
+            )->fetch();
+            if ($page) {
+                $pageContent = $page['content'] ?? null;
+                $pageMeta = [
+                    'title' => $page['title'] ?? $navItem->title,
+                    'meta_title' => $page['meta_title'] ?? ($page['title'] ?? $navItem->title),
+                    'meta_description' => $page['meta_description'] ?? '',
+                ];
+            }
+        }        
         // Проверяем существование таблицы
         $tables = $this->database->getTables();
         if (!in_array($tableName, $tables)) {
@@ -866,13 +884,13 @@ class FrontController {
         }
         
         // Показ формы
-        $this->showForm($navItem, $tableName);
+        $this->showForm($navItem, $tableName, $pageContent, $pageMeta);
     }
 
     /**
      * Показ формы
      */
-    private function showForm($navItem, $tableName) {
+    private function showForm($navItem, $tableName, $pageContent = null, $pageMeta = null) {
         $config = $navItem->getPageConfig();
         $structure = $this->database->getTableStructure($tableName);
         
@@ -885,8 +903,12 @@ class FrontController {
         $this->render($template, [
             'nav_item' => $navItem,
             'form_html' => $formHtml,
-            'title' => $navItem->title,
-            'config' => $config
+            'title' => $pageMeta['title'] ?? $navItem->title,
+            'meta_title' => $pageMeta['meta_title'] ?? '',
+            'meta_description' => $pageMeta['meta_description'] ?? '',
+            'config' => $config,
+            'pageContent' => $pageContent,
+            'pageMeta' => $pageMeta
         ]);
     }
 

@@ -1,0 +1,7 @@
+{
+    "require": {
+        "twig/twig": "^3.0",
+        "predis/predis": "^2.2",
+        "erusev/parsedown": "^1.7"
+    }
+}

@@ -22,6 +22,7 @@ class NavigationItem {
     public $description;
     public $form_config;
     public $page_config;
+    public $page_id;
     
     /**
      * Конструктор

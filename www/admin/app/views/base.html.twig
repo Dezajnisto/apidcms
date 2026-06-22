@@ -256,6 +256,13 @@
                     <span class="nav-text">Плагины</span>
                 </a>
 
+                <!-- Дизайн -->
+                <a href="{{ admin_url('design/css') }}" 
+                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'design' ? 'bg-gray-700' : '' }}">
+                    <i class="fas fa-paint-brush w-5 text-center"></i>
+                    <span class="nav-text">CSS-стили</span>
+                </a>
+
                 <!-- Статистика -->
                 <a href="{{ admin_url('stats') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'stats' ? 'bg-gray-700' : '' }}">

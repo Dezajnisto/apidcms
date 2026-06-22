@@ -545,6 +545,7 @@ class FrontController {
         $data['navigation'] = $this->getNavigation();
         $data['site_title'] = $this->getSetting('site_title') ?: 'Мой сайт';
         $data['site_description'] = $this->getSetting('site_description') ?: 'Описание сайта';
+        $data['custom_css'] = $this->getSetting('custom_css') ?: '';
 
         // Хук: фильтр данных перед рендером
         try {
@@ -554,7 +555,14 @@ class FrontController {
             // PluginManager не инициализирован — ok
         }
         
-        echo $this->twig->render($template, $data);
+        $html = $this->twig->render($template, $data);
+
+        // Внедряем custom_css перед </head>
+        if (!empty($data['custom_css'])) {
+            $html = str_replace('</head>', '<style id="custom-css">' . "\n" . $data['custom_css'] . "\n" . '</style></head>', $html);
+        }
+
+        echo $html;
         
         // ДОБАВЛЕНО: завершаем выполнение после успешного рендеринга
         exit;

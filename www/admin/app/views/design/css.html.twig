@@ -1,0 +1,65 @@
+{% extends base_template %}
+
+{% block title %}Редактор CSS-стилей{% endblock %}
+{% block page_title %}🎨 Редактор CSS-стилей{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-4 md:p-6 border-b border-gray-200">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-1">Глобальные CSS-стили</h2>
+                    <p class="text-sm text-gray-500">
+                        Стили применяются на всех страницах сайта. Используйте для кастомизации внешнего вида.
+                        <a href="/" target="_blank" class="text-blue-600 hover:text-blue-800 underline ml-1">
+                            Открыть сайт →
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ admin_url('design/css/save') }}" class="p-4 md:p-6">
+            <div class="mb-4">
+                <textarea id="css-editor"
+                          name="css"
+                          class="w-full font-mono text-sm leading-relaxed p-4 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-y"
+                          rows="32"
+                          placeholder="/* Введите CSS-стили */&#10;&#10;.my-class {&#10;    color: #8B5CF6;&#10;}">{{ css_content }}</textarea>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-gray-400">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Без сохранения изменения не применяются
+                    </span>
+                </div>
+                <button type="submit"
+                        class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-medium rounded-lg hover:opacity-90 transition-all duration-200 shadow-sm hover:shadow-md">
+                    <i class="fas fa-save mr-2"></i>Сохранить стили
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab-to-space for the textarea
+    const editor = document.getElementById('css-editor');
+    if (editor) {
+        editor.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 4;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

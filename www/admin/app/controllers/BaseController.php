@@ -142,6 +142,8 @@ class BaseController {
             return 'stats';
         } elseif (strpos($path, '/cache') !== false) {
             return 'cache';
+                } elseif (strpos($path, '/design') !== false) {
+            return 'design';
         } elseif (strpos($path, '/settings') !== false) {
             return 'settings';
         } else {

@@ -126,7 +126,12 @@ class App {
         $this->addRoute('/ai/generate-content', 'AIController', 'generateContent');
         $this->addRoute('/ai/insert-content', 'AIController', 'insertContent');
         $this->addRoute('/ai/fill-form', 'AIController', 'fillForm');
-        // +++ ПЛАГИНЫ +++
+                // +++ ДИЗАЙН +++
+        // Редактор CSS-стилей
+        $this->addRoute('/design/css', 'DesignController', 'css');
+        $this->addRoute('/design/css/save', 'DesignController', 'saveCss');
+
+        // Инициализируем маршруты плагинов
         $this->addRoute('/plugins', 'PluginAdminController', 'index');
         $this->addRoute('/plugins/toggle/{name}', 'PluginAdminController', 'toggle');
         $this->addRoute('/plugins/{name}', 'PluginAdminController', 'view');

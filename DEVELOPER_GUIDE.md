@@ -50,3 +50,8 @@ $re = '/[`"\x27]?/';
 
 ### str_replace hack — не использовать
 `str_replace('</head>', '<style>...</style>', $html)` — хак, отрефакторен. CSS теперь в `storage/css/custom.css`.
+
+### Пустые строки vs NULL в формах
+При редактировании записей empty POST-поля передаются как пустая строка.
+Если колонка nullable и имеет FOREIGN KEY, пустая строка → 0 в SQLite → FK constraint fail.
+Фикс: в TableController::update() и ::create() пустые строки для nullable-полей → null.

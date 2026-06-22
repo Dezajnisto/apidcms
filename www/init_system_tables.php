@@ -204,8 +204,6 @@ $settings = [
     ['site_favicon', null, 'string'],
     ['maintenance_mode', '0', 'string'],
 
-    // Custom CSS — пользовательские стили фронтенда
-    ['custom_css', '', 'text'],
     
     // Email — настройки почты
     ['email_driver', 'api', 'string'],

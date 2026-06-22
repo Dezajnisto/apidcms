@@ -555,14 +555,7 @@ class FrontController {
             // PluginManager не инициализирован — ok
         }
         
-        $html = $this->twig->render($template, $data);
-
-        // Внедряем custom_css перед </head>
-        if (!empty($data['custom_css'])) {
-            $html = str_replace('</head>', '<style id="custom-css">' . "\n" . $data['custom_css'] . "\n" . '</style></head>', $html);
-        }
-
-        echo $html;
+        echo $this->twig->render($template, $data);
         
         // ДОБАВЛЕНО: завершаем выполнение после успешного рендеринга
         exit;

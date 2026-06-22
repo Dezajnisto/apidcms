@@ -1,32 +1,69 @@
 <?php
 /**
- * Контроллер дизайна — управление CSS, темами
+ * Контроллер дизайна — редактирование CSS-файла
  *
- * Позволяет редактировать глобальные CSS-стили сайта
- * через админку. Стили хранятся в system_settings (ключ custom_css)
- * и подключаются на всех страницах фронтенда.
+ * Стили хранятся в проекте: {ROOT_PATH}/storage/css/custom.css
+ * Подключаются через <link> в base.html.twig на фронтенде.
  */
 
 namespace Admin;
 
-use Core\Settings;
 use Exception;
 
 class DesignController extends BaseController
 {
+    /**
+     * Путь к директории с CSS-файлами проекта
+     */
+    private function getCssDir(): string
+    {
+        $root = $this->app->getConfig()['paths']['root'];
+        return $root . '/storage/css';
+    }
+
+    /**
+     * Полный путь к файлу custom.css
+     */
+    private function getCssPath(): string
+    {
+        return $this->getCssDir() . '/custom.css';
+    }
+
+    /**
+     * URL файла custom.css (для <link> в шаблоне)
+     */
+    private function getCssUrl(): string
+    {
+        return '/storage/css/custom.css';
+    }
+
     /**
      * Страница редактора CSS
      */
     public function css()
     {
         try {
-            $settings = new Settings($this->db);
-            $currentCss = $settings->get('custom_css', '');
+            $cssDir = $this->getCssDir();
+            $cssPath = $this->getCssPath();
+
+            // Создаём директорию, если её нет
+            if (!is_dir($cssDir)) {
+                mkdir($cssDir, 0755, true);
+            }
+
+            // Создаём пустой файл, если его нет
+            if (!file_exists($cssPath)) {
+                file_put_contents($cssPath, '');
+            }
+
+            $currentCss = file_get_contents($cssPath);
+            $cssUrl = $this->getCssUrl();
             $saved = isset($_GET['saved']);
 
             $this->render('design/css', [
                 'title' => 'Редактор CSS-стилей',
                 'css_content' => $currentCss,
+                'css_url' => $cssUrl,
                 'saved' => $saved
             ]);
         } catch (Exception $e) {
@@ -37,15 +74,22 @@ class DesignController extends BaseController
     }
 
     /**
-     * Сохранить CSS
+     * Сохранить CSS в файл
      */
     public function saveCss()
     {
         try {
             $css = $_POST['css'] ?? '';
+            $cssPath = $this->getCssPath();
+            $cssDir = $this->getCssDir();
 
-            $settings = new Settings($this->db);
-            $settings->set('custom_css', $css, 'text');
+            if (!is_dir($cssDir)) {
+                mkdir($cssDir, 0755, true);
+            }
+
+            if (file_put_contents($cssPath, $css) === false) {
+                throw new Exception('Не удалось записать файл CSS');
+            }
 
             $this->redirect('/design/css?saved=1');
         } catch (Exception $e) {

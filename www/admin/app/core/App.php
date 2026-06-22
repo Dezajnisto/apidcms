@@ -72,6 +72,7 @@ class App {
         $this->addRoute('/table/{table}/delete-column/{column}', 'TableController', 'deleteColumn');
         $this->addRoute('/create-table', 'HomeController', 'createTableForm');
         $this->addRoute('/store-table', 'HomeController', 'createTable');
+        $this->addRoute('/store-table-sql', 'HomeController', 'createTableSql');
         $this->addRoute('/table/{table}/delete-table', 'HomeController', 'deleteTable');
         
         // +++ ДОБАВЛЯЕМ НОВЫЕ МАРШРУТЫ ДЛЯ УПРАВЛЕНИЯ ШАБЛОНАМИ +++

@@ -118,6 +118,50 @@ class HomeController extends BaseController {
         }
     }
 
+
+    /**
+     * Создать таблицу из сырого SQL
+     */
+    public function createTableSql() {
+        try {
+            $sql = $_POST['sql_code'] ?? '';
+            
+            if (empty(trim($sql))) {
+                throw new \Exception("SQL-код не может быть пустым");
+            }
+            
+            // Разрешаем только CREATE TABLE (с опциональным IF NOT EXISTS)
+            $sqlTrimmed = trim($sql);
+            if (!preg_match('/^CREATE\s+TABLE/i', $sqlTrimmed)) {
+                throw new \Exception("Разрешены только операторы CREATE TABLE. Другие SQL-операции запрещены.");
+            }
+            
+            // Запрещаем вложенные опасные операторы
+            $dangerous = ['DROP', 'DELETE', 'INSERT', 'UPDATE', 'ALTER', 'TRUNCATE', 'REPLACE'];
+            foreach ($dangerous as $cmd) {
+                if (preg_match('/;\s*' . $cmd . '/i', $sql)) {
+                    throw new \Exception("Обнаружена запрещённая команда {$cmd}. Разрешён только один CREATE TABLE.");
+                }
+            }
+            
+            // Выполняем SQL
+            $this->db->exec($sql);
+            
+            // Извлекаем имя таблицы из SQL для редиректа
+            preg_match('/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"\'']?([a-zA-Z_][a-zA-Z0-9_]*)[`"\'']?\s*\(/i', $sql, $matches);
+            $tableName = $matches[1] ?? 'unknown';
+            
+            $this->redirect("/table/{$tableName}?created=1");
+            
+        } catch (\Exception $e) {
+            $this->render('home/create_table', [
+                'title' => 'Создание новой таблицы',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+
     /**
      * Удалить таблицу
      * 

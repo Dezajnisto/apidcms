@@ -174,6 +174,71 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Стили для табов */
+        .tabs {
+            display: flex;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .tab-btn {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover {
+            color: #2980b9;
+        }
+        .tab-btn.active {
+            color: #2980b9;
+            border-bottom-color: #2980b9;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .sql-textarea {
+            width: 100%;
+            min-height: 350px;
+            font-family: 'Courier New', Consolas, monospace;
+            font-size: 14px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #1e1e2e;
+            color: #d4d4d4;
+            line-height: 1.5;
+            tab-size: 4;
+            resize: vertical;
+            white-space: pre;
+        }
+        .sql-textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .sql-hint {
+            background: #f0f8ff;
+            border: 1px solid #b8d4f0;
+            padding: 12px 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        .sql-hint code {
+            background: #e8f0f8;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.95em;
+        }
         .field-info {
             font-size: 0.85em;
             color: #666;
@@ -211,6 +276,13 @@
             </div>
         <?php endif; ?>
 
+        <div class="tabs">
+            <button type="button" class="tab-btn active" onclick="switchTab('constructor')">🔧 Визуальный конструктор</button>
+            <button type="button" class="tab-btn" onclick="switchTab('sql')">💻 SQL-код</button>
+        </div>
+
+        <!-- Вкладка: Визуальный конструктор -->
+        <div id="tab-constructor" class="tab-content active">
         <div class="form-help">
             <strong>Подсказка:</strong> Создайте новую таблицу с необходимыми колонками. Первая колонка будет автоматически установлена как первичный ключ.
         </div>
@@ -244,24 +316,85 @@
                 <button type="button" class="add-column" onclick="addColumn()">+ Добавить колонку</button>
             </div>
             
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="add_timestamps" name="add_timestamps" value="1" checked>
+                    <label for="add_timestamps">Добавить поля created_at и updated_at</label>
+                </div>
+                <div class="field-info">
+                    Автоматически добавит поля для отслеживания времени создания и обновления записей
+                </div>
+            </div>
+
             <div class="form-actions">
                 <button type="submit" class="btn btn-success">Создать таблицу</button>
                 <a href="/" class="btn btn-danger">Отмена</a>
             </div>
         </form>
-    </div>
+    </div> <!-- /tab-constructor -->
 
-    <div class="form-group">
-        <div class="checkbox-group">
-            <input type="checkbox" id="add_timestamps" name="add_timestamps" value="1" checked>
-            <label for="add_timestamps">Добавить поля created_at и updated_at</label>
+    <!-- Вкладка: SQL-код -->
+    <div id="tab-sql" class="tab-content">
+        <div class="sql-hint">
+            <strong>💡 Быстрое создание:</strong> Вставьте готовый SQL-код <code>CREATE TABLE</code>.<br>
+            Убедитесь, что в запросе нет других операторов (DROP, INSERT, UPDATE и т.д.).<br>
+            Пример:
+            <code style="display:block;margin-top:8px;padding:10px;background:#1e1e2e;color:#d4d4d4;border-radius:4px;">
+CREATE TABLE "example" (<br>
+&nbsp;&nbsp;"id" INTEGER PRIMARY KEY AUTOINCREMENT,<br>
+&nbsp;&nbsp;"title" TEXT NOT NULL,<br>
+&nbsp;&nbsp;"price" REAL,<br>
+&nbsp;&nbsp;"created_at" DATETIME DEFAULT CURRENT_TIMESTAMP<br>
+);
+            </code>
         </div>
-        <div class="field-info">
-            Автоматически добавит поля для отслеживания времени создания и обновления записей
-        </div>
-    </div>
+
+        <form method="POST" action="/store-table-sql">
+            <div class="form-group">
+                <label for="sql_code">SQL-код таблицы <span class="required">*</span></label>
+                <textarea id="sql_code" name="sql_code" class="sql-textarea" placeholder="CREATE TABLE &quot;my_table&quot; (...);"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success">Выполнить SQL и создать таблицу</button>
+                <a href="/" class="btn btn-danger">Отмена</a>
+            </div>
+        </form>
+    </div> <!-- /tab-sql -->
+
+</div> <!-- /container -->
 
     <script>
+        function switchTab(tabName) {
+            // Переключаем кнопки табов
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Переключаем содержимое табов
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        // Ctrl+Enter для отправки SQL-формы 
+        document.addEventListener('DOMContentLoaded', function() {
+            const sqlTextarea = document.getElementById('sql_code');
+            if (sqlTextarea) {
+                sqlTextarea.addEventListener('keydown', function(e) {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const start = this.selectionStart;
+                        const end = this.selectionEnd;
+                        this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+                        this.selectionStart = this.selectionEnd = start + 4;
+                    }
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        this.closest('form').submit();
+                    }
+                });
+            }
+        });
+
         let columnCount = 0;
 
         // Добавляем первую колонку при загрузке

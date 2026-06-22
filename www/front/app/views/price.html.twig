@@ -1,0 +1,730 @@
+{% extends "base.html.twig" %}
+
+{% block title %}{{ page.title }} | {{ parent() }}{% endblock %}
+{% block description %}{{ page.meta_description|default('Цены на авторские стихи и песни на заказ') }}{% endblock %}
+
+{% block content %}
+
+<style>
+/* ========================================
+CSS-TOKENS (фирменный стиль)
+======================================== */
+:root {
+ --purple: #8B5CF6;
+ --magenta: #D946EF;
+ --pink: #EC4899;
+ --gradient-primary: linear-gradient(135deg, #8B5CF6, #D946EF);
+ --gradient-diagonal: linear-gradient(135deg, #7C3AED 0%, #D946EF 100%);
+ --bg: #FAFAFA;
+ --surface: #FFFFFF;
+ --fg: #111111;
+ --muted: #6B6B6B;
+ --border: #E5E5E5;
+ --success: #17A34A;
+ --radius: 12px;
+ --shadow-card: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+ --shadow-lift: 0 12px 32px rgba(139,92,246,0.12), 0 4px 8px rgba(0,0,0,0.06);
+ --font-display: 'Oswald', sans-serif;
+ --font-body: 'Raleway', sans-serif;
+ --max-width: 1200px;
+}
+
+/* ========================================
+RESET / BASE
+======================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+body {
+ font-family: var(--font-body);
+ background: var(--bg);
+ color: var(--fg);
+ line-height: 1.5;
+}
+img { max-width: 100%; display: block; }
+a { text-decoration: none; color: inherit; }
+
+.price-container {
+ max-width: var(--max-width);
+ margin: 0 auto;
+ padding: 0 24px;
+}
+
+.price-section {
+ padding: 80px 0;
+}
+
+h1, h2, h3 {
+ font-family: var(--font-display);
+ font-weight: 600;
+ line-height: 1.15;
+}
+
+/* ========================================
+БЛОК 1 — HERO
+======================================== */
+.price-hero {
+ padding: 80px 0 40px;
+ text-align: center;
+ position: relative;
+ overflow: hidden;
+}
+.price-hero::before {
+ content: '';
+ position: absolute;
+ inset: 0;
+ background: radial-gradient(ellipse 60% 50% at 50% 20%, rgba(139,92,246,0.06), transparent 70%);
+ pointer-events: none;
+}
+.price-hero h1 {
+ font-size: clamp(36px, 6vw, 48px);
+ font-weight: 700;
+ letter-spacing: -0.01em;
+ text-transform: uppercase;
+ background: var(--gradient-primary);
+ -webkit-background-clip: text;
+ -webkit-text-fill-color: transparent;
+ background-clip: text;
+ margin-bottom: 20px;
+}
+.price-hero p {
+ max-width: 640px;
+ margin: 0 auto;
+ font-size: clamp(16px, 2vw, 18px);
+ color: var(--muted);
+ line-height: 1.6;
+}
+.price-hero p strong {
+ color: var(--fg);
+ font-weight: 600;
+}
+.price-hero-chevron {
+ margin-top: 20px;
+ animation: bounce 2s infinite;
+}
+.price-hero-chevron svg {
+ width: 32px;
+ height: 32px;
+ color: var(--purple);
+ opacity: 0.5;
+}
+@keyframes bounce {
+ 0%, 100% { transform: translateY(0); }
+ 50% { transform: translateY(8px); }
+}
+
+/* ========================================
+ОБЩИЕ СТИЛИ ДЛЯ СЕКЦИЙ
+======================================== */
+.section-title {
+ font-size: clamp(28px, 3.5vw, 36px);
+ text-align: center;
+ margin-bottom: 48px;
+ font-weight: 600;
+ letter-spacing: -0.01em;
+ color: var(--fg);
+}
+
+/* ========================================
+БЛОК 2+3 — СЕТКА ТАРИФОВ
+======================================== */
+.pricing-grid {
+ display: grid;
+ grid-template-columns: repeat(3, 1fr);
+ gap: 24px;
+ align-items: start;
+}
+
+.pricing-card {
+ background: var(--surface);
+ border-radius: var(--radius);
+ padding: 32px 28px;
+ box-shadow: var(--shadow-card);
+ border: 1px solid var(--border);
+ transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease;
+ display: flex;
+ flex-direction: column;
+}
+.pricing-card:hover {
+ transform: translateY(-6px);
+ box-shadow: var(--shadow-lift);
+}
+.pricing-card.featured {
+ border-color: transparent;
+ background: linear-gradient(var(--surface), var(--surface)) padding-box,
+ var(--gradient-primary) border-box;
+ position: relative;
+}
+.pricing-card.featured::after {
+ content: '★ Хит';
+ position: absolute;
+ top: -12px;
+ left: 50%;
+ transform: translateX(-50%);
+ background: var(--gradient-primary);
+ color: #fff;
+ font-family: var(--font-body);
+ font-size: 12px;
+ font-weight: 700;
+ text-transform: uppercase;
+ letter-spacing: 0.04em;
+ padding: 4px 16px;
+ border-radius: 20px;
+ white-space: nowrap;
+}
+
+.pricing-card h3 {
+ font-size: 22px;
+ font-weight: 600;
+ margin-bottom: 12px;
+ letter-spacing: -0.01em;
+}
+.pricing-card .price {
+ font-family: var(--font-display);
+ font-size: 36px;
+ font-weight: 700;
+ line-height: 1;
+ margin-bottom: 4px;
+ color: var(--fg);
+}
+.pricing-card .price .old {
+ font-size: 22px;
+ color: var(--muted);
+ text-decoration: line-through;
+ font-weight: 500;
+ margin-right: 8px;
+}
+.pricing-card .per-unit {
+ font-size: 13px;
+ color: var(--muted);
+ margin-bottom: 20px;
+ font-weight: 500;
+}
+.pricing-card ul {
+ list-style: none;
+ margin-bottom: 28px;
+ flex: 1;
+}
+.pricing-card ul li {
+ padding: 6px 0;
+ font-size: 14px;
+ color: var(--fg);
+ display: flex;
+ align-items: center;
+ gap: 8px;
+}
+.pricing-card ul li::before {
+ content: '✓';
+ font-weight: 700;
+ color: var(--purple);
+ flex-shrink: 0;
+}
+.pricing-card.featured ul li::before {
+ background: var(--gradient-primary);
+ -webkit-background-clip: text;
+ -webkit-text-fill-color: transparent;
+ background-clip: text;
+}
+
+/* ======== КНОПКИ ======== */
+.price-btn {
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ padding: 12px 28px;
+ border-radius: 8px;
+ font-family: var(--font-body);
+ font-size: 15px;
+ font-weight: 600;
+ cursor: pointer;
+ border: 2px solid transparent;
+ transition: all 0.25s ease;
+ text-align: center;
+ width: 100%;
+}
+.price-btn-primary {
+ background: var(--gradient-primary);
+ color: #fff;
+ border: none;
+}
+.price-btn-primary:hover {
+ opacity: 0.92;
+ transform: scale(1.02);
+}
+.price-btn-secondary {
+ background: transparent;
+ color: var(--fg);
+ border: 2px solid var(--border);
+}
+.price-btn-secondary:hover {
+ border-color: var(--purple);
+ color: var(--purple);
+}
+.price-btn-outline-pink {
+ background: transparent;
+ color: var(--pink);
+ border: 2px solid var(--pink);
+}
+.price-btn-outline-pink:hover {
+ background: var(--pink);
+ color: #fff;
+}
+.price-btn-white {
+ background: #fff;
+ color: var(--purple);
+ border: none;
+}
+.price-btn-white:hover {
+ box-shadow: 0 4px 16px rgba(255,255,255,0.3);
+ transform: translateY(-2px);
+}
+
+/* ========================================
+БЛОК 4 — ТАБЛИЦА УСЛУГ
+======================================== */
+.services-table-wrap {
+ max-width: 700px;
+ margin: 0 auto;
+}
+.services-table {
+ width: 100%;
+ border-collapse: collapse;
+}
+.services-table tr {
+ border-bottom: 1px solid var(--border);
+ transition: background 0.2s ease;
+}
+.services-table tr:last-child {
+ border-bottom: none;
+}
+.services-table tr:hover {
+ background: rgba(139,92,246,0.03);
+}
+.services-table td {
+ padding: 18px 12px;
+ font-size: 16px;
+ vertical-align: middle;
+}
+.services-table td:first-child {
+ font-weight: 500;
+}
+.services-table td:last-child {
+ text-align: right;
+ font-family: var(--font-display);
+ font-size: 18px;
+ font-weight: 600;
+ color: var(--purple);
+ white-space: nowrap;
+}
+.services-table tr:hover td:last-child {
+ text-decoration: underline;
+ text-decoration-color: var(--magenta);
+ text-underline-offset: 4px;
+ text-decoration-thickness: 2px;
+}
+
+/* ========================================
+БЛОК 5 — ПРОМОБЛОК (Lead Magnet)
+======================================== */
+.price-promo {
+ background: var(--gradient-diagonal);
+ border-radius: 20px;
+ padding: 60px 48px;
+ display: flex;
+ align-items: center;
+ gap: 48px;
+ color: #fff;
+ margin-top: 25px;
+}
+.price-promo-text {
+ flex: 1.2;
+}
+.price-promo-text h2 {
+ font-size: clamp(28px, 3vw, 36px);
+ font-weight: 700;
+ color: #fff;
+ margin-bottom: 16px;
+}
+.price-promo-text p {
+ font-size: 15px;
+ line-height: 1.7;
+ opacity: 0.9;
+ max-width: 480px;
+}
+.price-promo-form {
+ flex: 1;
+ display: flex;
+ flex-direction: column;
+ gap: 12px;
+}
+.price-promo-form input {
+ padding: 14px 18px;
+ border-radius: 8px;
+ border: 2px solid rgba(255,255,255,0.25);
+ background: rgba(255,255,255,0.12);
+ color: #fff;
+ font-family: var(--font-body);
+ font-size: 15px;
+ outline: none;
+ transition: border-color 0.2s ease, background 0.2s ease;
+}
+.price-promo-form input::placeholder {
+ color: rgba(255,255,255,0.6);
+}
+.price-promo-form input:focus {
+ border-color: #fff;
+ background: rgba(255,255,255,0.18);
+}
+.price-promo-form .price-btn {
+ padding: 14px 28px;
+ font-size: 16px;
+}
+
+/* ========================================
+МОДАЛЬНОЕ ОКНО
+======================================== */
+.price-modal-overlay {
+ display: none;
+ position: fixed;
+ inset: 0;
+ background: rgba(0,0,0,0.5);
+ backdrop-filter: blur(4px);
+ z-index: 1000;
+ align-items: center;
+ justify-content: center;
+ padding: 24px;
+}
+.price-modal-overlay.open {
+ display: flex;
+}
+.price-modal {
+ background: var(--surface);
+ border-radius: 16px;
+ padding: 40px 36px 32px;
+ max-width: 420px;
+ width: 100%;
+ position: relative;
+ box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+ animation: modalIn 0.25s ease;
+}
+@keyframes modalIn {
+ from { opacity: 0; transform: scale(0.95) translateY(12px); }
+ to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.price-modal-close {
+ position: absolute;
+ top: 14px;
+ right: 18px;
+ background: none;
+ border: none;
+ font-size: 24px;
+ color: var(--muted);
+ cursor: pointer;
+ line-height: 1;
+ padding: 4px;
+}
+.price-modal-close:hover { color: var(--fg); }
+.price-modal h3 {
+ font-size: 24px;
+ margin-bottom: 8px;
+ text-align: center;
+}
+.price-modal p {
+ font-size: 14px;
+ color: var(--muted);
+ text-align: center;
+ margin-bottom: 24px;
+}
+.price-modal-form {
+ display: flex;
+ flex-direction: column;
+ gap: 14px;
+}
+.price-modal-form input {
+ padding: 12px 16px;
+ border-radius: 8px;
+ border: 1px solid var(--border);
+ font-family: var(--font-body);
+ font-size: 15px;
+ outline: none;
+ transition: border-color 0.2s ease;
+}
+.price-modal-form input:focus {
+ border-color: var(--purple);
+}
+.price-modal-form .price-btn {
+ margin-top: 4px;
+}
+
+/* ========================================
+АДАПТИВНОСТЬ
+======================================== */
+@media (max-width: 1023px) {
+ .pricing-grid {
+ grid-template-columns: repeat(2, 1fr);
+ }
+ .pricing-grid .pricing-card:last-child {
+ grid-column: 1 / -1;
+ max-width: 480px;
+ margin: 0 auto;
+ }
+ .price-promo {
+ flex-direction: column;
+ text-align: center;
+ padding: 48px 32px;
+ }
+ .price-promo-text p { max-width: 100%; }
+ .price-promo-form { max-width: 400px; width: 100%; }
+}
+
+@media (max-width: 639px) {
+ .price-section { padding: 48px 0; }
+ .price-hero { padding: 48px 0 24px; }
+
+ .pricing-grid {
+ grid-template-columns: 1fr;
+ }
+ .pricing-grid .pricing-card:last-child {
+ grid-column: auto;
+ max-width: 100%;
+ }
+ .pricing-card {
+ padding: 24px 20px;
+ }
+ .pricing-card .price {
+ font-size: 30px;
+ }
+
+ .services-table td {
+ padding: 14px 8px;
+ font-size: 14px;
+ }
+ .services-table td:last-child {
+ font-size: 16px;
+ }
+
+ .price-promo {
+ padding: 36px 20px;
+ border-radius: 16px;
+ }
+ .price-promo-form input {
+ padding: 12px 14px;
+ }
+
+ .price-modal {
+ padding: 28px 20px 24px;
+ }
+}
+
+@media (max-width: 359px) {
+ .price-container { padding: 0 12px; }
+ .pricing-card { padding: 20px 16px; }
+}
+</style>
+
+<!-- ============================================
+БЛОК 1 — HERO
+============================================ -->
+<section class="price-hero">
+ <div class="price-container">
+ <h1>{{ page.title|default('Цены на авторские стихи и песни') }}</h1>
+ <p>
+ Оригинальные тексты для свадеб, юбилеев и близких людей.<br>
+ <strong>Пишем от 24 часов.</strong> 4 бесплатные правки. 100% гарантия соблюдения сроков.
+ </p>
+ <div class="price-hero-chevron">
+ <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M7 13l5 5 5-5M7 6l5 5 5-5"></path>
+ </svg>
+ </div>
+ </div>
+</section>
+
+<!-- ============================================
+БЛОК 2 — СТИХИ
+============================================ -->
+<section class="price-section" style="padding-top: 0; padding-bottom: 0;">
+ <div class="price-container">
+ <h2 class="section-title">Стихи на заказ</h2>
+ <div class="pricing-grid">
+
+ <!-- Карточка 1 -->
+ <div class="pricing-card">
+ <h3>5 четверостиший</h3>
+ <div class="price">1 800 ₽</div>
+ <div class="per-unit">360 ₽ / строфа</div>
+ <ul>
+ <li>Идеально для тоста</li>
+ <li>Готовность 24 часа</li>
+ <li>4 бесплатные правки</li>
+ <li>Бронь автора по 100% предоплате</li>
+ </ul>
+ <button class="price-btn price-btn-secondary" onclick="openPriceModal('5 четверостиший')">Заказать стихи</button>
+ </div>
+
+ <!-- Карточка 2 (акцентная) -->
+ <div class="pricing-card featured">
+ <h3>8 четверостиший</h3>
+ <div class="price">
+ <span class="old">2 880 ₽</span> 2 600 ₽
+ </div>
+ <div class="per-unit">325 ₽ / строфа</div>
+ <ul>
+ <li>Оптимально для поздравления</li>
+ <li>Готовность 24 часа</li>
+ <li>4 бесплатные правки</li>
+ <li>Бронь автора по 100% предоплате</li>
+ </ul>
+ <button class="price-btn price-btn-primary" onclick="openPriceModal('8 четверостиший')">Заказать стихи</button>
+ </div>
+
+ <!-- Карточка 3 -->
+ <div class="pricing-card">
+ <h3>10 четверостиший</h3>
+ <div class="price">
+ <span class="old">3 600 ₽</span> 2 900 ₽
+ </div>
+ <div class="per-unit">290 ₽ / строфа</div>
+ <ul>
+ <li>Развернутая история</li>
+ <li>Готовность 24 часа</li>
+ <li>4 бесплатные правки</li>
+ <li>Бронь автора по 100% предоплате</li>
+ </ul>
+ <button class="price-btn price-btn-secondary" onclick="openPriceModal('10 четверостиший')">Заказать стихи</button>
+ </div>
+
+ </div>
+ </div>
+</section>
+
+<!-- ============================================
+БЛОК 3 — ПЕСНИ
+============================================ -->
+<section class="price-section" style="padding-top: 40px; padding-bottom: 0;">
+ <div class="price-container">
+ <h2 class="section-title">Песни на заказ</h2>
+ <div class="pricing-grid">
+
+ <!-- Карточка 1 -->
+ <div class="pricing-card">
+ <h3>Переделка песни</h3>
+ <div class="price">3 000 ₽</div>
+ <ul>
+ <li>Ваш любимый мотив</li>
+ <li>Новый текст про ваших близких</li>
+ <li>Идеальное попадание в ритм</li>
+ </ul>
+ <button class="price-btn price-btn-outline-pink" onclick="openPriceModal('Переделка песни')">Заказать песню</button>
+ </div>
+
+ <!-- Карточка 2 -->
+ <div class="pricing-card">
+ <h3>Песня с ИИ-аранжировкой</h3>
+ <div class="price">4 000 ₽</div>
+ <ul>
+ <li>Оригинальный авторский текст</li>
+ <li>Генерация музыки нейросетью</li>
+ <li>Готовый MP3-трек</li>
+ </ul>
+ <button class="price-btn price-btn-outline-pink" onclick="openPriceModal('Песня с ИИ-аранжировкой')">Заказать песню</button>
+ </div>
+
+ <!-- Карточка 3 -->
+ <div class="pricing-card">
+ <h3>Песня для исполнения</h3>
+ <div class="price">8 000 ₽</div>
+ <ul>
+ <li>Оригинальный текст и ритмика</li>
+ <li>Создание уникальной минусовки</li>
+ <li>Полностью готова для записи в студии</li>
+ </ul>
+ <button class="price-btn price-btn-outline-pink" onclick="openPriceModal('Песня для исполнения')">Заказать песню</button>
+ </div>
+
+ </div>
+ </div>
+</section>
+
+<!-- ============================================
+БЛОК 4 — ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ (ТАБЛИЦА)
+============================================ -->
+<section class="price-section" style="padding-top: 40px; padding-bottom: 0;">
+ <div class="price-container">
+ <h2 class="section-title">Дополнительные форматы и оформление</h2>
+ <div class="services-table-wrap">
+ <table class="services-table">
+ <tbody>
+ <tr>
+ <td>Дизайн открытки со стихами</td>
+ <td>500 ₽</td>
+ </tr>
+ <tr>
+ <td>Написание акростиха (по первым буквам имени)</td>
+ <td>От 1 000 ₽</td>
+ </tr>
+ <tr>
+ <td>Создание караоке-версии песни</td>
+ <td>3 000 ₽</td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+</section>
+
+<!-- ============================================
+БЛОК 5 — ПРОМОБЛОК (Lead Magnet)
+============================================ -->
+<section class="price-section" style="padding-top: 40px; padding-bottom: 60px;">
+ <div class="price-container">
+ <div class="price-promo">
+ <div class="price-promo-text">
+ <h2>Скидка 30% на первый заказ</h2>
+ <p>
+ Оставьте заявку сейчас. Мы свяжемся с вами в течение 15 минут,
+ обсудим идею и забронируем за вами скидку. Оплата только после
+ согласования деталей.
+ </p>
+ </div>
+ <form class="price-promo-form" onsubmit="event.preventDefault(); alert('Спасибо! Мы свяжемся с вами в ближайшее время.'); this.reset();">
+ <input type="text" name="name" placeholder="Ваше имя" required>
+ <input type="tel" name="phone" placeholder="Номер телефона" required>
+ <button type="submit" class="price-btn price-btn-white">Забронировать скидку</button>
+ </form>
+ </div>
+ </div>
+</section>
+
+<!-- ============================================
+МОДАЛЬНОЕ ОКНО
+============================================ -->
+<div class="price-modal-overlay" id="priceOrderModal">
+ <div class="price-modal">
+ <button class="price-modal-close" onclick="closePriceModal()">✕</button>
+ <h3>Заказ</h3>
+ <p id="priceModalProduct">—</p>
+ <form class="price-modal-form" onsubmit="event.preventDefault(); alert('Спасибо! Мы свяжемся с вами для подтверждения заказа.'); closePriceModal(); this.reset();">
+ <input type="text" name="name" placeholder="Ваше имя" required>
+ <input type="tel" name="phone" placeholder="Номер телефона" required>
+ <button type="submit" class="price-btn price-btn-primary">Отправить</button>
+ </form>
+ </div>
+</div>
+
+<script>
+function openPriceModal(product) {
+ document.getElementById('priceModalProduct').textContent = '«' + product + '»';
+ document.getElementById('priceOrderModal').classList.add('open');
+}
+function closePriceModal() {
+ document.getElementById('priceOrderModal').classList.remove('open');
+}
+document.getElementById('priceOrderModal').addEventListener('click', function(e) {
+ if (e.target === this) closePriceModal();
+});
+document.addEventListener('keydown', function(e) {
+ if (e.key === 'Escape') closePriceModal();
+});
+</script>
+
+{% endblock %}

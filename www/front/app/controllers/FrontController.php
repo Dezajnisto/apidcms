@@ -353,7 +353,13 @@ class FrontController {
                 )->fetch();
                 
                 if ($page) {
-                    $this->showPage($page);
+                    // Поддержка кастомного шаблона из page_config или поля template
+                    $config = $navItem->getPageConfig();
+                    $template = ($config['template'] !== 'default') ? $config['template'] . '.html.twig' : 'page.html.twig';
+                    $this->render($template, [
+                        'page' => $page,
+                        'title' => $page['title']
+                    ]);
                 } else {
                     $this->show404();
                 }

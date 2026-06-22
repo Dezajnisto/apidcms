@@ -148,7 +148,7 @@ class HomeController extends BaseController {
             $this->db->exec($sql);
             
             // Извлекаем имя таблицы из SQL для редиректа
-            preg_match('/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"\'']?([a-zA-Z_][a-zA-Z0-9_]*)[`"\'']?\s*\(/i', $sql, $matches);
+            preg_match('/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"\x27]?([a-zA-Z_][a-zA-Z0-9_]*)[`"\x27]?\s*\(/i', $sql, $matches);
             $tableName = $matches[1] ?? 'unknown';
             
             $this->redirect("/table/{$tableName}?created=1");

@@ -289,7 +289,14 @@ class TableController extends BaseController {
             
             // Получаем значение из POST
             if (isset($_POST[$columnName])) {
-                $data[$columnName] = $_POST[$columnName];
+                $value = $_POST[$columnName];
+                
+                // Пустые строки для nullable-полей → null (иначе '' станет 0 для FK)
+                if ($value === '' && $column['notnull'] == 0) {
+                    $value = null;
+                }
+                
+                $data[$columnName] = $value;
             }
         }
         

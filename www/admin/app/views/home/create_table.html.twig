@@ -34,101 +34,234 @@
         </div>
     {% endif %}
 
-    <!-- Подсказка -->
-    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <div class="flex items-start space-x-3">
-            <i class="fas fa-info-circle text-blue-500 mt-1"></i>
-            <div>
-                <strong class="font-medium">Подсказка:</strong>
-                <p class="text-blue-700">Создайте новую таблицу с необходимыми колонками. Первая колонка будет автоматически установлена как первичный ключ.</p>
-            </div>
-        </div>
+    <!-- Табы -->
+    <div class="mb-6 border-b border-gray-200">
+        <nav class="flex space-x-1" id="tabNav">
+            <button type="button" 
+                    class="tab-btn px-4 py-2.5 text-sm font-medium rounded-t-lg border-l border-t border-r border-gray-200 -mb-px bg-white text-blue-600"
+                    data-tab="constructor">
+                <i class="fas fa-table mr-1.5"></i>Визуальный конструктор
+            </button>
+            <button type="button" 
+                    class="tab-btn px-4 py-2.5 text-sm font-medium rounded-t-lg text-gray-500 hover:text-gray-700"
+                    data-tab="sql">
+                <i class="fas fa-code mr-1.5"></i>SQL-код
+            </button>
+        </nav>
     </div>
 
-    <!-- Форма -->
-    <form method="POST" action="{{ admin_url('store-table') }}" id="createTableForm" class="space-y-6">
+    <!-- Вкладка: Конструктор -->
+    <div id="tab-constructor" class="tab-panel">
+        <!-- Подсказка -->
+        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-start space-x-3">
+                <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+                <div>
+                    <strong class="font-medium">Подсказка:</strong>
+                    <p class="text-blue-700">Создайте новую таблицу с необходимыми колонками. Первая колонка будет автоматически установлена как первичный ключ.</p>
+                </div>
+            </div>
+        </div>
+
         <!-- AI: создание таблицы по описанию -->
-        <button type="button" onclick="AIAssistant.init({mode:'table'});AIAssistant.open()" 
-                class="inline-flex items-center space-x-2 px-4 py-2 border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 transition">
-            <i class="fas fa-magic"></i>
-            <span>AI — Создать таблицу</span>
-        </button>
-
-        <!-- Название таблицы -->
-        <div class="bg-white rounded-lg border p-6">
-            <label for="table_name" class="block text-sm font-medium text-gray-700 mb-2">
-                Название таблицы <span class="text-red-500">*</span>
-            </label>
-            <input 
-                type="text" 
-                id="table_name" 
-                name="table_name" 
-                value="{{ formData.table_name ?? '' }}"
-                required
-                pattern="[a-zA-Z_][a-zA-Z0-9_]*"
-                title="Название таблицы может содержать только буквы, цифры и подчеркивания, и должно начинаться с буквы или подчеркивания"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="например: products, users, categories"
-            >
-            <p class="mt-1 text-sm text-gray-500">
-                Может содержать только буквы, цифры и подчеркивания. Должно начинаться с буквы или подчеркивания.
-            </p>
-        </div>
-
-        <!-- Колонки таблицы -->
-        <div class="bg-white rounded-lg border p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Колонки таблицы</h3>
-            
-            <div id="columnsList" class="space-y-4">
-                <!-- Колонки будут добавляться здесь динамически -->
-            </div>
-            
-            <button type="button" 
-                    onclick="addColumn()"
-                    class="mt-4 inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
-                <i class="fas fa-plus"></i>
-                <span>Добавить колонку</span>
+        <div class="mb-6">
+            <button type="button" onclick="AIAssistant.init({mode:'table'});AIAssistant.open()" 
+                    class="inline-flex items-center space-x-2 px-4 py-2 border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 transition">
+                <i class="fas fa-magic"></i>
+                <span>AI — Создать таблицу</span>
             </button>
         </div>
 
-        <!-- Дополнительные опции -->
-        <div class="bg-white rounded-lg border p-6">
-            <div class="flex items-center space-x-3">
-                <input type="checkbox" 
-                       id="add_timestamps" 
-                       name="add_timestamps" 
-                       value="1" 
-                       checked
-                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                <label for="add_timestamps" class="text-sm font-medium text-gray-700">
-                    Добавить поля created_at и updated_at
+        <!-- Форма конструктора -->
+        <form method="POST" action="{{ admin_url('store-table') }}" id="createTableForm" class="space-y-6">
+
+            <!-- Название таблицы -->
+            <div class="bg-white rounded-lg border p-6">
+                <label for="table_name" class="block text-sm font-medium text-gray-700 mb-2">
+                    Название таблицы <span class="text-red-500">*</span>
                 </label>
+                <input 
+                    type="text" 
+                    id="table_name" 
+                    name="table_name" 
+                    value="{{ formData.table_name ?? '' }}"
+                    required
+                    pattern="[a-zA-Z_][a-zA-Z0-9_]*"
+                    title="Название таблицы может содержать только буквы, цифры и подчеркивания, и должно начинаться с буквы или подчеркивания"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="например: products, users, categories"
+                >
+                <p class="mt-1 text-sm text-gray-500">
+                    Может содержать только буквы, цифры и подчеркивания. Должно начинаться с буквы или подчеркивания.
+                </p>
             </div>
-            <p class="mt-1 text-sm text-gray-500">
-                Автоматически добавит поля для отслеживания времени создания и обновления записей
-            </p>
+
+            <!-- Колонки таблицы -->
+            <div class="bg-white rounded-lg border p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Колонки таблицы</h3>
+                
+                <div id="columnsList" class="space-y-4">
+                    <!-- Колонки будут добавляться здесь динамически -->
+                </div>
+                
+                <button type="button" 
+                        onclick="addColumn()"
+                        class="mt-4 inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
+                    <i class="fas fa-plus"></i>
+                    <span>Добавить колонку</span>
+                </button>
+            </div>
+
+            <!-- Дополнительные опции -->
+            <div class="bg-white rounded-lg border p-6">
+                <div class="flex items-center space-x-3">
+                    <input type="checkbox" 
+                           id="add_timestamps" 
+                           name="add_timestamps" 
+                           value="1" 
+                           checked
+                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="add_timestamps" class="text-sm font-medium text-gray-700">
+                        Добавить поля created_at и updated_at
+                    </label>
+                </div>
+                <p class="mt-1 text-sm text-gray-500">
+                    Автоматически добавит поля для отслеживания времени создания и обновления записей
+                </p>
+            </div>
+            
+            <!-- Кнопки действий -->
+            <div class="flex items-center justify-end space-x-4 pt-6 border-t">
+                <a href="{{ admin_url('') }}" 
+                   class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
+                    Отмена
+                </a>
+                <button type="submit" 
+                        class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center space-x-2">
+                    <i class="fas fa-plus"></i>
+                    <span>Создать таблицу</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Вкладка: SQL-код -->
+    <div id="tab-sql" class="tab-panel hidden">
+        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-start space-x-3">
+                <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+                <div>
+                    <strong class="font-medium">💡 Быстрое создание:</strong>
+                    <p class="text-blue-700 mt-1">Вставьте готовый SQL-код <code class="bg-blue-100 px-1 rounded">CREATE TABLE</code>.</p>
+                    <p class="text-blue-700">Убедитесь, что в запросе нет других операторов (DROP, INSERT, UPDATE и т.д.).</p>
+                </div>
+            </div>
+            <div class="mt-3 p-3 bg-gray-900 text-gray-100 rounded-lg text-sm font-mono leading-relaxed">
+                <span class="text-purple-400">CREATE TABLE</span> <span class="text-green-400">"example"</span> (<br>
+                &nbsp;&nbsp;<span class="text-green-400">"id"</span> <span class="text-blue-400">INTEGER</span> <span class="text-yellow-400">PRIMARY KEY AUTOINCREMENT</span>,<br>
+                &nbsp;&nbsp;<span class="text-green-400">"title"</span> <span class="text-blue-400">TEXT</span> <span class="text-red-400">NOT NULL</span>,<br>
+                &nbsp;&nbsp;<span class="text-green-400">"created_at"</span> <span class="text-blue-400">DATETIME</span> <span class="text-yellow-400">DEFAULT CURRENT_TIMESTAMP</span><br>
+                );
+            </div>
         </div>
-        
-        <!-- Кнопки действий -->
-        <div class="flex items-center justify-end space-x-4 pt-6 border-t">
-            <a href="{{ admin_url('') }}" 
-               class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
-                Отмена
-            </a>
-            <button type="submit" 
-                    class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center space-x-2">
-                <i class="fas fa-plus"></i>
-                <span>Создать таблицу</span>
-            </button>
-        </div>
-    </form>
+
+        <form method="POST" action="{{ admin_url('store-table-sql') }}" class="space-y-6">
+            <div class="bg-white rounded-lg border p-6">
+                <label for="sql_code" class="block text-sm font-medium text-gray-700 mb-2">
+                    SQL-код таблицы <span class="text-red-500">*</span>
+                </label>
+                <textarea 
+                    id="sql_code" 
+                    name="sql_code" 
+                    class="sql-editor w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder='CREATE TABLE "my_table" (...);'
+                    rows="15"
+                ></textarea>
+                <p class="mt-2 text-sm text-gray-500">
+                    <i class="fas fa-keyboard mr-1"></i> Tab → 4 пробела · Ctrl+Enter → отправить
+                </p>
+            </div>
+
+            <div class="flex items-center justify-end space-x-4 pt-6 border-t">
+                <a href="{{ admin_url('') }}" 
+                   class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
+                    Отмена
+                </a>
+                <button type="submit" 
+                        class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center space-x-2">
+                    <i class="fas fa-play"></i>
+                    <span>Выполнить SQL и создать таблицу</span>
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
+<style>
+    .sql-editor {
+        background: #1e1e2e;
+        color: #d4d4d4;
+        min-height: 300px;
+        tab-size: 4;
+        white-space: pre;
+        resize: vertical;
+    }
+    .sql-editor::placeholder {
+        color: #6b7280;
+    }
+</style>
+
 <script>
+    // --- Tab switcher ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const panels = {
+            constructor: document.getElementById('tab-constructor'),
+            sql: document.getElementById('tab-sql'),
+        };
+
+        function switchTab(name) {
+            tabBtns.forEach(btn => {
+                const isActive = btn.dataset.tab === name;
+                btn.className = isActive
+                    ? 'tab-btn px-4 py-2.5 text-sm font-medium rounded-t-lg border-l border-t border-r border-gray-200 -mb-px bg-white text-blue-600'
+                    : 'tab-btn px-4 py-2.5 text-sm font-medium rounded-t-lg text-gray-500 hover:text-gray-700';
+            });
+            Object.keys(panels).forEach(key => {
+                panels[key].classList.toggle('hidden', key !== name);
+            });
+        }
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                switchTab(this.dataset.tab);
+            });
+        });
+
+        // --- SQL editor helpers ---
+        const sqlEditor = document.getElementById('sql_code');
+        if (sqlEditor) {
+            sqlEditor.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = this.selectionStart;
+                    const end = this.selectionEnd;
+                    this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+                    this.selectionStart = this.selectionEnd = start + 4;
+                }
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    this.closest('form').submit();
+                }
+            });
+        }
+    });
+
+    // --- Column management (unchanged from original) ---
     let columnCount = 0;
 
     document.addEventListener('DOMContentLoaded', function() {
-        addColumn(); // Добавляем первую пользовательскую колонку
+        addColumn();
     });
 
     function addColumn() {
@@ -208,7 +341,6 @@
         columnItem.remove();
         columnCount--;
         
-        // Обновляем номера колонок
         const columns = document.querySelectorAll('.bg-gray-50');
         columns.forEach((col, index) => {
             const title = col.querySelector('span');

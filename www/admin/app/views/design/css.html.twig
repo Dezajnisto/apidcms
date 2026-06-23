@@ -45,17 +45,10 @@
                         Файл: <code class="bg-gray-100 px-1 rounded text-xs">{{ css_url }}</code>
                     </span>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <a href="{{ admin_url('design/css/clear-cache') }}"
-                       class="px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-md hover:bg-amber-100 transition flex items-center space-x-2 text-sm"
-                       onclick="return confirm('Сбросить кэш CSS? Новая версия файла будет отправлена браузерам.')">
-                        <i class="fas fa-broom"></i><span>Очистить кэш браузера</span>
-                    </a>
-                    <button type="submit"
-                            class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center space-x-2">
-                        <i class="fas fa-save"></i><span>Сохранить стили</span>
-                    </button>
-                </div>
+                <button type="submit"
+                        class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center space-x-2">
+                    <i class="fas fa-save"></i><span>Сохранить стили</span>
+                </button>
             </div>
         </form>
     </div>

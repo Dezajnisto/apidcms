@@ -101,15 +101,6 @@ class DesignController extends BaseController
     }
 
     /**
-     * Сбросить кэш браузера для CSS
-     */
-    public function clearCssCache()
-    {
-        $this->bumpCssVersion();
-        $this->redirect('/design/css?cache_cleared=1');
-    }
-
-    /**
      * Инкрементировать версию CSS (для cache-busting ?v=N)
      */
     private function bumpCssVersion()

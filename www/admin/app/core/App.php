@@ -131,7 +131,6 @@ class App {
         // Редактор CSS-стилей
         $this->addRoute('/design/css', 'DesignController', 'css');
         $this->addRoute('/design/css/save', 'DesignController', 'saveCss');
-        $this->addRoute('/design/css/clear-cache', 'DesignController', 'clearCssCache');
 
         // Инициализируем маршруты плагинов
         $this->addRoute('/plugins', 'PluginAdminController', 'index');

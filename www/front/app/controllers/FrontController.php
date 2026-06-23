@@ -326,13 +326,15 @@ class FrontController {
      * Получить элемент навигации по URL
      */
     private function getNavigationItemByUrl($url) {
-        // В БД url хранится с ведущим слешем (/price), а $path приходит без него (price)
+        // В БД url может быть как /price так и examples (слеш или без)
+        $urls = [$url];
         if (strpos($url, '/') !== 0) {
-            $url = '/' . $url;
+            $urls[] = '/' . $url;
         }
+        $placeholders = implode(',', array_fill(0, count($urls), '?'));
         $result = $this->database->query(
-            "SELECT * FROM navigation WHERE url = ? AND status = 'active'",
-            [$url]
+            "SELECT * FROM navigation WHERE url IN ({$placeholders}) AND status = 'active' LIMIT 1",
+            $urls
         )->fetch();
         
         if ($result) {

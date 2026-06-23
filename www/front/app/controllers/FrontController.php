@@ -200,10 +200,33 @@ class FrontController {
      * Получить навигацию
      */
     public function getNavigation($location = 'main') {
-        return $this->database->query(
+        $items = $this->database->query(
             "SELECT * FROM navigation WHERE location = ? AND status = 'active' ORDER BY menu_order ASC",
             [$location]
         )->fetchAll();
+        
+        // Build parent->children map
+        $childrenMap = [];
+        foreach ($items as $item) {
+            $pid = (int)($item['parent_id'] ?? 0);
+            if ($pid > 0) {
+                $childrenMap[$pid][] = $item;
+            }
+        }
+        
+        // Attach children to parents and build result
+        $result = [];
+        foreach ($items as $item) {
+            $id = (int)$item['id'];
+            $item['children'] = $childrenMap[$id] ?? [];
+            // Only top-level items (parent_id = 0 or null) go to root
+            $pid = (int)($item['parent_id'] ?? 0);
+            if ($pid === 0) {
+                $result[] = $item;
+            }
+        }
+        
+        return $result;
     }
     
     /**

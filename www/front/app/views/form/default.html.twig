@@ -1,0 +1,35 @@
+{% extends "form/_base.html.twig" %}
+
+{% block form_content %}
+<form method="post" action="{{ action|default('/form-handler') }}"
+      class="{{ form_class|default('space-y-6') }}"
+      data-form="{{ form_name }}"
+      data-success-message="{{ success_message|e('html_attr') }}"
+      novalidate>
+
+    <input type="hidden" name="form_name" value="{{ form_name }}">
+
+    {% if enable_csrf %}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% endif %}
+
+    {% for field_name, field in fields %}
+        {% set field_class = field_class|default('w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition') %}
+        {% set field_error_class = field_error_class|default('border-red-400 focus:ring-red-400') %}
+        {% set label_class = label_class|default('block text-sm font-medium text-gray-700 mb-1.5') %}
+
+        {% include 'form/fields/' ~ field.type ~ '.html.twig' with {field: field, field_name: field_name} %}
+    {% endfor %}
+
+    {% if show_consent %}
+        {% include 'form/fields/consent.html.twig' %}
+    {% endif %}
+
+    <div class="form-submit pt-2">
+        <button type="submit"
+                class="{{ submit_class|default('w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition duration-200') }}">
+            {{ submit_text|default('Отправить') }}
+        </button>
+    </div>
+</form>
+{% endblock %}

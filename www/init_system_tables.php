@@ -87,6 +87,28 @@ $pdo->exec('
 ');
 echo "[OK] system_settings\n";
 
+// ========== ФОРМЫ ==========
+
+// 3.5. Формы (новая система форм)
+$pdo->exec('
+    CREATE TABLE IF NOT EXISTS forms (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        display_name TEXT NOT NULL,
+        source_table TEXT NOT NULL,
+        fields TEXT NOT NULL DEFAULT \"{}\",
+        notifications TEXT DEFAULT \"{}\",
+        design TEXT DEFAULT \"{}\",
+        template TEXT DEFAULT \"default\",
+        success_message TEXT DEFAULT \"Спасибо! Форма успешно отправлена.\",
+        enable_csrf INTEGER DEFAULT 1,
+        status TEXT DEFAULT \"active\",
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME
+    )
+');
+echo "[OK] forms\n";
+
 // ========== ОПЦИОНАЛЬНЫЕ ТАБЛИЦЫ ==========
 
 // 4. Секции (для landing-страниц)

@@ -1,0 +1,32 @@
+{% extends "form/_base.html.twig" %}
+
+{# Минимальная форма — без рамок, только поля и кнопка #}
+{% block form_content %}
+<form method="post" action="{{ action|default('/form-handler') }}"
+      class="{{ form_class|default('') }}"
+      data-form="{{ form_name }}"
+      data-success-message="{{ success_message|e('html_attr') }}"
+      novalidate>
+
+    <input type="hidden" name="form_name" value="{{ form_name }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    {% set label_class = 'block text-xs font-medium text-gray-500 mb-1' %}
+    {% set field_class = 'w-full px-3 py-2 border-0 border-b-2 border-gray-200 focus:border-blue-500 focus:ring-0 outline-none transition bg-transparent' %}
+
+    {% for field_name, field in fields %}
+        {% include 'form/fields/' ~ field.type ~ '.html.twig' with {field: field, field_name: field_name} %}
+    {% endfor %}
+
+    {% if show_consent %}
+        {% include 'form/fields/consent.html.twig' %}
+    {% endif %}
+
+    <div class="form-submit pt-1">
+        <button type="submit"
+                class="{{ submit_class|default('text-sm text-blue-600 hover:text-blue-800 underline font-medium') }}">
+            {{ submit_text|default('Отправить') }}
+        </button>
+    </div>
+</form>
+{% endblock %}

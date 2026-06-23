@@ -1,0 +1,32 @@
+{% extends "form/_base.html.twig" %}
+
+{# Герой-форма для главной prostostihi.ru — прозрачная, на градиентном фоне #}
+{% block form_content %}
+<form method="post" action="{{ action|default('/form-handler') }}"
+      class="{{ form_class|default('space-y-5') }}"
+      data-form="{{ form_name }}"
+      data-success-message="{{ success_message|e('html_attr') }}"
+      novalidate>
+
+    <input type="hidden" name="form_name" value="{{ form_name }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    {% set field_class = 'w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition' %}
+    {% set label_class = 'block text-sm font-medium text-white/80 mb-1.5' %}
+
+    {% for field_name, field in fields %}
+        {% include 'form/fields/' ~ field.type ~ '.html.twig' with {field: field, field_name: field_name} %}
+    {% endfor %}
+
+    {% if show_consent %}
+        {% include 'form/fields/consent.html.twig' %}
+    {% endif %}
+
+    <div class="form-submit pt-2">
+        <button type="submit"
+                class="{{ submit_class|default('w-full bg-gradient-to-r from-pink-500 to-orange-400 hover:from-pink-600 hover:to-orange-500 text-white font-bold px-8 py-4 rounded-full text-lg shadow-xl hover:shadow-2xl transition duration-300') }}">
+            {{ submit_text|default('Отправить') }}
+        </button>
+    </div>
+</form>
+{% endblock %}

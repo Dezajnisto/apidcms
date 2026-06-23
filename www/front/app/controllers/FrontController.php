@@ -99,13 +99,21 @@ class FrontController {
     }
 
     /**
-     * Рендерит форму по названию таблицы
+     * Рендерит форму по имени (новая система)
+     * Вызывается из Twig: {{ render_form('contacts') }}
+     *
+     * @param string $formName Имя формы из таблицы forms
+     * @param array $options   Опции: template, submit_text, submit_class, field_class, form_class
+     * @return \Twig\Markup
      */
-    public function renderForm($tableName, $config = []) {
-        $formRenderer = new \Core\FormRenderer($this->database);
-        $formHtml = $formRenderer->renderForm($tableName, $config);
+    public function renderForm($formName, $options = []) {
+        // Если options не массив (undefined/null из Twig) — сбрасываем
+        if (!is_array($options)) {
+            $options = [];
+        }
+        $formRenderer = new \Core\FormRenderer($this->database, $this->twig, $this->config);
+        $formHtml = $formRenderer->renderForm($formName, $options);
         
-        // Возвращаем как безопасный HTML
         return new \Twig\Markup($formHtml, 'UTF-8');
     }
 
@@ -859,15 +867,14 @@ class FrontController {
     }
 
     /**
-     * Обработка страницы-формы
+     * Обработка страницы-формы (page_type: form)
+     * Сначала проверяет новую систему (forms), потом старую (form_config в navigation)
      */
     private function handleFormPage($navItem) {
-
         $config = $navItem->getPageConfig();
         $tableName = $config['source_table'];
 
         // Загружаем связанную страницу (page_id), если указана
-        // Контент страницы будет выведен ПЕРЕД формой
         $pageContent = null;
         $pageMeta = null;
         if (!empty($navItem->page_id)) {
@@ -883,8 +890,8 @@ class FrontController {
                     'meta_description' => $page['meta_description'] ?? '',
                 ];
             }
-        }        
-        // Проверяем существование таблицы
+        }
+
         $tables = $this->database->getTables();
         if (!in_array($tableName, $tables)) {
             $this->show404();
@@ -897,21 +904,24 @@ class FrontController {
             return;
         }
         
-        // Показ формы
-        $this->showForm($navItem, $tableName, $pageContent, $pageMeta);
-    }
-
-    /**
-     * Показ формы
-     */
-    private function showForm($navItem, $tableName, $pageContent = null, $pageMeta = null) {
-        $config = $navItem->getPageConfig();
-        $structure = $this->database->getTableStructure($tableName);
+        // Пробуем новую систему форм
+        $formManager = new \Core\FormManager($this->database);
+        $form = $formManager->getForm($tableName); // ищем форму по имени таблицы
         
-        // Генерируем HTML формы
-        $formHtml = $this->generateFormHtml($structure, $config, $navItem->url);
+        if ($form) {
+            // Используем новую систему
+            $formRenderer = new \Core\FormRenderer($this->database, $this->twig, $this->config);
+            $options = [];
+            if ($config['template'] !== 'default' && $config['template'] !== 'form') {
+                $options['template'] = $config['template'];
+            }
+            $formHtml = $formRenderer->renderForm($tableName, $options);
+        } else {
+            // Старая система: form_config из navigation
+            $structure = $this->database->getTableStructure($tableName);
+            $formHtml = $this->generateFormHtml($structure, $config, $navItem->url);
+        }
         
-        // Определяем шаблон
         $template = $config['template'] === 'default' ? 'form.html.twig' : $config['template'] . '.html.twig';
         
         $this->render($template, [
@@ -1008,60 +1018,61 @@ class FrontController {
     }
 
     /**
-     * Обработка отправки формы
-     * 
-     * @param object $navItem Элемент навигации формы
-     * @param string $tableName Название таблицы для сохранения
+     * Обработка отправки формы страницы page_type=form
+     * Пытается использовать новую систему, при неудаче — старую
      */
     private function processFormSubmission($navItem, $tableName) {
+        // Пробуем новую систему
+        $formManager = new \Core\FormManager($this->database);
+        $form = $formManager->getForm($tableName);
+        
+        if ($form) {
+            // Новая система: подменяем form_name в POST
+            $_POST['form_name'] = $tableName;
+            $formRenderer = new \Core\FormRenderer($this->database, $this->twig, $this->config);
+            $result = $formRenderer->processSubmission();
+            
+            if ($result['success']) {
+                $this->showFormSuccess($navItem, $formData ?? []);
+            } else {
+                $errors = $result['errors'] ?? ['general' => $result['message']];
+                $this->showFormWithErrors($navItem, $tableName, $errors, $_POST);
+            }
+            return;
+        }
+        
+        // Старая система
         try {
-            // Проверяем CSRF токен
             if (!$this->validateCsrfToken()) {
                 throw new \Exception('Недействительный CSRF токен');
             }
             
-            // Получаем структуру таблицы для валидации
             $structure = $this->database->getTableStructure($tableName);
             $config = $navItem->getPageConfig();
             
-            // Подготавливаем данные для сохранения
             $formData = [];
             $errors = [];
             
             foreach ($structure as $field) {
                 $fieldName = $field['name'];
-                
-                // Пропускаем системные поля
-                if ($this->isSystemField($fieldName)) {
-                    continue;
-                }
+                if ($this->isSystemField($fieldName)) continue;
                 
                 $fieldConfig = $config['fields'][$fieldName] ?? [];
                 $value = $_POST[$fieldName] ?? '';
                 
-                // Валидация поля
                 $validationError = $this->validateField($field, $fieldConfig, $value);
-                if ($validationError) {
-                    $errors[$fieldName] = $validationError;
-                }
+                if ($validationError) $errors[$fieldName] = $validationError;
                 
-                // Очищаем и сохраняем значение
                 $formData[$fieldName] = $this->sanitizeFieldValue($field, $value);
             }
             
-            // Если есть ошибки - показываем форму снова
             if (!empty($errors)) {
                 $this->showFormWithErrors($navItem, $tableName, $errors, $_POST);
                 return;
             }
             
-            // Сохраняем данные в базу
             $newId = $this->database->insert($tableName, $formData);
-            
-            // Отправляем уведомления
             $this->sendFormNotifications($navItem, $formData, $newId);
-            
-            // Показываем страницу успеха
             $this->showFormSuccess($navItem, $formData);
             
         } catch (\Exception $e) {
@@ -1071,8 +1082,41 @@ class FrontController {
 
     /**
      * Обработка отправки форм со всех страниц
+     * Поддерживает:
+     *   — новую систему: form_name (из таблицы forms)
+     *   — старую систему: form_table (обратная совместимость)
      */
     private function handleFormSubmission() {
+        // Новая система: используем form_name
+        $formName = $_POST['form_name'] ?? '';
+        if (!empty($formName)) {
+            $formRenderer = new \Core\FormRenderer($this->database, $this->twig, $this->config);
+            $result = $formRenderer->processSubmission();
+            
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                      strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+            
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode($result);
+                exit;
+            }
+            
+            if ($result['success']) {
+                $_SESSION['form_success'] = $formName;
+                $_SESSION['form_message'] = $result['message'];
+            } else {
+                $_SESSION['form_error'] = $formName;
+                $_SESSION['form_error_message'] = $result['message'];
+                $_SESSION['form_data'] = $_POST;
+            }
+            
+            $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+            header('Location: ' . $referer);
+            exit;
+        }
+        
+        // Старая система: обратная совместимость (form_table)
         try {
             $tableName = $_POST['form_table'] ?? '';
             
@@ -1097,69 +1141,46 @@ class FrontController {
             $formData = [];
             foreach ($structure as $field) {
                 $fieldName = $field['name'];
-                
-                // Пропускаем системные поля
-                if ($this->isSystemField($fieldName)) {
-                    continue;
-                }
-                
+                if ($this->isSystemField($fieldName)) continue;
                 if (isset($_POST[$fieldName])) {
                     $formData[$fieldName] = trim($_POST[$fieldName]);
                 }
             }
             
-            // Вставляем данные
             $newId = $this->database->insert($tableName, $formData);
-
-            // 🔥 ОТПРАВКА УВЕДОМЛЕНИЙ ДЛЯ ПРОИЗВОЛЬНЫХ ФОРМ
             $this->sendNotificationsForCustomForm($tableName, $formData, $newId);
             
-            // 🔥 ПРОВЕРЯЕМ AJAX ЗАПРОС
             $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-                    strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+                      strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
             
             if ($isAjax) {
-                // Возвращаем JSON ответ для AJAX
                 header('Content-Type: application/json');
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Форма успешно отправлена!',
-                    'id' => $newId
-                ]);
-                exit;
-            } else {
-                // Обычный редирект для не-AJAX запросов
-                $_SESSION['form_success'] = true;
-                $_SESSION['form_message'] = 'Форма успешно отправлена!';
-                $referer = $_SERVER['HTTP_REFERER'] ?? '/';
-                header('Location: ' . $referer);
+                echo json_encode(['success' => true, 'message' => 'Форма успешно отправлена!', 'id' => $newId]);
                 exit;
             }
             
-        } catch (\Exception $e) {
-            // Сохраняем ошибку и данные формы
-            $_SESSION['form_error'] = $e->getMessage();
-            $_SESSION['form_data'] = $_POST;
-
-        // 🔥 ОБРАБОТКА ОШИБОК ДЛЯ AJAX
-        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-                  strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
-        
-        if ($isAjax) {
-            header('Content-Type: application/json');
-            echo json_encode([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
-            exit;
-        } else {
-            $_SESSION['form_error'] = $e->getMessage();
-            $_SESSION['form_data'] = $_POST;
+            $_SESSION['form_success'] = true;
+            $_SESSION['form_message'] = 'Форма успешно отправлена!';
             $referer = $_SERVER['HTTP_REFERER'] ?? '/';
             header('Location: ' . $referer);
             exit;
-        }            
-
+            
+        } catch (\Exception $e) {
+            $_SESSION['form_error'] = $e->getMessage();
+            $_SESSION['form_data'] = $_POST;
+            
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                      strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+            
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+                exit;
+            }
+            
+            $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+            header('Location: ' . $referer);
+            exit;
         }
     }
 

@@ -550,6 +550,7 @@ class FrontController {
         $data['site_title'] = $this->getSetting('site_title') ?: 'Мой сайт';
         $data['site_description'] = $this->getSetting('site_description') ?: 'Описание сайта';
         $data['custom_css'] = $this->getSetting('custom_css') ?: '';
+        $data['css_version'] = $this->getSetting('custom_css_version') ?: '1';
 
         // Хук: фильтр данных перед рендером
         try {

@@ -91,9 +91,74 @@ class DesignController extends BaseController
                 throw new Exception('Не удалось записать файл CSS');
             }
 
+            // Автоматически сбрасываем кэш браузера — инкрементим версию
+            $this->bumpCssVersion();
+
             $this->redirect('/design/css?saved=1');
         } catch (Exception $e) {
             $this->redirect('/design/css?error=' . urlencode($e->getMessage()));
         }
     }
+
+    /**
+     * Сбросить кэш браузера для CSS
+     */
+    public function clearCssCache()
+    {
+        $this->bumpCssVersion();
+        $this->redirect('/design/css?cache_cleared=1');
+    }
+
+    /**
+     * Инкрементировать версию CSS (для cache-busting ?v=N)
+     */
+    private function bumpCssVersion()
+    {
+        $current = $this->getSetting('custom_css_version') ?: '0';
+        $new = ((int)$current) + 1;
+        $this->setSetting('custom_css_version', (string)$new);
+    }
+
+    /**
+     * Получить настройку из system_settings
+     */
+    private function getSetting($key)
+    {
+        try {
+            $result = $this->db->query(
+                "SELECT setting_value FROM system_settings WHERE setting_key = ?",
+                [$key]
+            )->fetch();
+            return $result ? $result['setting_value'] : null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Сохранить настройку в system_settings
+     */
+    private function setSetting($key, $value)
+    {
+        try {
+            $existing = $this->db->query(
+                "SELECT id FROM system_settings WHERE setting_key = ?",
+                [$key]
+            )->fetch();
+            if ($existing) {
+                $this->db->query(
+                    "UPDATE system_settings SET setting_value = ? WHERE setting_key = ?",
+                    [$value, $key]
+                );
+            } else {
+                $this->db->query(
+                    "INSERT INTO system_settings (setting_key, setting_value, setting_type) VALUES (?, ?, 'text')",
+                    [$key, $value]
+                );
+            }
+        } catch (\Exception $e) {
+            // ignore
+        }
+    }
+
 }

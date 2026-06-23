@@ -285,6 +285,10 @@ class FormsController extends BaseController {
     /**
      * Получить директорию шаблонов формы
      */
+    public function editFieldTemplate($name, $file) {
+        return $this->editTemplate($name, "fields/" . $file);
+    }
+
     private function getFormTemplatesDir(): string {
         $projectDir = dirname(dirname(dirname(dirname(__DIR__))));
         $frontDir = $projectDir . "/front/app/views/form";

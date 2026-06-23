@@ -269,6 +269,12 @@
                                                title="Редактировать">
                                                 <i class="fas fa-edit"></i>
                                             </a>
+                                            <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/duplicate/' ~ row.id) }}" 
+                                               class="inline-flex items-center px-2 py-1.5 border border-amber-300 text-amber-700 rounded-md hover:bg-amber-50 transition text-xs"
+                                               title="Копировать"
+                                               onclick="return confirm('Создать копию записи #{{ row.id }}?')">
+                                                <i class="fas fa-copy"></i>
+                                            </a>
                                             <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/delete/' ~ row.id ~ '?page=' ~ currentPage) }}" 
                                                class="inline-flex items-center px-2 py-1.5 border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition text-xs"
                                                title="Удалить"

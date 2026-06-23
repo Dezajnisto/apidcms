@@ -10,6 +10,6 @@
            {{ field.required ? 'required' : '' }}
            class="{{ field_class|default('w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition') }}">
     {% if field.help_text %}
-        <p class="mt-1 text-sm text-gray-500">{{ field.help_text }}</p>
+        <p class="mt-1 text-sm {{ help_text_class|default('text-gray-500') }}">{{ field.help_text }}</p>
     {% endif %}
 </div>

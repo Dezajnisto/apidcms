@@ -15,7 +15,7 @@
     {% set label_class = 'block text-sm font-medium text-white/80 mb-1.5' %}
 
     {% for field_name, field in fields %}
-        {% include 'form/fields/' ~ field.type ~ '.html.twig' with {field: field, field_name: field_name} %}
+        {% include 'form/fields/' ~ field.type ~ '.html.twig' with {field: field, field_name: field_name, help_text_class: 'text-white font-bold'} %}
     {% endfor %}
 
     {% if show_consent %}

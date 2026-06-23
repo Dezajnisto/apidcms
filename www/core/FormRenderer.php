@@ -176,7 +176,9 @@ class FormRenderer {
         }
 
         try {
-            $emailNotifier = new EmailNotifier($this->config);
+            $settings = new \Core\Settings($this->database);
+            $emailConfig = $settings->getEmailConfig();
+            $emailNotifier = new EmailNotifier($emailConfig);
 
             $formTitle = $form['display_name'] ?? $form['name'];
 

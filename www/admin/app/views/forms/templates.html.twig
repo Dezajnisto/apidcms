@@ -35,7 +35,7 @@
                     <td class="py-2 pr-4 text-gray-500">{{ (t.size / 1024)|round(1) }} KB</td>
                     <td class="py-2 pr-4 text-gray-500">{{ t.modified|date('d.m.Y H:i') }}</td>
                     <td class="py-2 text-right">
-                        <a href="{{ admin_url('forms/' ~ form_name ~ '/templates/' ~ t.name) }}" class="text-blue-600 hover:text-blue-800 text-sm">
+                        <a href="{{ admin_url('forms/' ~ form_name ~ '/templates/' ~ t.name|replace({'/': '%2F'})) }}" class="text-blue-600 hover:text-blue-800 text-sm">
                             <i class="fas fa-edit mr-1"></i>Редактировать
                         </a>
                     </td>
@@ -67,7 +67,7 @@
                     <td class="py-2 pr-4 text-gray-500">{{ (t.size / 1024)|round(1) }} KB</td>
                     <td class="py-2 pr-4 text-gray-500">{{ t.modified|date('d.m.Y H:i') }}</td>
                     <td class="py-2 text-right">
-                        <a href="{{ admin_url('forms/' ~ form_name ~ '/templates/' ~ t.name) }}" class="text-blue-600 hover:text-blue-800 text-sm">
+                        <a href="{{ admin_url('forms/' ~ form_name ~ '/templates/' ~ t.name|replace({'/': '%2F'})) }}" class="text-blue-600 hover:text-blue-800 text-sm">
                             <i class="fas fa-edit mr-1"></i>Редактировать
                         </a>
                     </td>

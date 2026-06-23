@@ -133,6 +133,7 @@ class FormRenderer {
         // Подготавливаем данные только для полей, которые есть в таблице
         $savableFields = $this->formManager->getSavableFields($formName);
         $formData = [];
+        }
 
         foreach ($savableFields as $fieldName => $fieldConfig) {
             if ($fieldName === 'pd_consent') {
@@ -140,11 +141,11 @@ class FormRenderer {
             } elseif (isset($_POST[$fieldName])) {
                 $formData[$fieldName] = trim($_POST[$fieldName]);
             }
-        }
 
         // Если в таблице есть read_status — устанавливаем "unread"
-        if (in_array('read_status', $form['table_columns']) && empty($formData['read_status'])) {
-            $formData['read_status'] = 'unread';
+        $tableCols = $this->formManager->getSavableFields($formName);
+        if (in_array("read_status", $form["table_columns"]) && empty($formData["read_status"])) {
+            $formData["read_status"] = "unread";
         }
 
         // Вставляем данные

@@ -561,7 +561,6 @@ class FrontController {
         $data['site_description'] = $this->getSetting('site_description') ?: 'Описание сайта';
         $data['custom_css'] = $this->getSetting('custom_css') ?: '';
         $data['css_version'] = $this->getSetting('custom_css_version') ?: '1';
-        $data["session"] = new \Core\SessionProxy();
 
         // Хук: фильтр данных перед рендером
         try {

@@ -539,5 +539,50 @@ class TableController extends BaseController {
             ]);
         }
     }
+
+
+    /**
+     * Дублировать запись
+     */
+    public function duplicate($table, $id) {
+        $tables = $this->db->getTables();
+        if (!in_array($table, $tables)) {
+            $this->setFlash("error", "Таблица '{$table}' не найдена");
+            $this->redirect('/');
+            return;
+        }
+
+        $item = $this->db->getById($table, $id);
+        if (!$item) {
+            $this->setFlash("error", "Запись с ID {$id} не найдена");
+            $this->redirect("/table/{$table}");
+            return;
+        }
+
+        $structure = $this->db->getTableStructure($table);
+        $data = [];
+        foreach ($structure as $column) {
+            $name = $column['name'];
+            if ($column['pk'] == 1 && stripos($column['type'], 'INTEGER') !== false) {
+                continue;
+            }
+            if (in_array($name, ['created_at', 'updated_at'])) {
+                continue;
+            }
+            if (isset($item[$name])) {
+                $data[$name] = $item[$name];
+            }
+        }
+
+        try {
+            $newId = $this->db->insert($table, $data);
+            $this->setFlash("success", "Запись скопирована. Новый ID: {$newId}");
+            $page = $_GET['page'] ?? 1;
+            $this->redirect("/table/{$table}/id/{$newId}?page={$page}");
+        } catch (Exception $e) {
+            $this->setFlash("error", "Ошибка при копировании: " . $e->getMessage());
+            $this->redirect("/table/{$table}/id/{$id}");
+        }
+    }
+
 }
-?>

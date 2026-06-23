@@ -64,6 +64,7 @@ class App {
         $this->addRoute('/table/{table}/edit/{id}', 'TableController', 'editForm');
         $this->addRoute('/table/{table}/update/{id}', 'TableController', 'update');
         $this->addRoute('/table/{table}/delete/{id}', 'TableController', 'delete');
+        $this->addRoute('/table/{table}/duplicate/{id}', 'TableController', 'duplicate');
         
         // Управление структурой таблиц
         $this->addRoute('/table/{table}/structure', 'TableController', 'structure');

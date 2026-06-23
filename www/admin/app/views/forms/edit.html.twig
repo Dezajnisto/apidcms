@@ -1,0 +1,217 @@
+{% extends "base.html.twig" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex items-center space-x-2 mb-6">
+        <a href="{{ admin_url('forms') }}" class="text-gray-400 hover:text-gray-600 transition">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900">✏️ {{ form.display_name }}</h1>
+        <span class="text-sm text-gray-400">({{ form.name }})</span>
+    </div>
+
+    {# Flash messages #}
+    {% if flash is defined and flash %}
+        <div class="mb-4 p-4 rounded-lg {{ flash.type == 'success' ? 'bg-green-100 border border-green-200 text-green-800' : 'bg-red-100 border border-red-200 text-red-800' }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
+
+    <form method="post" action="{{ admin_url('forms/save') }}" class="space-y-6">
+        <input type="hidden" name="name" value="{{ form.name }}">
+
+        {# Основные настройки #}
+        <div class="bg-white rounded-xl shadow-sm border p-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Основные настройки</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Название</label>
+                    <input type="text" name="display_name" value="{{ form.display_name }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Таблица для данных</label>
+                    <select name="source_table" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        {% for t in tables %}
+                            <option value="{{ t }}" {{ form.source_table == t ? 'selected' : '' }}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Шаблон оформления</label>
+                    <select name="template" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="default" {{ form.template == 'default' ? 'selected' : '' }}>Default</option>
+                        <option value="hero" {{ form.template == 'hero' ? 'selected' : '' }}>Hero</option>
+                        <option value="minimal" {{ form.template == 'minimal' ? 'selected' : '' }}>Minimal</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Сообщение об успехе</label>
+                    <input type="text" name="success_message" value="{{ form.success_message }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex items-center space-x-6 pt-6">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="enable_csrf" value="1" {{ form.enable_csrf ? 'checked' : '' }}
+                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">CSRF защита</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="status" value="1" {{ form.status == 'active' ? 'checked' : '' }}
+                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Активна</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        {# Дизайн #}
+        <div class="bg-white rounded-xl shadow-sm border p-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Дизайн (CSS-классы по умолчанию)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Текст кнопки</label>
+                    <input type="text" name="design_submit_text" value="{{ form.design.submit_text|default('Отправить') }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">CSS кнопки</label>
+                    <input type="text" name="design_submit_class" value="{{ form.design.submit_class|default('') }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">CSS полей</label>
+                    <input type="text" name="design_field_class" value="{{ form.design.field_class|default('') }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+        </div>
+
+        {# Поля формы #}
+        <div class="bg-white rounded-xl shadow-sm border p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-gray-800">Поля формы</h2>
+                <button type="button" onclick="addField()"
+                        class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm transition">
+                    <i class="fas fa-plus mr-1"></i> Добавить поле
+                </button>
+            </div>
+
+            <div id="fields-container" class="space-y-3">
+                {% for fname, field in form.fields %}
+                    {% include 'forms/_field_card.html.twig' with {fname: fname, field: field, index: loop.index0} %}
+                {% endfor %}
+            </div>
+            <p class="mt-3 text-sm text-gray-400" id="no-fields-msg" {{ form.fields|length > 0 ? 'style="display:none"' : '' }}>
+                Нет полей. Нажмите «Добавить поле».
+            </p>
+        </div>
+
+        {# Уведомления #}
+        <div class="bg-white rounded-xl shadow-sm border p-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Уведомления</h2>
+            <div class="space-y-4">
+                <label class="flex items-center">
+                    <input type="checkbox" name="notify_admin" value="1" 
+                           onchange="document.getElementById('admin-notify-details').classList.toggle('hidden', !this.checked);"
+                           {{ form.notifications.admin_notify ? 'checked' : '' }}
+                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span class="ml-2 text-sm font-medium text-gray-700">Уведомлять администратора</span>
+                </label>
+                <div id="admin-notify-details" class="ml-6 space-y-3 {{ form.notifications.admin_notify ? '' : 'hidden' }}">
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Email администратора (через запятую)</label>
+                        <input type="text" name="admin_emails" value="{{ form.notifications.admin_emails|join(', ')|default('') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Тема письма</label>
+                        <input type="text" name="admin_subject" value="{{ form.notifications.admin_subject|default('Новая заявка с сайта') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <label class="flex items-center mt-4">
+                    <input type="checkbox" name="auto_reply" value="1"
+                           onchange="document.getElementById('autoreply-details').classList.toggle('hidden', !this.checked);"
+                           {{ form.notifications.auto_reply ? 'checked' : '' }}
+                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span class="ml-2 text-sm font-medium text-gray-700">Автоответ пользователю</span>
+                </label>
+                <div id="autoreply-details" class="ml-6 space-y-3 {{ form.notifications.auto_reply ? '' : 'hidden' }}">
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Тема автоответа</label>
+                        <input type="text" name="auto_reply_subject" value="{{ form.notifications.auto_reply_subject|default('Мы получили ваше сообщение') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Поле с email пользователя</label>
+                        <select name="auto_reply_field" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" id="auto-reply-field-select">
+                            {% for fname, field in form.fields %}
+                                <option value="{{ fname }}" {{ form.notifications.auto_reply_field == fname ? 'selected' : '' }}>{{ fname }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Кнопка сохранения #}
+        <div class="flex justify-end">
+            <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition shadow-lg">
+                <i class="fas fa-save mr-2"></i>Сохранить форму
+            </button>
+        </div>
+    </form>
+</div>
+
+{# Шаблон поля для JS #}
+<template id="field-template">
+    {% verbatim %}
+    {% include 'forms/_field_card.html.twig' with {fname: '__NAME__', field: {label: 'Новое поле', type: 'text'}, index: '__INDEX__'} %}
+    {% endverbatim %}
+</template>
+
+<script>
+let fieldIndex = {{ form.fields|length }};
+
+function addField() {
+    const container = document.getElementById('fields-container');
+    const template = document.getElementById('field-template').innerHTML;
+    // Remove {% verbatim %} tags if present
+    const clean = template.replace('{% verbatim %}', '').replace('{% endverbatim %}', '');
+    let html = clean.replace(/__NAME__/g, 'new_' + fieldIndex)
+                    .replace(/__INDEX__/g, fieldIndex);
+    container.insertAdjacentHTML('beforeend', html);
+    fieldIndex++;
+    document.getElementById('no-fields-msg').style.display = 'none';
+    updateAutoreplyFieldSelect();
+}
+
+function removeField(btn) {
+    btn.closest('.field-card').remove();
+    if (document.querySelectorAll('.field-card').length === 0) {
+        document.getElementById('no-fields-msg').style.display = '';
+    }
+    updateAutoreplyFieldSelect();
+}
+
+function updateAutoreplyFieldSelect() {
+    const select = document.getElementById('auto-reply-field-select');
+    const currentVal = select.value;
+    select.innerHTML = '';
+    document.querySelectorAll('input[name^="field_name["]').forEach(function(input) {
+        if (input.value) {
+            const opt = document.createElement('option');
+            opt.value = input.value;
+            opt.textContent = input.value;
+            select.appendChild(opt);
+        }
+    });
+    if (select.querySelector('option[value="' + currentVal + '"]')) {
+        select.value = currentVal;
+    }
+}
+</script>
+{% endblock %}

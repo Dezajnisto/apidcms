@@ -1,0 +1,61 @@
+<div class="field-card bg-gray-50 border border-gray-200 rounded-lg p-4">
+    <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center space-x-2 flex-1">
+            <span class="cursor-move text-gray-400 hover:text-gray-600"><i class="fas fa-grip-vertical"></i></span>
+            <input type="text" name="field_name[{{ index }}]" value="{{ fname }}"
+                   placeholder="Имя поля"
+                   oninput="updateAutoreplyFieldSelect()"
+                   class="w-36 px-2 py-1 text-sm font-mono border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+            <input type="text" name="field_label[{{ index }}]" value="{{ field.label|default('') }}"
+                   placeholder="Подпись"
+                   class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+            <select name="field_type[{{ index }}]"
+                    onchange="document.getElementById('type-opts-{{ index }}').classList.toggle('hidden', this.value !== 'textarea'); document.getElementById('type-opts-select-{{ index }}').classList.toggle('hidden', this.value !== 'select' && this.value !== 'radio');"
+                    class="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                <option value="text" {{ field.type == 'text' ? 'selected' : '' }}>text</option>
+                <option value="email" {{ field.type == 'email' ? 'selected' : '' }}>email</option>
+                <option value="tel" {{ field.type == 'tel' ? 'selected' : '' }}>tel</option>
+                <option value="textarea" {{ field.type == 'textarea' ? 'selected' : '' }}>textarea</option>
+                <option value="select" {{ field.type == 'select' ? 'selected' : '' }}>select</option>
+                <option value="checkbox" {{ field.type == 'checkbox' ? 'selected' : '' }}>checkbox</option>
+                <option value="date" {{ field.type == 'date' ? 'selected' : '' }}>date</option>
+                <option value="number" {{ field.type == 'number' ? 'selected' : '' }}>number</option>
+            </select>
+            <label class="flex items-center text-xs whitespace-nowrap">
+                <input type="checkbox" name="field_required[{{ index }}]" value="1"
+                       {{ field.required ? 'checked' : '' }}
+                       class="rounded border-gray-300 text-blue-600">
+                <span class="ml-1 text-gray-600">обяз.</span>
+            </label>
+        </div>
+        <button type="button" onclick="removeField(this)"
+                class="text-gray-400 hover:text-red-500 transition ml-2">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    {# Дополнительные настройки поля #}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+        <div>
+            <input type="text" name="field_placeholder[{{ index }}]" value="{{ field.placeholder|default('') }}"
+                   placeholder="Placeholder"
+                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+            <input type="text" name="field_help[{{ index }}]" value="{{ field.help_text|default('') }}"
+                   placeholder="Подсказка"
+                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div id="type-opts-{{ index }}" class="{{ field.type == 'textarea' ? '' : 'hidden' }}">
+            <input type="number" name="field_rows[{{ index }}]" value="{{ field.rows|default(5) }}"
+                   placeholder="Rows"
+                   class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div id="type-opts-select-{{ index }}" class="md:col-span-3 {{ field.type == 'select' or field.type == 'radio' ? '' : 'hidden' }}">
+            <textarea name="field_options[{{ index }}]" rows="2"
+                      placeholder="Опции: каждая на новой строке, формат: значение=Подпись"
+                      class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">{% for val, label in field.options|default({}) %}{{ val }}={{ label }}
+{% endfor %}</textarea>
+        </div>
+    </div>
+</div>

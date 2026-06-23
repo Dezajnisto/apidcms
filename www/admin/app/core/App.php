@@ -119,7 +119,13 @@ class App {
         $this->addRoute('/notifications/submission/{table}/id/{id}', 'NotificationsController', 'viewSubmission');
         $this->addRoute('/notifications/delete/{table}/id/{id}', 'NotificationsController', 'deleteSubmission');
         $this->addRoute('/notifications/mark-all-read/{table}', 'NotificationsController', 'markAllRead');
-
+// +++ ФОРМЫ +++
+        $this->addRoute('/forms', 'FormsController', 'index');
+        $this->addRoute('/forms/create', 'FormsController', 'create');
+        $this->addRoute('/forms/save', 'FormsController', 'save');
+        $this->addRoute('/forms/edit/{name}', 'FormsController', 'edit');
+        $this->addRoute('/forms/delete/{name}', 'FormsController', 'delete');
+        $this->addRoute('/forms/toggle/{name}', 'FormsController', 'toggle');
         // +++ AI МАРШРУТЫ +++
         $this->addRoute('/ai/assistant', 'AIController', 'assistant');
         $this->addRoute('/ai/generate-template', 'AIController', 'generateTemplate');

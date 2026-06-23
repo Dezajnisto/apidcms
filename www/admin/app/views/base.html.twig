@@ -203,6 +203,13 @@
                     {% endif %}
                 </a>
 
+                <!-- Формы -->
+                <a href="{{ admin_url('forms') }}" 
+                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'forms' ? 'bg-gray-700' : '' }}">
+                    <i class="fas fa-wpforms w-5 text-center"></i>
+                    <span class="nav-text">Формы</span>
+                </a>
+
                 <!-- Разделитель -->
                 <div class="border-t border-gray-700 my-2"></div>
 

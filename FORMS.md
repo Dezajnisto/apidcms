@@ -1,126 +1,242 @@
-# Формы в apidcms — создание и настройка
+# Система форм apidcms
 
-> Пользовательская документация для работы со страницами-формами.
+## Кратко
 
-## Тип страницы `form`
+Одна таблица `forms` в БД → любое количество полей → любой Twig-шаблон → разные дизайны.
 
-Страница типа `form` состоит из двух частей:
-1. **Контент страницы** (`pages.content`) — текст, картинки, контактные данные
-2. **Форма обратной связи** (`form_config` в таблице `navigation`) — поля для заполнения
+Форма состоит из:
+- **source_table** — куда сохраняются данные
+- **fields** — JSON с описанием полей (тип, label, placeholder, required)
+- **template** — какой Twig-шаблон использовать (default, hero, minimal)
+- **notifications** — кому слать письма и автоответ
 
-## Как создать страницу-форму
+Две формы могут ссылаться на одну таблицу, показывать разные поля и иметь разный дизайн.
 
-### 1. Создать страницу в админке
+---
 
-Раздел **Страницы** → **Добавить страницу**:
-- **Заголовок:** «Контакты» (или «Свяжитесь с нами»)
-- **URL:** `contact`
-- **Контент:** контактные данные (адрес, телефон, email)
+## Быстрый старт
 
-### 2. Создать пункт меню
+### 1. Создать форму
 
-Раздел **Навигация** → **Добавить**:
-- **Название:** как в меню
-- **URL:** `contact`
-- **Тип страницы:** `form`
-- **Таблица:** `contacts` (или любая другая, куда будут сохраняться данные)
-- **Шаблон:** `form`
-- **Страница:** выбрать созданную страницу
+```sql
+INSERT INTO forms (name, display_name, source_table, fields, template, success_message)
+VALUES (
+    'quick-callback',
+    'Быстрый звонок',
+    'contacts',
+    '{
+        "name": { "label": "Ваше имя", "type": "text", "required": true },
+        "phone": { "label": "Телефон", "type": "tel", "required": true }
+    }',
+    'hero',
+    'Спасибо! Мы перезвоним вам.'
+);
+```
 
-### 3. Заполнить form_config
+### 2. Вставить в Twig
 
-В разделе **Навигация** → редактировать пункт → поле **Form Config**.
+```twig
+{{ render_form('quick-callback') }}
 
-Это JSON со структурой формы:
+{{ render_form('quick-callback', { template: 'hero' }) }}
+
+{{ render_form('quick-callback', {
+    template: 'hero',
+    submit_text: 'Перезвоните мне',
+    submit_class: 'bg-gradient-to-r from-pink-500 to-orange-400 w-full py-4'
+}) }}
+```
+
+---
+
+## Таблица `forms`
+
+| Поле | Тип | Описание |
+|---|---|---|
+| `name` | TEXT UNIQUE | Идентификатор формы (указывается в render_form) |
+| `display_name` | TEXT | Человеческое название |
+| `source_table` | TEXT | Таблица в БД, куда пишутся данные |
+| `fields` | TEXT (JSON) | Описание полей (см. ниже) |
+| `notifications` | TEXT (JSON) | Настройки уведомлений |
+| `design` | TEXT (JSON) | CSS-классы по умолчанию |
+| `template` | TEXT | Имя шаблона ('default', 'hero', 'minimal') |
+| `success_message` | TEXT | Текст при успешной отправке |
+| `enable_csrf` | INTEGER | Вкл/выкл CSRF-защиту |
+| `status` | TEXT | 'active' или 'inactive' |
+
+### Формат `fields`
+
+Поля перечисляются в том порядке, в котором должны отображаться.
 
 ```json
 {
-    "form_title": "Свяжитесь с нами",
-    "form_description": "Заполните форму ниже и мы свяжемся с вами",
-    "submit_text": "Отправить сообщение",
-    "success_message": "Спасибо!",
-
-    "notifications": {
-        "admin_notify": true,
-        "admin_emails": ["admin@site.ru"],
-        "admin_subject": "Новая заявка",
-        "auto_reply": true,
-        "auto_reply_subject": "Мы получили ваше сообщение",
-        "auto_reply_field": "email"
+    "email": {
+        "label": "Email",
+        "type": "email",
+        "placeholder": "your@email.com",
+        "required": true,
+        "help_text": "Мы ответим на этот адрес"
     },
-
-    "fields": {
-        "имя_поля": {
-            "label": "Подпись поля",
-            "placeholder": "Текст-подсказка",
-            "required": true,
-            "type": "text",
-            "help_text": "Вспомогательный текст"
+    "phone": {
+        "label": "Телефон",
+        "type": "tel",
+        "placeholder": "+7 999 123-45-67",
+        "required": false
+    },
+    "message": {
+        "label": "Сообщение",
+        "type": "textarea",
+        "placeholder": "Расскажите о вашем проекте...",
+        "rows": 6
+    },
+    "theme": {
+        "label": "Тема обращения",
+        "type": "select",
+        "options": {
+            "general": "Общий вопрос",
+            "price": "Цены",
+            "support": "Поддержка"
         }
+    },
+    "agree": {
+        "label": "Я согласен с условиями",
+        "type": "checkbox",
+        "required": true
     }
 }
 ```
 
-## Типы полей
+**Поддерживаемые типы полей:** `text`, `email`, `tel`, `textarea`, `select`, `checkbox`, `date`, `number`, `radio`
 
-| type      | HTML-элемент      | Пример                         |
-|-----------|-------------------|--------------------------------|
-| `text`    | `<input>`         | Имя, фамилия, город            |
-| `email`   | `<input>`         | Email с валидацией             |
-| `tel`     | `<input>`         | Телефон                        |
-| `textarea`| `<textarea>`      | Длинный текст, сообщение       |
-| `select`  | `<select>`        | Выбор из списка (см. ниже)     |
-
-### Поле select (выпадающий список)
+### Формат `notifications`
 
 ```json
-"subject": {
-    "label": "Тема обращения",
-    "type": "select",
-    "required": true,
-    "options": [
-        {"value": "question", "label": "Вопрос"},
-        {"value": "order", "label": "Заказ"},
-        {"value": "other", "label": "Другое"}
-    ]
+{
+    "admin_notify": true,
+    "admin_emails": ["vadim@dezajno.ru"],
+    "admin_subject": "Новая заявка с сайта",
+    "auto_reply": true,
+    "auto_reply_subject": "Мы получили ваше сообщение",
+    "auto_reply_field": "email"
 }
 ```
 
-## Параметры поля
+### Формат `design`
 
-| Параметр      | Обязательный | Описание                              |
-|---------------|-------------|---------------------------------------|
-| `label`       | ✅          | Подпись над полем                     |
-| `placeholder` | ❌          | Текст-подсказка внутри поля           |
-| `required`    | ❌          | Обязательное поле (`true`/`false`)    |
-| `type`        | ❌          | Тип поля. Если не указан — `textarea` |
-| `help_text`   | ❌          | Подсказка под полем                   |
-| `rows`        | ❌          | Количество строк (только для textarea)|
-| `options`     | ❌          | Варианты выбора (только для select)   |
+```json
+{
+    "submit_text": "Отправить",
+    "submit_class": "",
+    "field_class": "",
+    "label_class": "",
+    "form_class": ""
+}
+```
 
-⚠️ **Важно:** Если не указать `"type"`, поле будет отрисовано как `textarea`.
+---
 
-## Уведомления
+## Шаблоны форм
 
-Секция `notifications` управляет отправкой писем:
+Файлы лежат в `front/app/views/form/`:
 
-- `admin_notify` — отправлять ли уведомление администратору
-- `admin_emails` — список email адресов для уведомлений
-- `admin_subject` — тема письма администратору
-- `auto_reply` — отправлять ли автоматический ответ
-- `auto_reply_subject` — тема письма клиенту
-- `auto_reply_field` — поле из формы, в котором хранится email клиента
+```
+form/
+├── default.html.twig    — стандартная, светлая
+├── hero.html.twig       — прозрачная на тёмном фоне
+├── minimal.html.twig    — только линии, без рамок
+├── fields/
+│   ├── text.html.twig, email, tel, textarea
+│   ├── select, checkbox, consent
+│   └── _fallback.html.twig
+└── messages.html.twig   — сообщения об успехе/ошибке
+```
 
-## Хранение данных
+Можно создавать свои шаблоны. В шаблоне доступны переменные:
+- `form_name` — имя формы
+- `fields` — массив полей (каждый с ключом `name`)
+- `show_consent` — показывать ли чекбокс согласия на ПД
+- `csrf_token` — CSRF-токен
+- `submit_text` — текст кнопки
+- `submit_class`, `field_class`, `label_class`, `form_class` — CSS-классы
+- `success_message` — текст успеха
+- `action` — URL обработчика (по умолчанию `/form-handler`)
+- `enable_csrf` — включён ли CSRF
+- `session` — сессия (см. флеш-сообщения)
 
-Данные из формы сохраняются в таблицу, указанную в поле **Таблица** (`source_table`). Если таблицы не существует — она создаётся автоматически при первом сохранении.
+---
 
-Просмотреть заполненные формы можно в разделе **Контент** →
-**Таблица-источник** (например, «Контакты»).
+## Несколько форм на одной странице
 
-## Шаблоны
+```twig
+<!-- Быстрая форма (имя + телефон) -->
+{{ render_form('quick-callback', { template: 'hero' }) }}
 
-Страницы типа `form` используют шаблон `front/app/views/form.html.twig`.
+<!-- Полная форма (имя + email + телефон + сообщение) -->
+{{ render_form('contacts', { template: 'default' }) }}
+```
 
-По умолчанию шаблон есть в `core_lib`. Можно переопределить:
-скопировать в `www/templates/front/form.html.twig` и отредактировать.
+Каждая форма использует свой `form_name`. Флеш-сообщения привязаны к имени формы, поэтому не конфликтуют.
+
+---
+
+## Флеш-сообщения (успех/ошибка)
+
+После отправки форма:
+1. Устанавливает `$_SESSION['form_success'] = 'quick-callback'` (или `form_error`)
+2. Редиректит на ту же страницу
+3. Шаблон `form/messages.html.twig` проверяет `session.form_success == form_name` и показывает сообщение
+4. После показа — удаляет из сессии (`session.remove('form_success')`)
+
+Для AJAX-запросов возвращается JSON:
+```json
+{"success": true, "message": "Спасибо!", "id": 123}
+```
+
+---
+
+## Обработка (эндпоинт `/form-handler`)
+
+1. Читает `form_name` из POST
+2. Загружает конфиг формы из `forms` по `name`
+3. Проверяет CSRF-токен
+4. Валидирует поля (required, email, etc.)
+5. Вставляет данные только в те колонки, которые есть в таблице
+6. Устанавливает `read_status = 'unread'` (если есть колонка)
+7. Отправляет уведомления (email админу + автоответ)
+8. Логирует согласие на ПД (если есть)
+9. Возвращает JSON (AJAX) или редирект (обычный)
+
+**Безопасность:**
+- `form_name` проверяется по БД — левое имя формы не пройдёт
+- `source_table` берётся из конфига, а не из POST
+- Сохраняются только поля из конфига, только в существующие колонки
+- CSRF-токен обязателен
+
+---
+
+## Создание формы для произвольной таблицы
+
+Пример: добавить форму для заполнения контента в таблицу `poetry`:
+
+```sql
+INSERT INTO forms (name, display_name, source_table, fields, template, success_message)
+VALUES (
+    'add-poetry',
+    'Добавить стихотворение',
+    'poetry',
+    '{
+        "title": { "label": "Название", "type": "text", "required": true },
+        "author": { "label": "Автор", "type": "text" },
+        "text": { "label": "Текст стиха", "type": "textarea", "rows": 15, "required": true }
+    }',
+    'default',
+    'Стихотворение добавлено!'
+);
+```
+
+В шаблоне:
+```twig
+{{ render_form('add-poetry') }}
+```
+
+Поля, для которых нет колонок в `poetry`, не отобразятся. Поля, которые есть в `poetry`, но не в конфиге, не перезапишутся.

@@ -198,4 +198,100 @@ class FormsController extends BaseController {
         }
         $this->redirect('/forms');
     }
+
+    /**
+     * Список шаблонов формы
+     */
+    public function templates($name) {
+        $form = $this->db->query("SELECT * FROM forms WHERE name = ?", [$name])->fetch();
+        if (!$form) {
+            $this->render("error/404", ["message" => "Форма '{$name}' не найдена"]);
+            return;
+        }
+        $templatesDir = $this->getFormTemplatesDir();
+        $templates = [];
+        if (is_dir($templatesDir)) {
+            $files = scandir($templatesDir);
+            foreach ($files as $f) {
+                if ($f === "." || $f === "..") continue;
+                if (preg_match("/\.twig$/", $f)) {
+                    $fp = $templatesDir . "/" . $f;
+                    $templates[] = ["name" => $f, "size" => filesize($fp), "modified" => filemtime($fp)];
+                }
+            }
+            usort($templates, fn($a, $b) => strcmp($a["name"], $b["name"]));
+        }
+        $fieldsDir = $templatesDir . "/fields";
+        $fieldTemplates = [];
+        if (is_dir($fieldsDir)) {
+            $files = scandir($fieldsDir);
+            foreach ($files as $f) {
+                if ($f === "." || $f === "..") continue;
+                if (preg_match("/\.twig$/", $f)) {
+                    $fp = $fieldsDir . "/" . $f;
+                    $fieldTemplates[] = ["name" => "fields/" . $f, "size" => filesize($fp), "modified" => filemtime($fp)];
+                }
+            }
+            usort($fieldTemplates, fn($a, $b) => strcmp($a["name"], $b["name"]));
+        }
+        $this->render("forms/templates", [
+            "title" => "Шаблоны формы: {$form["display_name"]}",
+            "form" => $form, "form_name" => $name,
+            "templates" => $templates, "field_templates" => $fieldTemplates,
+        ]);
+    }
+
+    /**
+     * Редактирование шаблона формы
+     */
+    public function editTemplate($name, $file) {
+        $form = $this->db->query("SELECT * FROM forms WHERE name = ?", [$name])->fetch();
+        if (!$form) {
+            $this->render("error/404", ["message" => "Форма '{$name}' не найдена"]);
+            return;
+        }
+        $templatesDir = $this->getFormTemplatesDir();
+        $filePath = $templatesDir . "/" . $file;
+        $realFilePath = realpath($filePath) ?: "";
+        $realTemplatesDir = realpath($templatesDir) ?: "___";
+        if (strpos($realFilePath, $realTemplatesDir) !== 0) {
+            $this->setFlash("error", "Недопустимый путь к шаблону");
+            $this->redirect("/forms/{$name}/templates");
+            return;
+        }
+        if (!file_exists($filePath)) {
+            $this->setFlash("error", "Шаблон '{$file}' не найден");
+            $this->redirect("/forms/{$name}/templates");
+            return;
+        }
+        if ($_SERVER["REQUEST_METHOD"] === "POST") {
+            $newContent = $_POST["content"] ?? "";
+            if (file_put_contents($filePath, $newContent) !== false) {
+                $this->setFlash("success", "Шаблон '{$file}' сохранён");
+                $this->redirect("/forms/{$name}/templates");
+                return;
+            } else {
+                $this->setFlash("error", "Не удалось сохранить шаблон");
+            }
+        }
+        $content = file_get_contents($filePath);
+        $this->render("forms/edit_template", [
+            "title" => "Редактирование: {$file}",
+            "form" => $form, "form_name" => $name,
+            "file_name" => $file, "content" => $content, "file_path" => $filePath
+        ]);
+    }
+
+    /**
+     * Получить директорию шаблонов формы
+     */
+    private function getFormTemplatesDir(): string {
+        $projectDir = dirname(dirname(dirname(dirname(__DIR__))));
+        $frontDir = $projectDir . "/front/app/views/form";
+        if (is_dir($frontDir)) {
+            return realpath($frontDir);
+        }
+        $coreDir = dirname(dirname(dirname(dirname(__DIR__)))) . "/core_lib/front/app/views/form";
+        return realpath($coreDir) ?: $coreDir;
+    }
 }

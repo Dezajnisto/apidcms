@@ -126,6 +126,8 @@ class App {
         $this->addRoute('/forms/edit/{name}', 'FormsController', 'edit');
         $this->addRoute('/forms/delete/{name}', 'FormsController', 'delete');
         $this->addRoute('/forms/toggle/{name}', 'FormsController', 'toggle');
+        $this->addRoute('/forms/{name}/templates', 'FormsController', 'templates');
+        $this->addRoute('/forms/{name}/templates/{file}', 'FormsController', 'editTemplate');
         // +++ AI МАРШРУТЫ +++
         $this->addRoute('/ai/assistant', 'AIController', 'assistant');
         $this->addRoute('/ai/generate-template', 'AIController', 'generateTemplate');

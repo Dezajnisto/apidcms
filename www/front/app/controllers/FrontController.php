@@ -924,7 +924,7 @@ private function handleFormSubmission() {
             if (empty($hash) && $formName === 'quick-callback') {
                 $hash = '#call-01';
             }
-            $redirectUrl = \$referer . ($hash ? '#' . ltrim($hash, '#') : '');
+            $redirectUrl = $referer . ($hash ? '#' . ltrim($hash, '#') : '');
             header('Location: ' . $redirectUrl);
             exit;
         }

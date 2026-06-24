@@ -173,11 +173,9 @@
     </form>
 </div>
 
-{# Шаблон поля для JS #}
+{# Шаблон поля для JS — рендерим серверно с плейсхолдерами, JS заменит __NAME__/__INDEX__ #}
 <template id="field-template">
-    {% verbatim %}
     {% include 'forms/_field_card.html.twig' with {fname: '__NAME__', field: {label: 'Новое поле', type: 'text'}, index: '__INDEX__'} %}
-    {% endverbatim %}
 </template>
 
 <script>
@@ -186,10 +184,8 @@ let fieldIndex = {{ form.fields|length }};
 function addField() {
     const container = document.getElementById('fields-container');
     const template = document.getElementById('field-template').innerHTML;
-    // Remove {% verbatim %} tags if present
-    const clean = template.replace('{% verbatim %}', '').replace('{% endverbatim %}', '');
-    let html = clean.replace(/__NAME__/g, 'new_' + fieldIndex)
-                    .replace(/__INDEX__/g, fieldIndex);
+    let html = template.replace(/__NAME__/g, 'new_' + fieldIndex)
+                       .replace(/__INDEX__/g, fieldIndex);
     container.insertAdjacentHTML('beforeend', html);
     fieldIndex++;
     document.getElementById('no-fields-msg').style.display = 'none';

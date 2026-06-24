@@ -30,4 +30,131 @@
         </button>
     </div>
 </form>
+
+<script>
+(function() {
+    var form = document.currentScript ? document.currentScript.closest('form') : document.querySelector('[data-form="{{ form_name }}"]');
+    if (!form) return;
+
+    var submitBtn = form.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', function(e) {
+        // Clear previous errors
+        form.querySelectorAll('.field-error').forEach(function(el) { el.remove(); });
+        form.querySelectorAll('.error-border').forEach(function(el) { el.classList.remove('error-border'); });
+
+        var errors = [];
+        var requiredFields = form.querySelectorAll('[required]');
+
+        requiredFields.forEach(function(field) {
+            var val = field.value.trim();
+            if (!val) {
+                errors.push({field: field, msg: 'Поле обязательно для заполнения'});
+                field.classList.add('error-border');
+            } else if (field.type === 'tel' && !/^[\d\s\-\+\(\)]{7,20}$/.test(val)) {
+                errors.push({field: field, msg: 'Введите корректный номер телефона'});
+                field.classList.add('error-border');
+            } else if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                errors.push({field: field, msg: 'Введите корректный email'});
+                field.classList.add('error-border');
+            }
+        });
+
+        // Check consent
+        var consent = form.querySelector('input[name="pd_consent"]');
+        if (consent && !consent.checked) {
+            errors.push({field: consent, msg: 'Необходимо согласие на обработку данных'});
+            consent.closest('label')?.classList.add('error-border');
+        }
+
+        if (errors.length > 0) {
+            e.preventDefault();
+            // Show first error inline
+            errors.forEach(function(err) {
+                var errEl = document.createElement('p');
+                errEl.className = 'field-error text-red-300 text-xs mt-1';
+                errEl.textContent = err.msg;
+                if (err.field.type === 'checkbox') {
+                    err.field.closest('label')?.after(errEl);
+                } else {
+                    err.field.parentNode.insertBefore(errEl, err.field.nextSibling);
+                }
+            });
+            // Focus first error field
+            errors[0].field.focus();
+            return;
+        }
+
+        // AJAX submit
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Отправка...';
+
+        var formData = new FormData(form);
+
+        fetch(form.getAttribute('action') || '/form-handler', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Отправить';
+
+            if (data.success) {
+                showModal('success', 'Отлично!', data.message || 'Форма отправлена');
+                if (data.errors && data.errors.length > 0) {
+                    // Show server-side field errors
+                }
+            } else {
+                var msg = data.message || 'Ошибка при отправке';
+                if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+                    msg = data.errors.join('<br>');
+                }
+                showModal('error', 'Ошибка', msg);
+            }
+        })
+        .catch(function(err) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Отправить';
+            showModal('error', 'Ошибка', 'Не удалось отправить форму. Попробуйте позже.');
+        });
+    });
+
+    function showModal(type, title, message) {
+        var existing = document.getElementById('formResultModal');
+        if (existing) existing.remove();
+
+        var icon = type === 'success'
+            ? '<div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center"><svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>'
+            : '<div class="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center"><svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>';
+
+        var btnClass = type === 'success' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700';
+
+        var html = '<div id="formResultModal" class="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4" onclick="if(event.target===this)this.remove()">' +
+            '<div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center relative">' +
+            '<button onclick="this.closest(\'#formResultModal\').remove()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>' +
+            icon +
+            '<h3 class="text-xl font-bold text-gray-900 mb-2">' + title + '</h3>' +
+            '<p class="text-gray-600 mb-6">' + message + '</p>' +
+            '<button onclick="this.closest(\'#formResultModal\').remove()" class="px-6 py-2.5 ' + btnClass + ' text-white rounded-lg transition font-medium">Закрыть</button>' +
+            '</div></div>';
+
+        document.body.insertAdjacentHTML('beforeend', html);
+
+        document.addEventListener('keydown', function modalKey(e) {
+            if (e.key === 'Escape') {
+                var m = document.getElementById('formResultModal');
+                if (m) m.remove();
+                document.removeEventListener('keydown', modalKey);
+            }
+        });
+    }
+})();
+</script>
+
+<style>
+.error-border { border-color: #fca5a5 !important; box-shadow: 0 0 0 1px #fca5a5; }
+</style>
 {% endblock %}

@@ -9,6 +9,8 @@
             <span class="text-green-800">{{ session.form_message|default(success_message|default('Форма успешно отправлена!')) }}</span>
         </div>
     </div>
+    {% set _ = session.remove('form_success') %}
+    {% set _ = session.remove('form_message') %}
 {% endif %}
 
 {% if session.form_error is defined and session.form_error == form_name %}
@@ -20,4 +22,7 @@
             <span class="text-red-800">{{ session.form_error_message }}</span>
         </div>
     </div>
+    {% set _ = session.remove('form_error') %}
+    {% set _ = session.remove('form_error_message') %}
+    {% set _ = session.remove('form_data') %}
 {% endif %}

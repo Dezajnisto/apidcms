@@ -245,6 +245,10 @@ class FrontController {
      * Генерация URL
      */
     public function generateUrl($path = '') {
+        // Anchors (#section) — return as-is, don't prefix with /
+        if (strlen($path) > 0 && $path[0] === '#') {
+            return $path;
+        }
         return '/' . ltrim($path, '/');
     }
     

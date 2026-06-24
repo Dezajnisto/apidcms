@@ -9,6 +9,7 @@
       novalidate>
 
     <input type="hidden" name="form_name" value="{{ form_name }}">
+    {% if success_message %}<input type="hidden" name="_success_message" value="{{ success_message|e('html_attr') }}">{% endif %}
 
     {% if enable_csrf %}
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

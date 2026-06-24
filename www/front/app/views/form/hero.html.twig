@@ -12,6 +12,7 @@
     <input type="hidden" name="form_name" value="{{ form_name }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="form_hash" value="{{ form_hash|default('') }}">
+    {% if success_message %}<input type="hidden" name="_success_message" value="{{ success_message|e('html_attr') }}">{% endif %}
 
     {% set field_class = 'w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition' %}
     {% set label_class = 'block text-sm font-medium text-white/80 mb-1.5' %}
@@ -109,7 +110,7 @@
             submitBtn.textContent = 'Отправить';
 
             if (data.success) {
-                showModal('success', 'Отлично!', data.message || 'Форма отправлена');
+                showModal('success', 'Отлично!', data.message || form.dataset.successMessage || 'Форма отправлена');
                 if (data.errors && data.errors.length > 0) {
                     // Show server-side field errors
                 }

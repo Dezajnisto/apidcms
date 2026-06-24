@@ -163,9 +163,11 @@ class FormRenderer {
             // Отправляем уведомления
             $this->sendNotifications($form, $formData, $newId);
 
+            $responseMessage = $_POST['_success_message'] ?? $form['success_message'] ?? 'Форма успешно отправлена!';
+
             return [
                 'success' => true,
-                'message' => $form['success_message'] ?? 'Форма успешно отправлена!',
+                'message' => $responseMessage,
                 'id' => $newId
             ];
 

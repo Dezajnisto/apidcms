@@ -194,6 +194,88 @@ form/
 
 ---
 
+
+## Согласие на обработку ПД
+
+Чекбокс согласия включается **автоматически**, если в таблице-источнике (`source_table`) есть колонка `pd_consent`. Ничего дополнительно настраивать в форме не нужно.
+
+**Как это работает:**
+1. Сервер проверяет структуру таблицы → видит колонку `pd_consent` → передаёт `show_consent = true` в шаблон
+2. Шаблон отображает чекбокс (встроенный или через `form/fields/consent.html.twig`)
+3. Сервер валидирует: чекбокс обязателен (required), без него форма не отправится
+4. При успешной отправке — значение сохраняется в колонку `pd_consent` и пишется лог в `admin/storage/logs/pd_consent.log`
+
+**Формат лога:** `дата | IP | таблица | id записи | User-Agent`
+
+### Добавление колонки pd_consent в существующую таблицу
+
+```sql
+ALTER TABLE contacts ADD COLUMN pd_consent INTEGER DEFAULT 0;
+```
+
+Чекбокс появится во всех формах, ссылающихся на эту таблицу.
+
+### В кастомном шаблоне
+
+```twig
+{% if show_consent %}
+<label>
+    <input type="checkbox" name="pd_consent" value="1" required>
+    Я даю согласие на обработку персональных данных
+</label>
+{% endif %}
+```
+
+---
+
+## AJAX-формы (без перезагрузки страницы)
+
+Для форм в модальных окнах или на одностраничниках нужна отправка без перезагрузки.
+
+### Вариант 1: атрибут `data-ajax-form`
+
+Добавьте атрибут к `<form>` и JS-обработчик (как в `priceform.html.twig`):
+
+```twig
+<form method="post" action="/form-handler" data-ajax-form>
+    ...
+</form>
+```
+
+JS перехватывает `submit`, отправляет через `fetch` с заголовком `X-Requested-With: XMLHttpRequest`. Сервер возвращает JSON вместо редиректа.
+
+### Вариант 2: встроенный fetch в шаблоне
+
+```twig
+<script>
+form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    fetch(this.action, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: new FormData(this)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) { /* показать успех */ }
+        else { /* показать ошибки */ }
+    });
+});
+</script>
+```
+
+**Ответ сервера (AJAX):**
+```json
+{"success": true, "message": "Спасибо!", "id": 123}
+```
+```json
+{"success": false, "message": "Проверьте форму", "errors": {"name": "Поле 'Имя' обязательно"}}
+```
+
+**Отличие от обычной отправки:** при обычной (не-AJAX) сервер делает редирект с flash-сообщениями в сессии. При AJAX — возвращает JSON в ответе, страница не перезагружается.
+
+---
+
 ## Обработка (эндпоинт `/form-handler`)
 
 1. Читает `form_name` из POST

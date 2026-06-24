@@ -74,6 +74,7 @@ class FormRenderer {
         // Собираем данные для шаблона
         $data = [
             'form_name'      => $formName,
+            'form_hash'      => $options['form_hash'] ?? '',
             'fields'         => $form['fields'],
             'show_consent'   => $showConsent,
             'enable_csrf'    => $enableCsrf,

@@ -45,6 +45,14 @@ VALUES (
     submit_text: 'Перезвоните мне',
     submit_class: 'bg-gradient-to-r from-pink-500 to-orange-400 w-full py-4'
 }) }}
+
+{# Скрыть поле и задать значение по умолчанию #}
+{{ render_form('quick-callback', {
+    template: 'hero',
+    submit_text: 'Забронировать скидку',
+    hidden_fields: ['name'],
+    field_defaults: { name: 'Клиент' }
+}) }}
 ```
 
 ---
@@ -160,6 +168,8 @@ form/
 - `submit_class`, `field_class`, `label_class`, `form_class` — CSS-классы
 - `success_message` — текст успеха
 - `action` — URL обработчика (по умолчанию `/form-handler`)
+- `hidden_fields` — массив имён полей, которые рендерятся как `<input type="hidden">`
+- `field_defaults` — ассоциативный массив значений по умолчанию для полей (особенно полезно для скрытых)
 - `enable_csrf` — включён ли CSRF
 - `session` — сессия (см. флеш-сообщения)
 

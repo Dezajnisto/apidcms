@@ -14,11 +14,15 @@
     {% endif %}
 
     {% for field_name, field in fields %}
-        {% set field_class = field_class|default('w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition') %}
-        {% set field_error_class = field_error_class|default('border-red-400 focus:ring-red-400') %}
-        {% set label_class = label_class|default('block text-sm font-medium text-gray-700 mb-1.5') %}
+        {% if field_name in hidden_fields|default([]) %}
+            <input type="hidden" name="{{ field_name }}" value="{{ field_defaults[field_name]|default('') }}">
+        {% else %}
+            {% set field_class = field_class|default('w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition') %}
+            {% set field_error_class = field_error_class|default('border-red-400 focus:ring-red-400') %}
+            {% set label_class = label_class|default('block text-sm font-medium text-gray-700 mb-1.5') %}
 
-        {% include 'form/fields/' ~ field.type ~ '.html.twig' with {field: field, field_name: field_name} %}
+            {% include 'form/fields/' ~ field.type ~ '.html.twig' with {field: field, field_name: field_name} %}
+        {% endif %}
     {% endfor %}
 
     {% if show_consent %}

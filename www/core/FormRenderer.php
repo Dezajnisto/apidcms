@@ -87,6 +87,8 @@ class FormRenderer {
             'form_class'     => $options['form_class'] ?? $form['design']['form_class'] ?? '',
             'success_message'=> $form['success_message'] ?? 'Форма успешно отправлена!',
             'source_table'   => $form['source_table'],
+            'hidden_fields'  => $options['hidden_fields'] ?? [],
+            'field_defaults' => $options['field_defaults'] ?? [],
         ];
 
         try {

@@ -921,11 +921,11 @@ private function handleFormSubmission() {
             
             $referer = $_SERVER['HTTP_REFERER'] ?? '/';
             $hash = $_POST['form_hash'] ?? '';
-            if (empty($hash) && \$formName === 'quick-callback') {
-                \$hash = '#call-01';
+            if (empty($hash) && $formName === 'quick-callback') {
+                $hash = '#call-01';
             }
-            \$redirectUrl = \$referer . (\$hash ? '#' . ltrim(\$hash, '#') : '');
-            header('Location: ' . \$redirectUrl);
+            $redirectUrl = \$referer . ($hash ? '#' . ltrim($hash, '#') : '');
+            header('Location: ' . $redirectUrl);
             exit;
         }
         

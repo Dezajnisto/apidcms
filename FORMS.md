@@ -168,7 +168,8 @@ form/
 - `submit_class`, `field_class`, `label_class`, `form_class` — CSS-классы
 - `success_message` — текст успеха
 - `action` — URL обработчика (по умолчанию `/form-handler`)
-- `hidden_fields` — массив имён полей, которые рендерятся как `<input type="hidden">`
+- `hidden_fields` — массив имён полей
+- `form_attrs` — произвольные HTML-атрибуты для тега `<form>` (например `style="flex: 1.8"`), которые рендерятся как `<input type="hidden">`
 - `field_defaults` — ассоциативный массив значений по умолчанию для полей (особенно полезно для скрытых)
 - `enable_csrf` — включён ли CSRF
 - `session` — сессия (см. флеш-сообщения)

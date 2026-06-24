@@ -6,6 +6,7 @@
       class="{{ form_class|default('space-y-5') }}"
       data-form="{{ form_name }}"
       data-success-message="{{ success_message|e('html_attr') }}"
+      {% if form_attrs %}{{ form_attrs|raw }}{% endif %}
       novalidate>
 
     <input type="hidden" name="form_name" value="{{ form_name }}">

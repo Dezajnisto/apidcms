@@ -920,7 +920,9 @@ private function handleFormSubmission() {
             }
             
             $referer = $_SERVER['HTTP_REFERER'] ?? '/';
-            header('Location: ' . $referer);
+            $hash = $_POST['form_hash'] ?? '';
+            $redirectUrl = $referer . ($hash ? '#' . ltrim($hash, '#') : '');
+            header('Location: ' . $redirectUrl);
             exit;
         }
         

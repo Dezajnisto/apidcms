@@ -178,21 +178,4 @@ if (strpos($uri, 'admin') === 0 || $uri === 'admin') {
             echo "<pre>Ошибка: " . htmlspecialchars($e->getMessage()) . "</pre>";
         }
     }
-
-    // Обработчик отправки форм (POST с form_table)
-    $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-    if ($requestMethod === 'POST' && isset($_POST['form_table'])) {
-        if (!isset($database)) {
-            $database = new \Core\Database($config['database']);
-        }
-        $formRenderer = new \Core\FormRenderer($database);
-        $result = $formRenderer->processFormSubmission();
-        if ($result) {
-            $_SESSION['form_success'] = 'Форма успешно отправлена!';
-        } else {
-            $_SESSION['form_error'] = 'Ошибка при отправке формы!';
-        }
-        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/'));
-        exit;
-    }
 }

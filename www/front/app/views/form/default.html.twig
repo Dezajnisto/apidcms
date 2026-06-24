@@ -9,7 +9,6 @@
       novalidate>
 
     <input type="hidden" name="form_name" value="{{ form_name }}">
-    {% if success_message %}<input type="hidden" name="_success_message" value="{{ success_message|e('html_attr') }}">{% endif %}
 
     {% if enable_csrf %}
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -19,6 +18,7 @@
         {% if field_name in hidden_fields|default([]) %}
             <input type="hidden" name="{{ field_name }}" value="{{ field_defaults[field_name]|default('') }}">
         {% else %}
+            {% set field = field|merge(field_overrides[field_name]|default({})) %}
             {% set field_class = field_class|default('w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition') %}
             {% set field_error_class = field_error_class|default('border-red-400 focus:ring-red-400') %}
             {% set label_class = label_class|default('block text-sm font-medium text-gray-700 mb-1.5') %}

@@ -88,7 +88,8 @@ class FormRenderer {
             'success_message'=> $options['success_message'] ?? $form['success_message'] ?? 'Форма успешно отправлена!',
             'source_table'   => $form['source_table'],
             'hidden_fields'  => $options['hidden_fields'] ?? [],
-            'form_attrs'     => $options['form_attrs'] ?? '',
+            'form_attrs'       => $options['form_attrs'] ?? '',
+            'field_overrides' => $options['field_overrides'] ?? [],
             'field_defaults' => $options['field_defaults'] ?? [],
         ];
 
@@ -163,11 +164,9 @@ class FormRenderer {
             // Отправляем уведомления
             $this->sendNotifications($form, $formData, $newId);
 
-            $responseMessage = $_POST['_success_message'] ?? $form['success_message'] ?? 'Форма успешно отправлена!';
-
             return [
                 'success' => true,
-                'message' => $responseMessage,
+                'message' => $form['success_message'] ?? 'Форма успешно отправлена!',
                 'id' => $newId
             ];
 

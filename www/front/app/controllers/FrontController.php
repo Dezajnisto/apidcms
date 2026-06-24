@@ -894,6 +894,108 @@ class FrontController {
      * Обработка страницы-формы (page_type: form)
      * Использует новую систему форм с FormRenderer
      */
+private function handleFormSubmission() {
+        // Новая система: используем form_name
+        $formName = $_POST['form_name'] ?? '';
+        if (!empty($formName)) {
+            $formRenderer = new \Core\FormRenderer($this->database, $this->twig, $this->config);
+            $result = $formRenderer->processSubmission();
+            
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                      strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+            
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode($result);
+                exit;
+            }
+            
+            if ($result['success']) {
+                $_SESSION['form_success'] = $formName;
+                $_SESSION['form_message'] = $result['message'];
+            } else {
+                $_SESSION['form_error'] = $formName;
+                $_SESSION['form_error_message'] = $result['message'];
+                $_SESSION['form_data'] = $_POST;
+            }
+            
+            $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+            header('Location: ' . $referer);
+            exit;
+        }
+        
+        // Старая система: обратная совместимость (form_table)
+        try {
+            $tableName = $_POST['form_table'] ?? '';
+            
+            if (empty($tableName)) {
+                throw new \Exception('Не указана таблица для формы');
+            }
+            
+            // Проверяем CSRF токен
+            if (!$this->validateCsrfToken()) {
+                throw new \Exception('Недействительный CSRF токен');
+            }
+            
+            // Проверяем существование таблицы
+            if (!$this->database->tableExists($tableName)) {
+                throw new \Exception("Таблица '{$tableName}' не найдена");
+            }
+            
+            // Получаем структуру таблицы
+            $structure = $this->database->getTableStructure($tableName);
+            
+            // Подготавливаем данные
+            $formData = [];
+            foreach ($structure as $field) {
+                $fieldName = $field['name'];
+                if ($this->isSystemField($fieldName)) continue;
+                if (isset($_POST[$fieldName])) {
+                    $formData[$fieldName] = trim($_POST[$fieldName]);
+                }
+            }
+            
+            $newId = $this->database->insert($tableName, $formData);
+            $this->sendNotificationsForCustomForm($tableName, $formData, $newId);
+            
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                      strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+            
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'message' => 'Форма успешно отправлена!', 'id' => $newId]);
+                exit;
+            }
+            
+            $_SESSION['form_success'] = true;
+            $_SESSION['form_message'] = 'Форма успешно отправлена!';
+            $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+            header('Location: ' . $referer);
+            exit;
+            
+        } catch (\Exception $e) {
+            $_SESSION['form_error'] = $e->getMessage();
+            $_SESSION['form_data'] = $_POST;
+            
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                      strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+            
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+                exit;
+            }
+            
+            $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+            header('Location: ' . $referer);
+            exit;
+        }
+    }
+
+    /**
+     * Отправка уведомлений для произвольных форм (не привязанных к страницам)
+     */
+
     private function handleFormPage($navItem) {
         $config = $navItem->getPageConfig();
         $tableName = $config['source_table'];

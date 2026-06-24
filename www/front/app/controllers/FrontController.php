@@ -759,6 +759,11 @@ class FrontController {
             $template = $config['template'] . '.html.twig';
         }
         
+        // Build query string for pagination (exclude 'page' param)
+        $queryParams = $_GET;
+        unset($queryParams['page']);
+        $queryString = http_build_query($queryParams);
+
         $this->render($template, [
             'items' => $data,
             'nav_item' => $navItem,
@@ -767,7 +772,8 @@ class FrontController {
             'current_page' => $page,
             'total_pages' => $totalPages,
             'total_count' => $totalCount,
-            'config' => $config
+            'config' => $config,
+            'query_string' => $queryString
         ]);
     }
 

@@ -64,13 +64,13 @@
 {% if total_pages > 1 %}
 <div class="pagination">
     {% if current_page > 1 %}
-        <a href="{{ url(nav_item.url ~ '?page=' ~ (current_page - 1)) }}" class="pagination-prev">← Назад</a>
+        <a href="{{ url(nav_item.url ~ '?page=' ~ (current_page - 1) ~ (query_string ? '&' ~ query_string : '')) }}" class="pagination-prev">← Назад</a>
     {% endif %}
     
     <span class="pagination-info">Страница {{ current_page }} из {{ total_pages }}</span>
     
     {% if current_page < total_pages %}
-        <a href="{{ url(nav_item.url ~ '?page=' ~ (current_page + 1)) }}" class="pagination-next">Вперед →</a>
+        <a href="{{ url(nav_item.url ~ '?page=' ~ (current_page + 1) ~ (query_string ? '&' ~ query_string : '')) }}" class="pagination-next">Вперед →</a>
     {% endif %}
 </div>
 {% endif %}

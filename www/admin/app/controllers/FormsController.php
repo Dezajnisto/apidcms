@@ -47,10 +47,24 @@ class FormsController extends BaseController {
             $tables[] = $t;
         }
 
+        // Available form templates
+        $templatesDir = $this->getFormTemplatesDir();
+        $availableTemplates = [];
+        if (is_dir($templatesDir)) {
+            foreach (scandir($templatesDir) as $f) {
+                if ($f === '.' || $f === '..') continue;
+                if (preg_match('/\.twig$/', $f) && $f !== '_base.html.twig' && $f !== 'messages.html.twig') {
+                    $availableTemplates[] = $f;
+                }
+            }
+            sort($availableTemplates);
+        }
+
         $this->render('forms/edit', [
             'title' => 'Редактирование формы: ' . $form['display_name'],
             'form' => $form,
             'tables' => $tables,
+            'available_templates' => $availableTemplates,
         ]);
     }
 

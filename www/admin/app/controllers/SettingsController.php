@@ -71,6 +71,12 @@ class SettingsController extends BaseController {
     public function saveSettings() {
         try {
             $settingsData = $_POST["settings"] ?? [];
+            // Checkbox fields: unchecked = 0
+            foreach ([maintenance_mode, ai_frontend_use_system, stats_enabled] as $ck) {
+                if (!isset($settingsData[$ck])) {
+                    $settingsData[$ck] = 0;
+                }
+            }
             if (empty($settingsData)) {
                 throw new Exception("\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u0434\u043b\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f");
             }

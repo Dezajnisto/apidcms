@@ -33,7 +33,7 @@
 
 <script>
 (function() {
-    var form = document.currentScript ? document.currentScript.closest('form') : document.querySelector('[data-form="{{ form_name }}"]');
+    var form = document.querySelector('form[data-form="{{ form_name }}"]');
     if (!form) return;
 
     var submitBtn = form.querySelector('button[type="submit"]');

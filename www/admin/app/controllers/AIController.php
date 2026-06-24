@@ -320,6 +320,15 @@ class AIController extends BaseController {
             $result = $this->ai->chat([["role" => "user", "content" => $userMsg]], $systemPrompt, 0.7, 4096);
             $values = json_decode($result, true);
 
+            // Keep user-filled values, don't let AI overwrite them
+            if (is_array($values) && !empty($existingValues)) {
+                foreach ($existingValues as $key => $val) {
+                    if (isset($values[$key]) && isset($val) && trim($val) !== '') {
+                        $values[$key] = $val;
+                    }
+                }
+            }
+
             $this->jsonResponse(["response" => $result, "values" => $values, "fields" => $fields]);
         } catch (\Exception $e) {
             $this->jsonResponse(["error" => $e->getMessage()], 500);

@@ -336,7 +336,7 @@ var AIAssistant = {
             payload.prompt = text;
             payload.table = this.currentContext.tableName || '';
             payload.structure = this.currentContext.structure || [];
-            payload.existing_values = this.currentContext.existingValues || {};
+            payload.existing_values = this.collectFormValues();
         }
 
         fetch(endpoint, {
@@ -364,9 +364,7 @@ var AIAssistant = {
             if (self.currentContext.mode === 'template' && data.template) {
                 self.currentContext.existingContent = data.template;
             }
-            if (self.currentContext.mode === 'fill-form' && data.values) {
-                self.currentContext.existingValues = data.values;
-            }
+            // fill-form: collectFormValues() at each request, don't cache AI output
         })
         .catch(function(err) {
             self.hideTyping();

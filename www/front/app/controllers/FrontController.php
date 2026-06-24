@@ -1051,6 +1051,21 @@ private function handleFormSubmission() {
             $options['template'] = $config['template'];
         }
         $formHtml = $formRenderer->renderForm($tableName, $options);
+
+        // Flash-сообщения из сессии (после редиректа с предыдущей отправки)
+        $errors = [];
+        $success = null;
+        $successMessage = null;
+
+        if (isset($_SESSION['form_error']) && $_SESSION['form_error'] === $tableName) {
+            $errors['general'] = $_SESSION['form_error_message'] ?? 'Проверьте правильность заполнения формы';
+            unset($_SESSION['form_error'], $_SESSION['form_error_message'], $_SESSION['form_data']);
+        }
+        if (isset($_SESSION['form_success']) && $_SESSION['form_success'] === $tableName) {
+            $success = true;
+            $successMessage = $_SESSION['form_message'] ?? 'Форма успешно отправлена!';
+            unset($_SESSION['form_success'], $_SESSION['form_message']);
+        }
         
         $template = $config['template'] === 'default' ? 'form.html.twig' : $config['template'] . '.html.twig';
         
@@ -1062,7 +1077,10 @@ private function handleFormSubmission() {
             'meta_description' => $pageMeta['meta_description'] ?? '',
             'config' => $config,
             'pageContent' => $pageContent,
-            'pageMeta' => $pageMeta
+            'pageMeta' => $pageMeta,
+            'errors' => $errors,
+            'success' => $success,
+            'success_message' => $successMessage
         ]);
     }
 

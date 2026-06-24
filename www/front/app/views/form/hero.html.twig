@@ -3,6 +3,7 @@
 {# Герой-форма для главной prostostihi.ru — прозрачная, на градиентном фоне #}
 {% block form_content %}
 <form method="post" action="{{ action|default('/form-handler') }}"
+      id="form-{{ form_hash|default('main')|replace({'#': ''}) }}"
       class="{{ form_class|default('space-y-5') }}"
       data-form="{{ form_name }}"
       data-success-message="{{ success_message|e('html_attr') }}"
@@ -39,7 +40,7 @@
 
 <script>
 (function() {
-    var form = document.querySelector('form[data-form="{{ form_name }}"]');
+    var form = document.getElementById('form-{{ form_hash|default('main')|replace({'#': ''}) }}');
     if (!form) return;
 
     var submitBtn = form.querySelector('button[type="submit"]');

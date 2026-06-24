@@ -1,0 +1,83 @@
+{# admin/app/views/cache/index.html.twig #}
+{% extends "base.html.twig" %}
+
+{% block title %}Управление кэшем{% endblock %}
+
+{% block page_title %}Управление кэшем{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Заголовок и кнопки -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <div>
+            <h1 class="text-xl md:text-2xl font-bold text-gray-900">Управление кэшем</h1>
+            <p class="text-sm text-gray-500 mt-1">Очистка временных файлов и кэша шаблонов</p>
+        </div>
+        <div>
+            <a href="/admin/cache/clear?type=all" 
+               class="inline-flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition text-sm w-full sm:w-auto"
+               onclick="return confirm('Вы уверены, что хотите очистить весь кэш?')">
+                <i class="fas fa-broom"></i>
+                <span>Очистить весь кэш</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Карточки -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
+        {% for name, info in cacheInfo %}
+        <div class="bg-white rounded-lg shadow-sm border p-4 md:p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base md:text-lg font-semibold text-gray-900 capitalize">
+                    {{ name == 'twig_admin' ? 'Twig (Админка)' : 'Twig (Фронтенд)' }}
+                </h3>
+                <span class="text-xs px-2 py-1 rounded {{ info.exists ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                    {{ info.exists ? 'Активен' : 'Не найден' }}
+                </span>
+            </div>
+            
+            <div class="space-y-2 text-sm text-gray-600">
+                <div class="flex justify-between">
+                    <span>Файлов:</span>
+                    <span class="font-medium">{{ info.file_count }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Размер:</span>
+                    <span class="font-medium">{{ info.total_size }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Доступ на запись:</span>
+                    <span class="font-medium {{ info.writable ? 'text-green-600' : 'text-red-600' }}">
+                        {{ info.writable ? 'Да' : 'Нет' }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t">
+                <a href="/admin/cache/clear?type={{ name }}" 
+                   class="inline-flex items-center justify-center space-x-2 px-3 py-1 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition text-sm w-full"
+                   onclick="return confirm('Очистить кэш?')">
+                    <i class="fas fa-broom"></i>
+                    <span>Очистить</span>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Информация -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+        <div class="flex items-start space-x-3">
+            <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+            <div class="text-blue-700">
+                <strong>Информация:</strong>
+                <ul class="mt-1 space-y-1">
+                    <li>• Кэш Twig автоматически пересоздается при следующем запросе</li>
+                    <li>• Очистка кэша может временно замедлить работу сайта</li>
+                    <li>• Рекомендуется очищать кэш после изменения шаблонов</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

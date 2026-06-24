@@ -289,13 +289,116 @@ class FormsController extends BaseController {
         return $this->editTemplate($name, "fields/" . $file);
     }
 
-    private function getFormTemplatesDir(): string {
-        $projectDir = dirname(dirname(dirname(dirname(__DIR__))));
-        $frontDir = $projectDir . "/front/app/views/form";
-        if (is_dir($frontDir)) {
-            return realpath($frontDir);
+    /**
+     * Create a new form or field template
+     */
+    public function createTemplate($name) {
+        $form = $this->db->query("SELECT * FROM forms WHERE name = ?", [$name])->fetch();
+        if (!$form) {
+            $this->setFlash("error", "Form '{$name}' not found");
+            $this->redirect("/forms");
+            return;
         }
-        $coreDir = dirname(dirname(dirname(dirname(__DIR__)))) . "/core_lib/front/app/views/form";
-        return realpath($coreDir) ?: $coreDir;
+
+        if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+            $this->redirect("/forms/{$name}/templates");
+            return;
+        }
+
+        $fileName = trim($_POST["template_name"] ?? "");
+        $templateType = $_POST["template_type"] ?? "form";
+
+        if (empty($fileName)) {
+            $this->setFlash("error", "Template name is required");
+            $this->redirect("/forms/{$name}/templates");
+            return;
+        }
+
+        // Validate: only .html.twig extension, letters/numbers/hyphens/underscores
+        if (!preg_match('/^[a-zA-Z0-9_-]+\.html\.twig$/', $fileName)) {
+            $this->setFlash("error", "Name must be like: my-template.html.twig (letters, numbers, hyphens, underscores)");
+            $this->redirect("/forms/{$name}/templates");
+            return;
+        }
+
+        $templatesDir = $this->getFormTemplatesDir();
+
+        if ($templateType === "field") {
+            $templatesDir .= "/fields";
+            if (!is_dir($templatesDir)) {
+                mkdir($templatesDir, 0755, true);
+            }
+        }
+
+        $filePath = $templatesDir . "/" . $fileName;
+
+        if (file_exists($filePath)) {
+            $this->setFlash("error", "Template '{$fileName}' already exists");
+            $this->redirect("/forms/{$name}/templates");
+            return;
+        }
+
+        // Generate skeleton based on type
+        if ($templateType === "field") {
+            $skeleton = <<<'TWIG'
+{# Field: CHANGE_ME — CHANGE_ME input #}
+{% set input_id = 'field_' ~ field.name %}
+<div class="form-group{{ field.required ? ' required' : '' }}">
+    {% set has_label = field.label is defined and field.label is not empty %}
+    {% if has_label %}
+    <label for="{{ input_id }}" class="form-label">{{ field.label }}{% if field.required %} <span class="required-star">*</span>{% endif %}</label>
+    {% endif %}
+    <input type="{{ field.type }}" name="{{ field.name }}" id="{{ input_id }}"
+           value="{{ form_data[field.name]|default('') }}"
+           class="form-control {{ design.field_class|default('') }}"
+           {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+           {% if field.required %}required{% endif %}>
+    {% if field.help_text %}<small class="form-help">{{ field.help_text }}</small>{% endif %}
+</div>
+TWIG;
+        } else {
+            $skeleton = <<<'TWIG'
+{# CHANGE_ME — describe this template #}
+{% extends "form/_base.html.twig" %}
+
+{% block form_content %}
+    {% for field_name, field in form.fields %}
+        {% set field = field|merge({name: field_name}) %}
+        <div class="mb-3">
+            {{ include('form/fields/' ~ field.type ~ '.html.twig', {field: field, form_data: form_data, design: design}, ignore_missing = true) }}
+        </div>
+    {% endfor %}
+
+    <button type="submit" class="{{ design.submit_class|default('btn btn-primary') }}">
+        {{ design.submit_text|default('Send') }}
+    </button>
+{% endblock %}
+TWIG;
+        }
+
+        if (file_put_contents($filePath, $skeleton) === false) {
+            $this->setFlash("error", "Failed to create template '{$fileName}'");
+        } else {
+            $this->setFlash("success", "Template '{$fileName}' created");
+        }
+
+        $this->redirect("/forms/{$name}/templates");
+    }
+
+    private function getFormTemplatesDir(): string {
+        // Prefer project's own form templates directory
+        $projectFrontDir = PROJECT_ROOT . '/front/app/views/form';
+        if (is_dir($projectFrontDir)) {
+            return realpath($projectFrontDir);
+        }
+        // Fall back to core templates
+        // __DIR__ is .../core/www/admin/app/controllers/ → go up 3 to reach www/
+        $coreDir = dirname(dirname(dirname(__DIR__)));
+        $coreFrontDir = $coreDir . '/front/app/views/form';
+        if (is_dir($coreFrontDir)) {
+            return realpath($coreFrontDir);
+        }
+        // Last resort: return project path (for creating new templates)
+        return $projectFrontDir;
     }
 }

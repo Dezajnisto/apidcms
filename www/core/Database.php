@@ -343,9 +343,13 @@ class Database {
             
             // Добавляем DEFAULT только если значение указано и не пустое
             if (isset($column['default']) && $column['default'] !== '') {
-                // Экранируем значение для SQL
-                $defaultValue = $this->pdo->quote($column['default']);
-                $definition .= " DEFAULT " . $defaultValue;
+                $def = $column['default'];
+                // SQL expressions (CURRENT_TIMESTAMP, NULL, etc.) must NOT be quoted
+                if (preg_match('/^(CURRENT_TIMESTAMP|CURRENT_DATE|CURRENT_TIME|NULL)$/i', $def)) {
+                    $definition .= " DEFAULT " . $def;
+                } else {
+                    $definition .= " DEFAULT " . $this->pdo->quote($def);
+                }
             }
             
             $columnDefinitions[] = $definition;
@@ -377,7 +381,11 @@ class Database {
         }
         
         if ($defaultValue !== null) {
-            $sql .= " DEFAULT " . $this->pdo->quote($defaultValue);
+            if (preg_match('/^(CURRENT_TIMESTAMP|CURRENT_DATE|CURRENT_TIME|NULL)$/i', (string)$defaultValue)) {
+                $sql .= " DEFAULT " . $defaultValue;
+            } else {
+                $sql .= " DEFAULT " . $this->pdo->quote($defaultValue);
+            }
         }
         
         $this->query($sql);
@@ -484,7 +492,12 @@ class Database {
                     $definition .= " NOT NULL";
                 }
                 if ($col['dflt_value'] !== null) {
-                    $definition .= " DEFAULT " . $this->pdo->quote($col['dflt_value']);
+                    $dflt = $col['dflt_value'];
+                    if (preg_match('/^(CURRENT_TIMESTAMP|CURRENT_DATE|CURRENT_TIME|NULL)$/i', $dflt)) {
+                        $definition .= " DEFAULT " . $dflt;
+                    } else {
+                        $definition .= " DEFAULT " . $this->pdo->quote($dflt);
+                    }
                 }
                 if ($col['pk']) {
                     $definition .= " PRIMARY KEY";

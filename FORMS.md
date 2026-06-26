@@ -333,3 +333,35 @@ VALUES (
 ```
 
 Поля, для которых нет колонок в `poetry`, не отобразятся. Поля, которые есть в `poetry`, но не в конфиге, не перезапишутся.
+
+
+### Рекомендуемая структура таблицы для форм
+
+Чтобы форма работала с уведомлениями, таблица-приёмник (`source_table`) должна содержать:
+
+| Колонка | Тип | Назначение |
+|---|---|---|
+| `id` | INTEGER PRIMARY KEY | Идентификатор записи |
+| `created_at` | DATETIME DEFAULT CURRENT_TIMESTAMP | Дата создания |
+| `read_status` | TEXT DEFAULT 'unread' | Статус прочтения (unread/read) |
+| `form_name` | TEXT DEFAULT '' | Имя формы (для фильтрации уведомлений) |
+
+Без `form_name` уведомления будут показывать все записи таблицы для всех форм, которые в неё пишут.
+
+Без `read_status` все записи считаются непрочитанными.
+
+Пример создания таблицы:
+```sql
+CREATE TABLE contacts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    phone TEXT,
+    email TEXT,
+    message TEXT,
+    read_status TEXT DEFAULT 'unread',
+    form_name TEXT DEFAULT '',
+    pd_consent INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME
+);
+```

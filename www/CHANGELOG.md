@@ -1,5 +1,39 @@
 # Changelog
 
+
+## 2026-06-26 — Рефакторинг уведомлений и form_name
+
+### Уведомления: переход с navigation на forms
+
+- **Проблема:** NotificationsController искал формы через `navigation.page_type = 'form'` — устаревший тип страниц, который больше не используется
+- **Исправление:** `getFormTables()` и `getFormInfoByTable()` теперь запрашивают таблицу `forms` напрямую
+- **Обратная совместимость:** поле `'' AS url` оставлено для шаблонов
+
+### form_name: привязка заявок к форме
+
+- **Проблема:** несколько форм могут писать в одну таблицу (напр. `contacts`), но нельзя было понять, какая форма создала запись
+- **Решение:**
+  - `FormRenderer::processSubmission()` — при сохранении автоматически пишет `form_name` (если колонка есть в source_table)
+  - `NotificationsController` — все методы переписаны с `{table}` на `{formName}`, фильтрация по `form_name`
+  - Маршруты: `/notifications/form/{formName}`, `/notifications/submission/{formName}/id/{id}` и т.д.
+- **Метод `hasColumn($table, $columnName)`** — проверяет наличие колонки, обеспечивает обратную совместимость с таблицами без `form_name`
+
+### Шаблоны уведомлений
+
+- `index.html.twig`: ссылки используют `form.name`, убран вывод URL
+- `view_form.html.twig`, `view_submission.html.twig`: ссылки используют `form_name`
+
+### Фикс бага
+
+- Исправлен порядок параметров в SQL-запросах: `form_name` должен идти до `LIMIT/OFFSET`
+
+### Файлы
+
+- `core/FormRenderer.php` (+5 строк)
+- `admin/app/controllers/NotificationsController.php` (полный рерайт, ~300 строк)
+- `admin/app/core/App.php` (4 маршрута)
+- `admin/app/views/notifications/*.twig` (3 шаблона)
+
 ## 2026-06-17 — AI-страницы: новый тип `ai` и настройки фронтенда
 
 ### Новый тип страниц: `ai` — чат с ИИ

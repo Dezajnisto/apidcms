@@ -55,7 +55,7 @@ class NotificationsController extends BaseController {
 
         $hasFormName = $this->hasColumn($table, 'form_name');
         $whereForm = $hasFormName ? " AND form_name = ?" : "";
-        $formParams = $hasFormName ? [$perPage, $offset, $formName] : [$perPage, $offset];
+        $formParams = $hasFormName ? [$formName, $perPage, $offset] : [$perPage, $offset];
         $countParams = $hasFormName ? [$formName] : [];
 
         $submissions = $this->db->query(
@@ -256,7 +256,7 @@ class NotificationsController extends BaseController {
             if ($this->db->tableExists($table)) {
                 $hasFormName = $this->hasColumn($table, 'form_name');
                 $whereForm = $hasFormName ? " AND form_name = ?" : "";
-                $params = $hasFormName ? [$limit, $formName] : [$limit];
+                $params = $hasFormName ? [$formName, $limit] : [$limit];
 
                 $submissions = $this->db->query(
                     "SELECT *, '{$table}' as source_table

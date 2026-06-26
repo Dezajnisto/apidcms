@@ -167,9 +167,9 @@ class NotificationsController extends BaseController {
      */
     private function getFormTables() {
         $forms = $this->db->query(
-            "SELECT DISTINCT source_table, title, url 
-             FROM navigation 
-             WHERE page_type = 'form' AND status = 'active'"
+            "SELECT name, display_name AS title, source_table, '' AS url
+             FROM forms 
+             WHERE status = 'active'"
         )->fetchAll();
         
         return $forms;
@@ -259,9 +259,9 @@ class NotificationsController extends BaseController {
      */
     private function getFormInfoByTable($table) {
         return $this->db->query(
-            "SELECT title, url, form_config 
-             FROM navigation 
-             WHERE source_table = ? AND page_type = 'form' 
+            "SELECT display_name AS title, fields AS form_config 
+             FROM forms 
+             WHERE source_table = ? AND status = 'active'
              LIMIT 1",
             [$table]
         )->fetch();

@@ -10,7 +10,7 @@
             <p class="text-gray-600">Таблица: {{ table_name }}</p>
         </div>
         <div class="flex space-x-3">
-            <a href="{{ admin_url('notifications/mark-all-read/' ~ table_name) }}" 
+            <a href="{{ admin_url('notifications/mark-all-read/' ~ form_name) }}" 
                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                 Отметить все прочитанными
             </a>
@@ -94,11 +94,11 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <a href="{{ admin_url('notifications/submission/' ~ table_name ~ '/id/' ~ submission.id) }}" 
+                        <a href="{{ admin_url('notifications/submission/' ~ form_name ~ '/id/' ~ submission.id) }}" 
                            class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                             Подробнее
                         </a>
-                        <a href="{{ admin_url('notifications/delete/' ~ table_name ~ '/id/' ~ submission.id) }}" 
+                        <a href="{{ admin_url('notifications/delete/' ~ form_name ~ '/id/' ~ submission.id) }}" 
                            class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
                            onclick="return confirm('Удалить эту заявку?')">
                             Удалить

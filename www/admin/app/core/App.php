@@ -116,10 +116,10 @@ class App {
 
         // Уведомления о заявках форм
         $this->addRoute('/notifications', 'NotificationsController', 'index');
-        $this->addRoute('/notifications/form/{table}', 'NotificationsController', 'viewForm');
-        $this->addRoute('/notifications/submission/{table}/id/{id}', 'NotificationsController', 'viewSubmission');
-        $this->addRoute('/notifications/delete/{table}/id/{id}', 'NotificationsController', 'deleteSubmission');
-        $this->addRoute('/notifications/mark-all-read/{table}', 'NotificationsController', 'markAllRead');
+        $this->addRoute('/notifications/form/{formName}', 'NotificationsController', 'viewForm');
+        $this->addRoute('/notifications/submission/{formName}/id/{id}', 'NotificationsController', 'viewSubmission');
+        $this->addRoute('/notifications/delete/{formName}/id/{id}', 'NotificationsController', 'deleteSubmission');
+        $this->addRoute('/notifications/mark-all-read/{formName}', 'NotificationsController', 'markAllRead');
 // +++ ФОРМЫ +++
         $this->addRoute('/forms', 'FormsController', 'index');
         $this->addRoute('/forms/create', 'FormsController', 'create');

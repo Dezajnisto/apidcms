@@ -81,7 +81,7 @@
         </div>
         <div class="divide-y">
             {% for form in forms %}
-            {% set form_stats = stats[form.source_table] %}
+            {% set form_stats = stats[form.name] %}
             <div class="px-6 py-4 hover:bg-gray-50">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
@@ -95,7 +95,6 @@
                         <div class="ml-4">
                             <h3 class="text-lg font-medium text-gray-900">{{ form.title }}</h3>
                             <p class="text-sm text-gray-500">Таблица: {{ form.source_table }}</p>
-                            <p class="text-sm text-gray-500">URL: {{ form.url }}</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-4">
@@ -115,12 +114,12 @@
                             </div>
                         </div>
                         <div class="flex space-x-2">
-                            <a href="{{ admin_url('notifications/form/' ~ form.source_table) }}" 
+                            <a href="{{ admin_url('notifications/form/' ~ form.name) }}" 
                                class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 Просмотреть
                             </a>
                             {% if form_stats.unread_count > 0 %}
-                            <a href="{{ admin_url('notifications/mark-all-read/' ~ form.source_table) }}" 
+                            <a href="{{ admin_url('notifications/mark-all-read/' ~ form.name) }}" 
                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                                 Отметить прочитанными
                             </a>
@@ -180,7 +179,7 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <a href="{{ admin_url('notifications/submission/' ~ submission.source_table ~ '/id/' ~ submission.id) }}" 
+                        <a href="{{ admin_url('notifications/submission/' ~ submission.form_name ~ '/id/' ~ submission.id) }}" 
                            class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                             Подробнее
                         </a>

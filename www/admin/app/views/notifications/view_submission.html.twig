@@ -10,11 +10,11 @@
             <p class="text-gray-600">Форма: {{ form_info.title }}</p>
         </div>
         <div class="flex space-x-3">
-            <a href="{{ admin_url('notifications/form/' ~ table_name) }}" 
+            <a href="{{ admin_url('notifications/form/' ~ form_name) }}" 
                class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                 ← Назад к списку
             </a>
-            <a href="{{ admin_url('notifications/delete/' ~ table_name ~ '/id/' ~ submission.id) }}" 
+            <a href="{{ admin_url('notifications/delete/' ~ form_name ~ '/id/' ~ submission.id) }}" 
                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
                onclick="return confirm('Удалить эту заявку?')">
                 Удалить
@@ -110,7 +110,7 @@
                     <h2 class="text-lg font-semibold text-gray-900">Действия</h2>
                 </div>
                 <div class="p-6 space-y-3">
-                    <a href="{{ admin_url('notifications/form/' ~ table_name) }}" 
+                    <a href="{{ admin_url('notifications/form/' ~ form_name) }}" 
                        class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                         Все заявки этой формы
                     </a>

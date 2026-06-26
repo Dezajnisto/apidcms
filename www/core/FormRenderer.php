@@ -152,6 +152,11 @@ class FormRenderer {
             $formData['read_status'] = 'unread';
         }
 
+        // Сохраняем form_name для аналитики
+        if (in_array('form_name', $form['table_columns'])) {
+            $formData['form_name'] = $formName;
+        }
+
         // Вставляем данные
         try {
             $newId = $this->database->insert($form['source_table'], $formData);

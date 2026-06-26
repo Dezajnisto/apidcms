@@ -1,33 +1,30 @@
 <?php
 /**
- * Контроллер для управления уведомлениями о заявках форм
+ * NotificationsController — уведомления о заявках форм (v2: form_name фильтрация)
  */
 
 namespace Admin;
 
 class NotificationsController extends BaseController {
-    
+
     /**
      * Главная страница уведомлений
      */
     public function index() {
-        // Получаем все таблицы, которые используются в формах
         $forms = $this->getFormTables();
-        
-        // Собираем статистику по всем формам
+
         $stats = [];
         $totalUnread = 0;
-        
+
         foreach ($forms as $form) {
-            $table = $form['source_table'];
-            $formStats = $this->getFormStats($table);
-            $stats[$table] = $formStats;
+            $formName = $form['name'];
+            $formStats = $this->getFormStats($formName, $form['source_table']);
+            $stats[$formName] = $formStats;
             $totalUnread += $formStats['unread_count'];
         }
-        
-        // Получаем последние заявки из всех форм
+
         $recentSubmissions = $this->getRecentSubmissions($forms, 10);
-        
+
         $this->render('notifications/index', [
             'title' => 'Уведомления о заявках',
             'forms' => $forms,
@@ -37,40 +34,47 @@ class NotificationsController extends BaseController {
             'current_time' => date('Y-m-d H:i:s')
         ]);
     }
-    
+
     /**
-     * Просмотр заявок конкретной формы
+     * Просмотр заявок конкретной формы (по имени формы)
      */
-    public function viewForm($table) {
-        // Проверяем существование таблицы
+    public function viewForm($formName) {
+        $formInfo = $this->getFormInfoByName($formName);
+        $table = $formInfo['source_table'] ?? $formName;
+
         if (!$this->db->tableExists($table)) {
             $this->render('error/404', [
                 'message' => "Таблица '{$table}' не найдена"
             ]);
             return;
         }
-        
-        // Получаем настройки пагинации
+
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $perPage = 20;
         $offset = ($page - 1) * $perPage;
-        
-        // Получаем заявки
+
+        $hasFormName = $this->hasColumn($table, 'form_name');
+        $whereForm = $hasFormName ? " AND form_name = ?" : "";
+        $formParams = $hasFormName ? [$perPage, $offset, $formName] : [$perPage, $offset];
+        $countParams = $hasFormName ? [$formName] : [];
+
         $submissions = $this->db->query(
-            "SELECT * FROM {$table} ORDER BY created_at DESC LIMIT ? OFFSET ?",
-            [$perPage, $offset]
+            "SELECT * FROM {$table} WHERE 1=1{$whereForm} ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            $formParams
         )->fetchAll();
-        
-        // Получаем общее количество
-        $totalCount = $this->db->query("SELECT COUNT(*) as count FROM {$table}")->fetch()['count'];
+
+        $totalCount = $this->db->query(
+            "SELECT COUNT(*) as count FROM {$table} WHERE 1=1{$whereForm}",
+            $countParams
+        )->fetch()['count'];
         $totalPages = ceil($totalCount / $perPage);
-        
-        // Получаем информацию о форме
-        $formInfo = $this->getFormInfoByTable($table);
-        
+
+        $formInfo['form_name'] = $formName;
+
         $this->render('notifications/view_form', [
-            'title' => "Заявки: " . ($formInfo['title'] ?? $table),
+            'title' => "Заявки: " . ($formInfo['title'] ?? $formName),
             'table_name' => $table,
+            'form_name' => $formName,
             'form_info' => $formInfo,
             'submissions' => $submissions,
             'structure' => $this->db->getTableStructure($table),
@@ -79,106 +83,126 @@ class NotificationsController extends BaseController {
             'total_count' => $totalCount
         ]);
     }
-    
+
     /**
      * Просмотр конкретной заявки
      */
-    public function viewSubmission($table, $id) {
+    public function viewSubmission($formName, $id) {
+        $formInfo = $this->getFormInfoByName($formName);
+        $table = $formInfo['source_table'] ?? $formName;
+
         if (!$this->db->tableExists($table)) {
             $this->render('error/404', [
                 'message' => "Таблица '{$table}' не найдена"
             ]);
             return;
         }
-        
+
         $submission = $this->db->getById($table, $id);
-        
+
         if (!$submission) {
             $this->render('error/404', [
                 'message' => "Заявка #{$id} не найдена"
             ]);
             return;
         }
-        
-        // Помечаем как прочитанную (добавляем поле если его нет)
+
         $this->markAsRead($table, $id);
-        
-        $formInfo = $this->getFormInfoByTable($table);
-        
+
         $this->render('notifications/view_submission', [
             'title' => "Заявка #{$id}",
             'table_name' => $table,
+            'form_name' => $formName,
             'form_info' => $formInfo,
             'submission' => $submission,
             'structure' => $this->db->getTableStructure($table)
         ]);
     }
-    
+
     /**
      * Удаление заявки
      */
-    public function deleteSubmission($table, $id) {
+    public function deleteSubmission($formName, $id) {
+        $formInfo = $this->getFormInfoByName($formName);
+        $table = $formInfo['source_table'] ?? $formName;
+
         if (!$this->db->tableExists($table)) {
             $this->render('error/404', [
                 'message' => "Таблица '{$table}' не найдена"
             ]);
             return;
         }
-        
+
         $success = $this->db->delete($table, $id);
-        
+
         if ($success) {
-            $this->redirect("/notifications/form/{$table}?deleted=1");
+            $this->redirect("/notifications/form/{$formName}?deleted=1");
         } else {
             $this->render('error/404', [
                 'message' => "Не удалось удалить заявку #{$id}"
             ]);
         }
     }
-    
+
     /**
      * Отметить все заявки как прочитанные для формы
      */
-    public function markAllRead($table) {
+    public function markAllRead($formName) {
+        $formInfo = $this->getFormInfoByName($formName);
+        $table = $formInfo['source_table'] ?? $formName;
+
         if ($this->db->tableExists($table)) {
-            // Если в таблице есть поле read_status, обновляем его
             $structure = $this->db->getTableStructure($table);
             $hasReadStatus = false;
-            
+            $hasFormName = false;
+
             foreach ($structure as $column) {
                 if ($column['name'] === 'read_status') {
                     $hasReadStatus = true;
-                    break;
+                }
+                if ($column['name'] === 'form_name') {
+                    $hasFormName = true;
                 }
             }
-            
+
             if ($hasReadStatus) {
-                $this->db->query(
-                    "UPDATE {$table} SET read_status = 'read' WHERE read_status = 'unread' OR read_status IS NULL"
-                );
+                if ($hasFormName) {
+                    $this->db->query(
+                        "UPDATE {$table} SET read_status = 'read' WHERE (read_status = 'unread' OR read_status IS NULL) AND form_name = ?",
+                        [$formName]
+                    );
+                } else {
+                    $this->db->query(
+                        "UPDATE {$table} SET read_status = 'read' WHERE read_status = 'unread' OR read_status IS NULL"
+                    );
+                }
             }
         }
-        
-        $this->redirect("/notifications/form/{$table}?marked_read=1");
+
+        $this->redirect("/notifications/form/{$formName}?marked_read=1");
     }
-    
+
+    // ================================================================
+    // Private helpers
+    // ================================================================
+
     /**
-     * Получить список таблиц, используемых в формах
+     * Получить список форм из таблицы forms
      */
     private function getFormTables() {
         $forms = $this->db->query(
-            "SELECT name, display_name AS title, source_table, '' AS url
-             FROM forms 
+            "SELECT name, display_name AS title, source_table
+             FROM forms
              WHERE status = 'active'"
         )->fetchAll();
-        
+
         return $forms;
     }
-    
+
     /**
-     * Получить статистику по форме
+     * Получить статистику по форме (с фильтром по form_name)
      */
-    private function getFormStats($table) {
+    private function getFormStats($formName, $table) {
         if (!$this->db->tableExists($table)) {
             return [
                 'total_count' => 0,
@@ -186,112 +210,131 @@ class NotificationsController extends BaseController {
                 'today_count' => 0
             ];
         }
-        
-        $totalCount = $this->db->query("SELECT COUNT(*) as count FROM {$table}")->fetch()['count'];
-        
-        // Проверяем наличие поля read_status
-        $structure = $this->db->getTableStructure($table);
-        $hasReadStatus = false;
-        
-        foreach ($structure as $column) {
-            if ($column['name'] === 'read_status') {
-                $hasReadStatus = true;
-                break;
-            }
-        }
-        
+
+        $hasFormName = $this->hasColumn($table, 'form_name');
+        $whereForm = $hasFormName ? " AND form_name = ?" : "";
+        $formParam = $hasFormName ? [$formName] : [];
+
+        $totalCount = $this->db->query(
+            "SELECT COUNT(*) as count FROM {$table} WHERE 1=1{$whereForm}",
+            $formParam
+        )->fetch()['count'];
+
+        $hasReadStatus = $this->hasColumn($table, 'read_status');
+
         if ($hasReadStatus) {
             $unreadCount = $this->db->query(
-                "SELECT COUNT(*) as count FROM {$table} WHERE read_status = 'unread' OR read_status IS NULL"
+                "SELECT COUNT(*) as count FROM {$table} WHERE (read_status = 'unread' OR read_status IS NULL){$whereForm}",
+                $formParam
             )->fetch()['count'];
         } else {
-            $unreadCount = $totalCount; // Если нет поля статуса, считаем все непрочитанными
+            $unreadCount = $totalCount;
         }
-        
-        // Заявки за сегодня
+
         $todayCount = $this->db->query(
-            "SELECT COUNT(*) as count FROM {$table} WHERE DATE(created_at) = DATE('now')"
+            "SELECT COUNT(*) as count FROM {$table} WHERE DATE(created_at) = DATE('now'){$whereForm}",
+            $formParam
         )->fetch()['count'];
-        
+
         return [
             'total_count' => $totalCount,
             'unread_count' => $unreadCount,
             'today_count' => $todayCount
         ];
     }
-    
+
     /**
      * Получить последние заявки из всех форм
      */
     private function getRecentSubmissions($forms, $limit = 10) {
         $allSubmissions = [];
-        
+
         foreach ($forms as $form) {
             $table = $form['source_table'];
-            
+            $formName = $form['name'];
+
             if ($this->db->tableExists($table)) {
+                $hasFormName = $this->hasColumn($table, 'form_name');
+                $whereForm = $hasFormName ? " AND form_name = ?" : "";
+                $params = $hasFormName ? [$limit, $formName] : [$limit];
+
                 $submissions = $this->db->query(
-                    "SELECT *, '{$table}' as source_table 
-                     FROM {$table} 
-                     ORDER BY created_at DESC 
+                    "SELECT *, '{$table}' as source_table
+                     FROM {$table}
+                     WHERE 1=1{$whereForm}
+                     ORDER BY created_at DESC
                      LIMIT ?",
-                    [$limit]
+                    $params
                 )->fetchAll();
-                
+
                 foreach ($submissions as $submission) {
                     $submission['form_title'] = $form['title'];
+                    $submission['form_name'] = $form['name'];
                     $allSubmissions[] = $submission;
                 }
             }
         }
-        
-        // Сортируем по дате создания (новые сверху)
+
         usort($allSubmissions, function($a, $b) {
             return strtotime($b['created_at']) - strtotime($a['created_at']);
         });
-        
-        // Ограничиваем общее количество
+
         return array_slice($allSubmissions, 0, $limit);
     }
-    
+
     /**
-     * Получить информацию о форме по названию таблицы
+     * Получить информацию о форме по имени (из таблицы forms)
+     */
+    private function getFormInfoByName($formName) {
+        return $this->db->query(
+            "SELECT display_name AS title, source_table, fields AS form_config
+             FROM forms
+             WHERE name = ? AND status = 'active'
+             LIMIT 1",
+            [$formName]
+        )->fetch();
+    }
+
+    /**
+     * Устаревший метод — оставлен для обратной совместимости
+     * @deprecated использовать getFormInfoByName
      */
     private function getFormInfoByTable($table) {
         return $this->db->query(
-            "SELECT display_name AS title, fields AS form_config 
-             FROM forms 
+            "SELECT display_name AS title, source_table AS table, fields AS form_config
+             FROM forms
              WHERE source_table = ? AND status = 'active'
              LIMIT 1",
             [$table]
         )->fetch();
     }
-    
+
+    /**
+     * Проверить существование колонки в таблице
+     */
+    private function hasColumn($table, $columnName) {
+        $structure = $this->db->getTableStructure($table);
+        foreach ($structure as $column) {
+            if ($column['name'] === $columnName) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Пометить заявку как прочитанную
      */
     private function markAsRead($table, $id) {
-        // Проверяем наличие поля read_status
-        $structure = $this->db->getTableStructure($table);
-        $hasReadStatus = false;
-        
-        foreach ($structure as $column) {
-            if ($column['name'] === 'read_status') {
-                $hasReadStatus = true;
-                break;
-            }
-        }
-        
-        // Если поля нет - добавляем его
+        $hasReadStatus = $this->hasColumn($table, 'read_status');
+
         if (!$hasReadStatus) {
             $this->db->addColumn($table, 'read_status', 'TEXT', true, 'unread');
         }
-        
-        // Обновляем статус
+
         $this->db->query(
             "UPDATE {$table} SET read_status = 'read' WHERE id = ?",
             [$id]
         );
     }
 }
-?>

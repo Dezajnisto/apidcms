@@ -14,6 +14,13 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {% endif %}
 
+{# Anti-spam: hidden honeypot field (bots fill it, humans don't see it) #}
+    <div style="position:absolute;left:-9999px;opacity:0;height:0;overflow:hidden" aria-hidden="true">
+        <input type="email" name="_hp_email" value="" tabindex="-1" autocomplete="off">
+    </div>
+    {# Anti-spam: timestamp check (form must be open at least 3 seconds) #}
+    <input type="hidden" name="_form_ts" value="{{ form_ts }}">
+
     {% for field_name, field in fields %}
         {% if field_name in hidden_fields|default([]) %}
             <input type="hidden" name="{{ field_name }}" value="{{ field_defaults[field_name]|default('') }}">

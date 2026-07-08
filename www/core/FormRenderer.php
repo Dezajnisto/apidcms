@@ -91,6 +91,7 @@ class FormRenderer {
             'form_attrs'       => $options['form_attrs'] ?? '',
             'field_overrides' => $options['field_overrides'] ?? [],
             'field_defaults' => $options['field_defaults'] ?? [],
+            'form_ts'       => time(),
         ];
 
         try {
@@ -121,6 +122,17 @@ class FormRenderer {
         $form = $this->formManager->getForm($formName);
         if (!$form) {
             return ['success' => false, 'message' => 'Форма не найдена'];
+        }
+
+        // Anti-spam: honeypot check (hidden field bots fill but humans don't see)
+        if (!empty($_POST['_hp_email'])) {
+            return ['success' => false, 'message' => 'Form submission error'];
+        }
+
+        // Anti-spam: time-based check (form must not be submitted faster than 3 seconds)
+        $formTs = isset($_POST['_form_ts']) ? intval($_POST['_form_ts']) : 0;
+        if ($formTs > 0 && (time() - $formTs) < 3) {
+            return ['success' => false, 'message' => 'Form submission error'];
         }
 
         // Проверка CSRF

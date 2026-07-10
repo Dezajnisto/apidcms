@@ -20,3 +20,6 @@ bin/
 
 # Old project archive
 docs/archive/
+
+# Internal docs - published on site only
+www/docs/

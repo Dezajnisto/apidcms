@@ -14,3 +14,9 @@ www/storage/logs/
 # Временные файлы
 .DS_Store
 Thumbs.db
+
+# Internal tools - never publish
+bin/
+
+# Old project archive
+docs/archive/

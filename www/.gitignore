@@ -1,0 +1,27 @@
+# Database
+admin/storage/database/*.db
+admin/storage/database/*.db-shm
+admin/storage/database/*.db-wal
+
+# Cache
+storage/cache/*
+admin/app/views/cache/*
+
+# Uploads (user content, keep dir structure)
+storage/uploads/*
+!storage/uploads/.gitkeep
+
+# Config
+front/config/config.php
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+core_lib/
+static/static

@@ -348,7 +348,7 @@ class FrontController {
         $parts = explode("/", $path);
         if (count($parts) === 3 && $parts[1] === "page" && is_numeric($parts[2])) {
             $navItem = $this->getNavigationItemByUrl($parts[0]);
-            if ($navItem && in_array($navItem->page_type, ["blog", "catalog"])) {
+            if ($navItem && in_array($navItem->page_type, ["dynamic"])) {
                 $this->showDynamicList($navItem, (int)$parts[2]);
                 return;
             }
@@ -407,18 +407,6 @@ class FrontController {
                 } else {
                     $this->show404();
                 }
-                break;
-                
-            case 'blog':
-                // Блог - список записей из указанной таблицы
-                $page = $_GET['page'] ?? 1;
-                $this->showDynamicList($navItem, $page);
-                break;
-                
-            case 'catalog':
-                // Каталог - аналогично блогу, но с другим шаблоном
-                $page = $_GET['page'] ?? 1;
-                $this->showDynamicList($navItem, $page);
                 break;
                 
             case 'category':
@@ -506,7 +494,7 @@ class FrontController {
             // Ищем родительскую страницу в навигации
             $parentNav = $this->getNavigationItemByUrl($parentSlug);
             
-            if ($parentNav && in_array($parentNav->page_type, ['blog', 'catalog'])) {
+            if ($parentNav && in_array($parentNav->page_type, ['dynamic'])) {
                 // Это отдельная запись блога/каталога
                 $success = $this->showDynamicItem($parentNav, $itemSlug);
                 if ($success) {
@@ -875,11 +863,18 @@ class FrontController {
                 $template .= '.html.twig';
             }
             
+            // Sidebar: все активные записи (для навигации)
+            $orderCol = in_array('sort_order', $columnNames) ? 'sort_order' : 'id';
+            $allItems = $this->database->query(
+                "SELECT * FROM {$tableName} WHERE status = 'active' ORDER BY {$orderCol} ASC"
+            )->fetchAll();
+
             $this->render($template, [
                 'item' => $item,
                 'nav_item' => $parentNav,
                 'prev_item' => $prevItem,
                 'next_item' => $nextItem,
+                'items' => $allItems,
                 'title' => $item['title'] ?? $item['name'] ?? 'Запись'
             ]);
             

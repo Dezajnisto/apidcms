@@ -838,12 +838,21 @@ class FrontController {
             $prevItem = null;
             $nextItem = null;
             
-            if (in_array('created_at', $columnNames) && isset($item['created_at'])) {
+            // prev/next: sort_order предпочтительнее, затем created_at
+            if (in_array('sort_order', $columnNames) && isset($item['sort_order'])) {
+                $prevItem = $this->database->query(
+                    "SELECT * FROM {$tableName} WHERE sort_order < ? AND status = 'active' ORDER BY sort_order DESC LIMIT 1",
+                    [$item['sort_order']]
+                )->fetch();
+                $nextItem = $this->database->query(
+                    "SELECT * FROM {$tableName} WHERE sort_order > ? AND status = 'active' ORDER BY sort_order ASC LIMIT 1",
+                    [$item['sort_order']]
+                )->fetch();
+            } elseif (in_array('created_at', $columnNames) && isset($item['created_at'])) {
                 $prevItem = $this->database->query(
                     "SELECT * FROM {$tableName} WHERE created_at < ? ORDER BY created_at DESC LIMIT 1",
                     [$item['created_at']]
                 )->fetch();
-                
                 $nextItem = $this->database->query(
                     "SELECT * FROM {$tableName} WHERE created_at > ? ORDER BY created_at ASC LIMIT 1",
                     [$item['created_at']]

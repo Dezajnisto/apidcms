@@ -38,20 +38,24 @@ echo "=== Инициализация таблиц ===\n\n";
 // ========== ОБЯЗАТЕЛЬНЫЕ ТАБЛИЦЫ ==========
 
 // 1. Страницы
-$pdo->exec('
-    CREATE TABLE IF NOT EXISTS pages (
+$pdo->exec("
+    CREATE TABLE IF NOT EXISTS forms (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        slug TEXT UNIQUE NOT NULL,
-        content TEXT,
-        meta_title TEXT,
-        meta_description TEXT,
-        status TEXT DEFAULT "active",
+        name TEXT UNIQUE NOT NULL,
+        display_name TEXT NOT NULL,
+        source_table TEXT NOT NULL,
+        fields TEXT NOT NULL DEFAULT '{}',
+        notifications TEXT DEFAULT '{}',
+        design TEXT DEFAULT '{}',
+        template TEXT DEFAULT 'default',
+        success_message TEXT DEFAULT 'Спасибо! Форма успешно отправлена.',
+        enable_csrf INTEGER DEFAULT 1,
+        status TEXT DEFAULT 'active',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at DATETIME
     )
-');
-echo "[OK] pages\n";
+");
+echo "[OK] forms\n";
 
 // 2. Навигация / типы страниц
 $pdo->exec('
@@ -87,27 +91,6 @@ $pdo->exec('
 ');
 echo "[OK] system_settings\n";
 
-// ========== ФОРМЫ ==========
-
-// 3.5. Формы (новая система форм)
-$pdo->exec('
-    CREATE TABLE IF NOT EXISTS forms (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
-        display_name TEXT NOT NULL,
-        source_table TEXT NOT NULL,
-        fields TEXT NOT NULL DEFAULT \"{}\",
-        notifications TEXT DEFAULT \"{}\",
-        design TEXT DEFAULT \"{}\",
-        template TEXT DEFAULT \"default\",
-        success_message TEXT DEFAULT \"Спасибо! Форма успешно отправлена.\",
-        enable_csrf INTEGER DEFAULT 1,
-        status TEXT DEFAULT \"active\",
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME
-    )
-');
-echo "[OK] forms\n";
 
 // ========== ОПЦИОНАЛЬНЫЕ ТАБЛИЦЫ ==========
 

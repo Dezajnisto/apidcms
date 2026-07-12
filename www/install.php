@@ -160,7 +160,7 @@ function find_composer(): ?string {
 function run_composer(string $corePath): bool {
     $c = find_composer();
     if (!$c) { log_err("Composer not found"); return false; }
-    log("Composer: $c");
+    _log("Composer: $c");
     $cmd = escapeshellcmd($c) . ' install --no-dev --no-interaction -d ' . escapeshellarg($corePath) . ' 2>&1';
     passthru($cmd, $rc);
     if ($rc !== 0) { log_err("Composer failed"); return false; }
@@ -200,17 +200,19 @@ if ($isCLI || $isPost) {
         else $core = $root;
     }
     $core = rtrim($core, '/');
-    log("Root: $root");
-    log("Core: $core");
+    _log("Root: $root");
+    _log("Core: $core");
 
-    if (!is_dir($core . '/vendor')) log("Vendor not found — will install");
+    if (!is_dir($core . '/vendor')) _log("Vendor not found — will install");
 
     // 3. Directories
     step("3/5: Directories");
     ensure_dir($root . '/admin/storage/database');
     ensure_dir($root . '/storage/cache/twig');
     ensure_dir($root . '/storage/uploads');
+  ensure_dir($root . '/tmp/php/sessions');
     ensure_dir($root . '/storage/logs');
+  ensure_dir($root . '/tmp/php/sessions');
     foreach (['/storage/uploads/.gitkeep', '/storage/logs/.gitkeep'] as $gk) {
         $p = $root . $gk;
         if (!file_exists($p)) file_put_contents($p, '');
@@ -233,7 +235,7 @@ if ($isCLI || $isPost) {
     // 5. Composer + DB
     step("5/5: Dependencies & Database");
     if (!is_dir($core . '/vendor')) {
-        if (!run_composer($core)) log("Composer skipped — run manually");
+        if (!run_composer($core)) _log("Composer skipped — run manually");
     } else {
         log_ok("Vendor exists");
     }
@@ -241,7 +243,7 @@ if ($isCLI || $isPost) {
     $init = $root . '/init_system_tables.php';
     if (!file_exists($init)) $init = $core . '/init_system_tables.php';
     if (file_exists($init)) {
-        log("Initializing database...");
+        _log("Initializing database...");
         require $init;
         log_ok("Database ready");
     } else {

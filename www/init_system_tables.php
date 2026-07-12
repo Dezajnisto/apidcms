@@ -39,6 +39,23 @@ echo "=== Инициализация таблиц ===\n\n";
 
 // 1. Страницы
 $pdo->exec("
+    CREATE TABLE IF NOT EXISTS pages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL DEFAULT '',
+        slug TEXT NOT NULL DEFAULT '',
+        content TEXT,
+        template TEXT DEFAULT 'default',
+        meta_description TEXT,
+        featured_image TEXT,
+        status TEXT DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+");
+echo "[OK] pages\n";
+
+// 2. Формы
+$pdo->exec("
     CREATE TABLE IF NOT EXISTS forms (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT UNIQUE NOT NULL,
@@ -48,7 +65,7 @@ $pdo->exec("
         notifications TEXT DEFAULT '{}',
         design TEXT DEFAULT '{}',
         template TEXT DEFAULT 'default',
-        success_message TEXT DEFAULT 'Спасибо! Форма успешно отправлена.',
+        success_message TEXT DEFAULT 'Spasibo! Forma uspeshno otpravlena.',
         enable_csrf INTEGER DEFAULT 1,
         status TEXT DEFAULT 'active',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -57,7 +74,7 @@ $pdo->exec("
 ");
 echo "[OK] forms\n";
 
-// 2. Навигация / типы страниц
+// 3. Навигация / типы страниц
 $pdo->exec('
     CREATE TABLE IF NOT EXISTS navigation (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,7 +95,7 @@ $pdo->exec('
 ');
 echo "[OK] navigation\n";
 
-// 3. Системные настройки (заменяет старую таблицу settings)
+// 4. Системные настройки (заменяет старую таблицу settings)
 $pdo->exec('
     CREATE TABLE IF NOT EXISTS system_settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -244,4 +261,9 @@ if (class_exists('Core\VisitStats')) {
     Core\VisitStats::initTable($db);
     echo "[OK] visit_stats\n";
 }
+// Default pages
+$pdo->exec("INSERT OR IGNORE INTO pages (id, title, slug, content, status) VALUES (1, 'Main', 'home', '<h1>Welcome!</h1><p>Site installed. <a href=/admin>Go to admin</a> to add content.</p>', 'active')");
+$pdo->exec("INSERT OR IGNORE INTO navigation (id, title, url, page_id, page_type, location, menu_order, status) VALUES (1, 'Main', 'home', 1, 'page', 'header', 1, 'active')");
+echo "[OK] default pages\n";
+
 echo "\n=== Инициализация завершена ===\n";

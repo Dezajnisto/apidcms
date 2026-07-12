@@ -55,6 +55,12 @@ class Database {
             
             // Включаем foreign keys для SQLite
             $this->pdo->exec("PRAGMA foreign_keys = ON");
+
+            // WAL mode: writers don't block readers, readers don't block writers
+            $this->pdo->exec("PRAGMA journal_mode = WAL");
+
+            // Wait up to 5 seconds if DB is locked (instead of failing immediately)
+            $this->pdo->exec("PRAGMA busy_timeout = 5000");
             
         } catch (\PDOException $e) {
             die("Ошибка подключения к базе данных: " . $e->getMessage());

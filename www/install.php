@@ -62,10 +62,6 @@ if (!$isCLI && !$isPost) {
   </form>
 
   <div class="skip">
-    или <a href=".">перейти на сайт</a>
-  </div>
-
-  <div class="log" id="log"></div>
 </div>
 
 <script>

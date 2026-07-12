@@ -23,5 +23,3 @@ docs/archive/
 
 # Internal docs - published on site only
 www/docs/
-install.php
-# Installer - never sync to projects

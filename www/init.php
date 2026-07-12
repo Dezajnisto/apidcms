@@ -128,6 +128,54 @@ if (preg_match('/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/i', $ur
     }
 }
 
+
+// If database doesn't exist and it's not the installer — show setup prompt
+$dbFile = PROJECT_ROOT . '/admin/storage/database/cms.db';
+if (!file_exists($dbFile) && $uri !== 'install.php') {
+    http_response_code(503);
+    header('Content-Type: text/html; charset=utf-8');
+    echo <<<'HTML'
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Установка apidcms</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #f5f3ff; color: #1e1b4b; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .card { background: #fff; border-radius: 16px; padding: 48px 40px; max-width: 520px; width: 100%; box-shadow: 0 4px 24px rgba(139,92,246,0.12); text-align: center; }
+  .icon { font-size: 48px; margin-bottom: 16px; }
+  h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+  p { color: #6b7280; font-size: 16px; line-height: 1.6; margin-bottom: 8px; }
+  .steps { text-align: left; background: #f9fafb; border-radius: 12px; padding: 20px 24px; margin: 24px 0; font-size: 15px; line-height: 1.8; }
+  .steps a { color: #8b5cf6; font-weight: 600; text-decoration: none; }
+  .steps a:hover { text-decoration: underline; }
+  .step { display: flex; gap: 10px; margin-bottom: 6px; }
+  .step .num { color: #8b5cf6; font-weight: 700; flex-shrink: 0; }
+  .btn { display: inline-block; background: #8b5cf6; color: #fff; padding: 14px 32px; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; transition: background .2s; }
+  .btn:hover { background: #7c3aed; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">🚀</div>
+  <h1>Добро пожаловать в apidcms</h1>
+  <p>Вы загрузили CMS на сервер. Остался один шаг.</p>
+  <div class="steps">
+    <div class="step"><span class="num">1.</span> Откройте страницу установки:</div>
+    <div class="step" style="padding-left:22px;"><a href="/install.php">→ /install.php</a></div>
+    <div class="step"><span class="num">2.</span> Установщик проверит сервер и всё настроит</div>
+    <div class="step"><span class="num">3.</span> Сайт заработает автоматически</div>
+  </div>
+  <a href="/install.php" class="btn">Запустить установку</a>
+</div>
+</body>
+</html>
+HTML;
+    exit;
+}
+
 if (strpos($uri, 'admin') === 0 || $uri === 'admin') {
     // ===== АДМИНКА =====
     define('ADMIN_ACCESS', true);

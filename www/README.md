@@ -5,12 +5,76 @@
 ## Быстрый старт
 
 ```bash
-# 1. Скопируйте файлы на сервер
-# 2. Откройте сайт в браузере
-# 3. Готово — CMS развернётся автоматически
+# 1. Клонируйте репозиторий
+git clone https://github.com/Dezajnisto/apidcms.git my-project
+
+# 2. Зайдите в папку
+cd my-project/www
+
+# 3. Запустите установщик
+php install.php
+
+# 4. Запустите встроенный сервер (или настройте Apache/Nginx)
+php -S localhost:8000
+
+# 5. Откройте в браузере http://localhost:8000
 ```
 
-Подробнее: [apidcms.dezajno.ru](https://apidcms.dezajno.ru)
+Готово. Админка: `/admin`, логин: `admin`, пароль: `admin`.
+
+## Установка на хостинг
+
+### Через git clone (рекомендуется)
+
+Репозиторий содержит CMS в папке `www/`. Клонируйте прямо в нужную директорию:
+
+```bash
+cd ~
+git clone https://github.com/Dezajnisto/apidcms.git имя_проекта
+```
+
+Или клонируйте во временную папку и скопируйте содержимое `www/`:
+
+```bash
+git clone https://github.com/Dezajnisto/apidcms.git tmp
+cp -r tmp/www/* /путь/к/проекту/
+# или
+cp -r tmp/www/* www/
+rm -rf tmp
+```
+
+После клонирования:
+```bash
+cd /путь/к/проекту
+php install.php
+```
+
+Установщик проверит PHP-расширения, создаст конфиги, установит зависимости Composer и инициализирует базу данных.
+
+### Через ZIP-архив
+
+Если на хостинге нет git — скачайте архив:
+
+```bash
+wget https://github.com/Dezajnisto/apidcms/archive/refs/heads/main.zip
+unzip main.zip
+cp -r apidcms-main/www/* /путь/к/проекту/
+rm -rf apidcms-main main.zip
+php install.php
+```
+
+### Важно после установки
+
+1. **Пароль админки** — поменяйте в админке или в `admin/config/config.php`
+2. **AI API-ключ** — укажите в настройках админки, если планируете использовать AI-ассистента
+3. **Удалите install.php** с сервера после установки (или ограничьте к нему доступ)
+
+### Системные требования
+
+- PHP 8.1+
+- Расширения: `pdo_sqlite`, `sqlite3`, `curl`, `mbstring`, `json`, `gd`, `openssl`, `fileinfo`, `zip`, `xml`, `session`
+- Composer (установщик скачает зависимости)
+- Опционально: Imagick (для превью на лету), intl (для локализации)
 
 ## Возможности
 
@@ -23,13 +87,7 @@
 - **Статистика** — встроенный дашборд посещений
 - **Markdown → HTML** — встроенный фильтр для Twig-шаблонов
 - **SQLite** — не нужен MySQL/PostgreSQL сервер
-
-## Системные требования
-
-- PHP 8.1+
-- SQLite3 (расширение php-sqlite3)
-- mbstring, json, fileinfo
-- Опционально: Imagick (для WebP)
+- **Автоустановка** — `install.php` сам настраивает проект из коробки
 
 ## Лицензия
 

@@ -2,92 +2,62 @@
 
 Лёгкая CMS с ИИ-ассистентом. PHP + SQLite. Устанавливается за минуту.
 
-## Быстрый старт
-
-```bash
-# 1. Клонируйте репозиторий
-git clone https://github.com/Dezajnisto/apidcms.git my-project
-
-# 2. Зайдите в папку
-cd my-project/www
-
-# 3. Запустите установщик
-php install.php
-
-# 4. Запустите встроенный сервер (или настройте Apache/Nginx)
-php -S localhost:8000
-
-# 5. Откройте в браузере http://localhost:8000
-```
-
-Готово. Админка: `/admin`, логин: `admin`, пароль: `admin`.
-
 ## Установка на хостинг
 
-### Через git clone (рекомендуется)
-
-Репозиторий содержит CMS в папке `www/`. Клонируйте прямо в нужную директорию:
+Зайдите в папку проекта и выполните:
 
 ```bash
-cd ~
-git clone https://github.com/Dezajnisto/apidcms.git имя_проекта
-```
-
-Или клонируйте во временную папку и скопируйте содержимое `www/`:
-
-```bash
+cd ~/мой-сайт.ru
+rm -rf www/* tmp
 git clone https://github.com/Dezajnisto/apidcms.git tmp
-cp -r tmp/www/* /путь/к/проекту/
-# или
-cp -r tmp/www/* www/
-rm -rf tmp
+cp -r tmp/www/* www/ && rm -rf tmp
+php www/install.php
 ```
 
-После клонирования:
-```bash
-cd /путь/к/проекту
-php install.php
-```
+Замените `мой-сайт.ru` на название папки вашего сайта.
 
-Установщик проверит PHP-расширения, создаст конфиги, установит зависимости Composer и инициализирует базу данных.
-
-### Через ZIP-архив
-
-Если на хостинге нет git — скачайте архив:
+## Установка через ZIP (если нет Git)
 
 ```bash
+cd ~/мой-сайт.ru
+rm -rf www/*
 wget https://github.com/Dezajnisto/apidcms/archive/refs/heads/main.zip
-unzip main.zip
-cp -r apidcms-main/www/* /путь/к/проекту/
-rm -rf apidcms-main main.zip
-php install.php
+unzip main.zip && cp -r apidcms-main/www/* www/ && rm -rf apidcms-main main.zip
+php www/install.php
 ```
 
-### Важно после установки
+## Локальный запуск
 
-1. **Пароль админки** — поменяйте в админке или в `admin/config/config.php`
-2. **AI API-ключ** — укажите в настройках админки, если планируете использовать AI-ассистента
-3. **Удалите install.php** с сервера после установки (или ограничьте к нему доступ)
+```bash
+git clone https://github.com/Dezajnisto/apidcms.git
+cd apidcms/www
+php install.php
+php -S localhost:8000
+```
 
-### Системные требования
+Откройте http://localhost:8000. Админка: `/admin`, логин: `admin`, пароль: `admin`.
+
+## Системные требования
 
 - PHP 8.1+
-- Расширения: `pdo_sqlite`, `sqlite3`, `curl`, `mbstring`, `json`, `gd`, `openssl`, `fileinfo`, `zip`, `xml`, `session`
-- Composer (установщик скачает зависимости)
-- Опционально: Imagick (для превью на лету), intl (для локализации)
+- Расширения: `sqlite3`, `curl`, `mbstring`, `json`, `gd`, `openssl`, `fileinfo`, `zip`, `xml`
+- Composer (установщик установит зависимости)
 
 ## Возможности
 
-- **AI Ассистент** — нейросеть внутри админки, помогает создавать таблицы, формы и контент
-- **Конструктор таблиц** — создавайте БД-таблицы через UI без SQL
-- **Twig-шаблоны** — гибкая система шаблонов с формочками и динамическими страницами
-- **Файловый менеджер** — загрузка, превью, WebP на лету
-- **Плагины** — система расширений с хуками и редактором шаблонов
-- **Формы** — конструктор с email-уведомлениями и сохранением в БД
+- **AI Ассистент** — нейросеть в админке: создаёт таблицы, формы, шаблоны и контент
+- **Конструктор таблиц** — БД-таблицы через UI без SQL
+- **Twig-шаблоны** — гибкая система шаблонов
+- **Файловый менеджер** — загрузка, превью, WebP
+- **Плагины** — система расширений с хуками
+- **Формы** — конструктор с email-уведомлениями
 - **Статистика** — встроенный дашборд посещений
-- **Markdown → HTML** — встроенный фильтр для Twig-шаблонов
 - **SQLite** — не нужен MySQL/PostgreSQL сервер
-- **Автоустановка** — `install.php` сам настраивает проект из коробки
+- **Автоустановка** — `install.php` сам всё настраивает
+
+## Документация
+
+[apidcms.dezajno.ru/docs](https://apidcms.dezajno.ru/docs)
 
 ## Лицензия
 

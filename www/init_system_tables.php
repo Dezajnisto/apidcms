@@ -8,7 +8,7 @@
  */
 
 define('ROOT_PATH', realpath(__DIR__));
-define('CORE_PATH', ROOT_PATH . '/core_lib');
+if (is_dir(ROOT_PATH . '/core_lib')) { define('CORE_PATH', ROOT_PATH . '/core_lib'); } else { define('CORE_PATH', ROOT_PATH); }
 define('ADMIN_PATH', ROOT_PATH . '/admin');
 define('ADMIN_ACCESS', true);
 define('FRONT_ACCESS', true);

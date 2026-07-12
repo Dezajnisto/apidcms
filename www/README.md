@@ -8,8 +8,8 @@
 
 ```bash
 cd ~/мой-сайт.ru
-rm -rf tmp && git clone https://github.com/Dezajnisto/apidcms.git tmp
-cp -r tmp/www/* www/ && rm -rf tmp
+git clone https://github.com/Dezajnisto/apidcms.git _clone
+cp -r _clone/www/* www/ && rm -rf _clone
 php www/install.php
 ```
 

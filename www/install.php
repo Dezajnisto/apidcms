@@ -126,7 +126,7 @@ HTML;
 
 // ── Helper functions ──
 
-function log(string $msg): void { echo "  $msg\n"; flush(); }
+function _log(string $msg): void { echo "  $msg\n"; flush(); }
 
 function log_ok(string $msg): void { echo "  ✅ $msg\n"; flush(); }
 

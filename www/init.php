@@ -176,6 +176,42 @@ HTML;
     exit;
 }
 
+// If database exists and install.php is still here — block the site (security risk)
+$dbFile = PROJECT_ROOT . '/admin/storage/database/cms.db';
+$installFile = PROJECT_ROOT . '/install.php';
+if (file_exists($dbFile) && file_exists($installFile) && $uri !== 'install.php') {
+    http_response_code(503);
+    header('Content-Type: text/html; charset=utf-8');
+    echo <<<'HTML'
+<!DOCTYPE html>
+<html lang=ru>
+<head>
+<meta charset=utf-8><meta name=viewport content=width=device-width,initial-scale=1>
+<title>⚠️ Удалите install.php</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#fef2f2;color:#991b1b;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.card{background:#fff;border-radius:16px;padding:48px 40px;max-width:520px;width:100%;box-shadow:0 4px 24px rgba(239,68,68,.12);text-align:center}
+.icon{font-size:48px;margin-bottom:16px}
+h1{font-size:24px;font-weight:700;margin-bottom:8px}
+p{color:#6b7280;font-size:16px;line-height:1.6;margin-bottom:8px}
+code{background:#f3f4f6;padding:4px 10px;border-radius:6px;font-size:15px}
+</style>
+</head>
+<body>
+<div class=card>
+<div class=icon>⚠️</div>
+<h1>Удалите install.php</h1>
+<p>Сайт установлен, но файл <code>install.php</code> всё ещё на сервере.</p>
+<p>Это небезопасно — любой может переустановить сайт.</p>
+<p>Удалите его командой:<br><code>rm www/install.php</code></p>
+</div>
+</body>
+</html>
+HTML;
+    exit;
+}
+
 if (strpos($uri, 'admin') === 0 || $uri === 'admin') {
     // ===== АДМИНКА =====
     define('ADMIN_ACCESS', true);

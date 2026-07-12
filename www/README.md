@@ -4,23 +4,19 @@
 
 ## Установка на хостинг
 
-Зайдите в папку проекта и выполните:
+Зайдите в папку проекта, замените `мой-сайт.ru` на свою:
 
 ```bash
 cd ~/мой-сайт.ru
-rm -rf www/* tmp
-git clone https://github.com/Dezajnisto/apidcms.git tmp
+rm -rf tmp && git clone https://github.com/Dezajnisto/apidcms.git tmp
 cp -r tmp/www/* www/ && rm -rf tmp
 php www/install.php
 ```
-
-Замените `мой-сайт.ru` на название папки вашего сайта.
 
 ## Установка через ZIP (если нет Git)
 
 ```bash
 cd ~/мой-сайт.ru
-rm -rf www/*
 wget https://github.com/Dezajnisto/apidcms/archive/refs/heads/main.zip
 unzip main.zip && cp -r apidcms-main/www/* www/ && rm -rf apidcms-main main.zip
 php www/install.php
@@ -41,19 +37,18 @@ php -S localhost:8000
 
 - PHP 8.1+
 - Расширения: `sqlite3`, `curl`, `mbstring`, `json`, `gd`, `openssl`, `fileinfo`, `zip`, `xml`
-- Composer (установщик установит зависимости)
+- Composer
 
 ## Возможности
 
-- **AI Ассистент** — нейросеть в админке: создаёт таблицы, формы, шаблоны и контент
-- **Конструктор таблиц** — БД-таблицы через UI без SQL
-- **Twig-шаблоны** — гибкая система шаблонов
+- **AI Ассистент** — нейросеть в админке
+- **Конструктор таблиц** — БД без SQL
+- **Twig-шаблоны** — гибкая система
 - **Файловый менеджер** — загрузка, превью, WebP
-- **Плагины** — система расширений с хуками
-- **Формы** — конструктор с email-уведомлениями
-- **Статистика** — встроенный дашборд посещений
-- **SQLite** — не нужен MySQL/PostgreSQL сервер
-- **Автоустановка** — `install.php` сам всё настраивает
+- **Плагины** — система расширений
+- **Формы** — конструктор с email
+- **Статистика** — встроенный дашборд
+- **SQLite** — не нужен MySQL
 
 ## Документация
 

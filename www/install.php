@@ -62,6 +62,16 @@ function run_install(array $opts): bool {
     }
     i_ok("Directories created");
 
+    // Default custom.css — user-editable via admin panel
+    $customCssPath = $root . '/storage/css/custom.css';
+    if (!file_exists($customCssPath)) {
+        $customCss = base64_decode('LyogZGVmYXVsdCBjdXN0b20uY3NzIOKAlCDRg9C/0YDQsNCy0LvRj9C10YLRgdGPINGH0LXRgNC10Lcg0L/QsNC90LXQu9GMINCw0LTQvNC40L3QuNGB0YLRgNCw0YLQvtGA0LAKICog0JjQt9C80LXQvdGP0LnRgtC1LCDRgdC+0YXRgNCw0L3Rj9C50YLQtSDQvtGA0LjQs9C40L3QsNC7INC4INC90LUg0YPRgtGA0LDRgtC40YLQtSDQv9GA0Lgg0L7QsdC90L7QstC70LXQvdC40Lgg0Y/QtNGA0LAKICovCgovKiDQntGB0L3QvtCy0L3Ri9C1INC+0YLRgdGC0YPQv9GLICovCm1haW4gewogICAgcGFkZGluZzogMCAxcmVtOwp9CgovKiDQotC40L/QvtCz0YDQsNGE0LjQutCwICovCmFydGljbGUgewogICAgbWF4LXdpZHRoOiA4MDBweDsKICAgIG1hcmdpbjogMCBhdXRvOwogICAgcGFkZGluZzogMnJlbSAxcmVtOwp9CgovKiDQkdC70L7QsyDQuCDQv9GD0L3QutGC0Ysg0YHQv9C40YHQutCwICovCi5jb250ZW50LWxpc3QgewogICAgbWF4LXdpZHRoOiA4MDBweDsKICAgIG1hcmdpbjogMCBhdXRvOwogICAgcGFkZGluZzogMXJlbTsKfQouY29udGVudC1pdGVtIHsKICAgIG1hcmdpbi1ib3R0b206IDJyZW07CiAgICBwYWRkaW5nOiAxLjVyZW07CiAgICBiYWNrZ3JvdW5kOiAjZmZmOwogICAgYm9yZGVyLXJhZGl1czogOHB4OwogICAgYm94LXNoYWRvdzogMCAxcHggM3B4IHJnYmEoMCwwLDAsMC4wOCk7Cn0KLml0ZW0tdGl0bGUgewogICAgZm9udC1zaXplOiAxLjI1cmVtOwogICAgbWFyZ2luOiAwIDAgMC43NXJlbTsKfQouaXRlbS10aXRsZSBhIHsKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsKICAgIGNvbG9yOiAjMWExYTFhOwp9Ci5pdGVtLW1ldGEgewogICAgY29sb3I6ICM4ODg7CiAgICBmb250LXNpemU6IDAuOXJlbTsKICAgIG1hcmdpbi1ib3R0b206IDAuNzVyZW07Cn0KLml0ZW0tZXhjZXJwdCB7CiAgICBjb2xvcjogIzY2NjsKICAgIGxpbmUtaGVpZ2h0OiAxLjY7Cn0KCi8qINCn0YLQtdC90LjQtSDRgdC+0LPQu9Cw0YjQtdC90LjQuSAqLwouYnRuIHsKICAgIGRpc3BsYXk6IGlubGluZS1ibG9jazsKICAgIHBhZGRpbmc6IDhweCAyMHB4OwogICAgYmFja2dyb3VuZDogIzhiNWNmNjsKICAgIGNvbG9yOiAjZmZmOwogICAgYm9yZGVyLXJhZGl1czogNnB4OwogICAgdGV4dC1kZWNvcmF0aW9uOiBub25lOwogICAgZm9udC13ZWlnaHQ6IDYwMDsKfQouYnRuOmhvdmVyIHsKICAgIGJhY2tncm91bmQ6ICM3YzNhZWQ7Cn0K');
+        file_put_contents($customCssPath, $customCss);
+        i_ok("custom.css created (editable in admin)");
+    } else {
+        i_ok("custom.css exists");
+    }
+
     // Copy default templates from core to project (editable by user)
     $templatesSrc = $core . '/front/app/views';
     $templatesDst = $root . '/front/app/views';

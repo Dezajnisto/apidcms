@@ -6,6 +6,9 @@ RewriteRule ^s3-proxy/(.*)$ /front/s3-proxy.php?path=$1 [L,QSA]
 # Admin — always route through index.php
 RewriteRule ^admin(.*)$ index.php [QSA,L]
 
+# Block direct access to tmp/ (sessions, cache)
+RewriteRule ^tmp/ - [F,L]
+
 # All other requests to index.php
 # (init.php serves static files from core_lib/static/ — no symlink needed)
 RewriteCond %{REQUEST_FILENAME} !-f

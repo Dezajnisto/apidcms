@@ -105,6 +105,13 @@ $pm = \Core\PluginManager::getInstance($pluginsDir);
 $pm->loadPlugins(); // загружает init.php всех активных плагинов
 $pm->doAction('core.init');
 
+// === Настройка сессий ===
+$sessionPath = PROJECT_ROOT . '/tmp/php/sessions';
+if (!is_dir($sessionPath)) {
+    @mkdir($sessionPath, 0755, true);
+}
+session_save_path($sessionPath);
+
 // === Маршрутизация ===
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);

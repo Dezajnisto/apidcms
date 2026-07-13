@@ -78,16 +78,21 @@ function run_install(array $opts): bool {
     if (is_dir($templatesSrc) && !is_dir($templatesDst)) {
         mkdir($templatesDst, 0755, true);
         $copied = 0;
-        foreach (new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($templatesSrc, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST
-        ) as $item) {
-            $target = $templatesDst . '/' . $item->getSubPathName();
-            if ($item->isDir()) {
-                mkdir($target, 0755);
-            } else {
-                copy($item, $target);
-                $copied++;
+        $dirs = [$templatesSrc];
+        while ($dirs) {
+            $src = array_shift($dirs);
+            foreach (scandir($src) as $f) {
+                if ($f === '.' || $f === '..') continue;
+                $sp = $src . '/' . $f;
+                $rel = substr($sp, strlen($templatesSrc) + 1);
+                $tp = $templatesDst . '/' . $rel;
+                if (is_dir($sp)) {
+                    mkdir($tp, 0755);
+                    $dirs[] = $sp;
+                } else {
+                    copy($sp, $tp);
+                    $copied++;
+                }
             }
         }
         i_ok("Templates copied to project ($copied files)");

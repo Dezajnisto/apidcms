@@ -5,7 +5,7 @@ admin/storage/database/*.db-wal
 
 # Cache
 storage/cache/*
-admin/app/views/cache/*
+
 
 # Uploads (user content, keep dir structure)
 storage/uploads/*

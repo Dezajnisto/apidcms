@@ -106,15 +106,28 @@ function add_seed(string $root): void {
     try {
         $db = new PDO("sqlite:$dbf"); $db->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
         $db->exec("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000");
-        $db->exec("INSERT OR IGNORE INTO pages(id,title,slug,content,status) VALUES(2,'About','about','<h1>About us</h1><p>We are a small team.</p><p><a href=\"/\">Home</a></p>','active')");
-        $db->exec("INSERT OR IGNORE INTO pages(id,title,slug,content,status) VALUES(3,'Contact','contact','<h1>Contact</h1><p>hello@example.com</p>','active')");
-        $db->exec("INSERT OR IGNORE INTO pages(id,title,slug,content,status) VALUES(4,'First post','first-post','<h2>Hello!</h2><p>Your first blog post.</p>','active')");
-        $db->exec("INSERT OR IGNORE INTO pages(id,title,slug,content,status) VALUES(5,'Second post','second-post','<h2>Getting started</h2><p>Create pages in admin.</p>','active')");
-        $db->exec("INSERT OR IGNORE INTO navigation(id,title,url,page_id,page_type,source_table,location,menu_order,status) VALUES(2,'About','about',2,'page','','header',2,'active')");
-        $db->exec("INSERT OR IGNORE INTO navigation(id,title,url,page_id,page_type,source_table,location,menu_order,status) VALUES(3,'Contact','contact',3,'page','','header',3,'active')");
-        $db->exec("INSERT OR IGNORE INTO navigation(id,title,url,page_id,page_type,source_table,location,menu_order,status) VALUES(4,'Blog','blog',null,'dynamic','pages','header',4,'active')");
-        $db->exec("UPDATE navigation SET page_type='page' WHERE id=1");
-        i_ok("Sample pages: Home, About, Contact, Blog (2 posts)");
+
+        // Home page
+        $db->exec("INSERT OR IGNORE INTO pages(id,title,slug,content,status) VALUES(1,'Home','home','<section style=\"padding:4rem 0;text-align:center\"><h1 style=\"font-size:2.5rem;margin-bottom:1rem\">Welcome to apidcms</h1><p style=\"font-size:1.25rem;color:#6b7280;margin-bottom:2rem\">A lightweight PHP CMS. Create pages, blog posts, forms, and more.</p><a href=\"/blog\" style=\"display:inline-block;padding:12px 32px;background:#8b5cf6;color:#fff;border-radius:8px;text-decoration:none;font-weight:600\">Read the blog</a></section>','active')");
+
+        // About page
+        $db->exec("INSERT OR IGNORE INTO pages(id,title,slug,content,status) VALUES(2,'About us','about','<h1>About apidcms</h1><p>apidcms is a minimalist content management system built with PHP 8.1+ and SQLite.</p><h2>Features</h2><ul><li>No database server needed — SQLite</li><li>Twig templates</li><li>Built-in blog, forms, navigation</li><li>Plugin system</li><li>AI-powered pages</li></ul><p><a href=\"/\">Back to home</a></p>','active')");
+
+        // Contact page
+        $db->exec("INSERT OR IGNORE INTO pages(id,title,slug,content,status) VALUES(3,'Contact','contact','<h1>Contact us</h1><p>Have questions? Reach out via email.</p><p>Email: <strong>hello@example.com</strong></p><p><a href=\"/\">Back to home</a></p>','active')");
+
+        // Blog posts
+        $db->exec("INSERT OR IGNORE INTO pages(id,title,slug,content,status) VALUES(4,'Getting started','getting-started','<h2>Installation</h2><p>Getting started with apidcms takes only a few minutes. Clone the repository, upload to your server, and run install.php.</p><h2>First steps</h2><p>After installation, log in to the admin panel at /admin. From there you can create pages, customize navigation, and manage content.</p><h2>Creating your first page</h2><p>Go to Pages in the admin panel, click New Page, write your content, and publish.</p>','active')");
+        $db->exec("INSERT OR IGNORE INTO pages(id,title,slug,content,status) VALUES(5,'Customizing your site','customizing','<h2>Templates</h2><p>apidcms uses Twig templates. You can override any template by creating your own in the admin panel or editing files directly.</p><h2>CSS Styling</h2><p>Add your custom CSS in the admin panel under Design. Changes take effect immediately after clearing the cache.</p><h2>Navigation</h2><p>Manage your site menu in the admin panel. Add links, reorder items, and create dropdown menus.</p>','active')");
+        $db->exec("INSERT OR IGNORE INTO pages(id,title,slug,content,status) VALUES(6,'Using plugins','plugins','<h2>What are plugins?</h2><p>Plugins extend apidcms functionality without modifying the core. Each plugin lives in its own directory under /plugins.</p><h2>Available plugins</h2><p>Check the admin panel under Plugins to see what is installed and active.</p><h2>Creating your own</h2><p>Plugin development is straightforward: a plugin.json manifest, an init.php bootstrap, and optional templates.</p>','active')");
+
+        // Navigation — location='main' (what getNavigation() expects)
+        $db->exec("UPDATE navigation SET title='Home', url='home', page_id=1, page_type='page', source_table='', location='main', menu_order=1, status='active' WHERE id=1");
+        $db->exec("INSERT OR IGNORE INTO navigation(id,title,url,page_id,page_type,source_table,location,menu_order,status) VALUES(2,'About','about',2,'page','','main',2,'active')");
+        $db->exec("INSERT OR IGNORE INTO navigation(id,title,url,page_id,page_type,source_table,location,menu_order,status) VALUES(3,'Blog','blog',null,'dynamic','pages','main',3,'active')");
+        $db->exec("INSERT OR IGNORE INTO navigation(id,title,url,page_id,page_type,source_table,location,menu_order,status) VALUES(4,'Contact','contact',3,'page','','main',4,'active')");
+
+        i_ok("Sample site: Home, About, Blog (3 posts), Contact");
     } catch (\Exception $e) { i_err("Seed failed: ".$e->getMessage()); }
 }
 

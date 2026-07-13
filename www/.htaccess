@@ -1,0 +1,40 @@
+RewriteEngine On
+
+# Allow static files
+RewriteRule ^static/ - [L]
+
+# S3 Proxy
+RewriteRule ^s3-proxy/(.*)$ /front/s3-proxy.php?path=$1 [L,QSA]
+
+# Admin — always route through index.php
+RewriteRule ^admin(.*)$ index.php [QSA,L]
+
+# All other requests to index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Protect sensitive files
+<Files ~ "\.(env|json|config\.js|md|gitignore|gitattributes|lock|sql)$">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files ~ "(composer\.json|composer\.lock|package\.json|package-lock\.json)">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Disable directory listing
+Options -Indexes
+
+# Static file caching
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+</IfModule>

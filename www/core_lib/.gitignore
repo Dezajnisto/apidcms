@@ -12,7 +12,6 @@ storage/uploads/*
 !storage/uploads/.gitkeep
 
 # Config
-front/config/config.php
 
 # OS
 .DS_Store

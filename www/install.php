@@ -36,7 +36,7 @@ function run_install(array $opts): bool {
     $core = rtrim($core, '/');
     i_step("Environment"); if (!check_env()) return false;
     i_step("Structure");
-    foreach (['/admin/config','/admin/storage/database','/storage/cache/twig','/storage/css','/storage/uploads','/storage/logs','/tmp/php/sessions'] as $d) {
+    foreach (['/admin/config','/admin/storage/database','/storage/cache/twig','/storage/css','/storage/uploads','/front/config','/storage/logs','/tmp/php/sessions'] as $d) {
         $p = $root.$d; if (!is_dir($p)) @mkdir($p, 0755, true);
     }
     @file_put_contents($root.'/storage/uploads/.gitkeep',''); @file_put_contents($root.'/storage/logs/.gitkeep','');

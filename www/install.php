@@ -42,10 +42,25 @@ function run_install(array $opts): bool {
     @file_put_contents($root.'/storage/uploads/.gitkeep',''); @file_put_contents($root.'/storage/logs/.gitkeep','');
     i_ok("Directories created");
     i_step("Config");
-    if (!file_exists($root.'/admin/config/config.php')) {
-        file_put_contents($root.'/admin/config/config.php',"<?php\nreturn ['security'=>['admin_username'=>'".addslashes($opts['username'])."','admin_password'=>'".addslashes($opts['password'])."'],'ai'=>['api_key'=>'".addslashes($opts['api_key'])."','model'=>'".addslashes($opts['model'])."']];\n");
+    $adminConfigPath = $root.'/admin/config/config.php';
+    if (file_exists($adminConfigPath)) {
+        $existing = include $adminConfigPath;
+        if (!is_array($existing)) $existing = [];
+        $existing['security'] = [
+            'admin_username' => $opts['username'],
+            'admin_password' => $opts['password'],
+            'session_timeout' => $existing['security']['session_timeout'] ?? 3600,
+        ];
+        $existing['ai'] = [
+            'api_key' => $opts['api_key'],
+            'model' => $opts['model'],
+        ];
+        file_put_contents($adminConfigPath, "<?php\nreturn ".var_export($existing, true).";\n");
+        i_ok("admin/config/config.php updated");
+    } else {
+        file_put_contents($adminConfigPath, "<?php\nreturn ['security'=>['admin_username'=>'".addslashes($opts['username'])."','admin_password'=>'".addslashes($opts['password'])."','session_timeout'=>3600],'ai'=>['api_key'=>'".addslashes($opts['api_key'])."','model'=>'".addslashes($opts['model'])."']];\n");
         i_ok("admin/config/config.php created");
-    } else i_ok("admin/config/config.php exists");
+    }
     if (!file_exists($root.'/front/config/config.php')) {
         $c="<?php\nif(!defined('ROOT_PATH')){define('ROOT_PATH',realpath(__DIR__.'/../..'));define('FRONT_PATH',ROOT_PATH.'/front');define('FRONT_APP_PATH',FRONT_PATH.'/app');define('PUBLIC_PATH',ROOT_PATH.'/public');define('STORAGE_PATH',ROOT_PATH.'/storage');}\nreturn ['database'=>['path'=>ROOT_PATH.'/admin/storage/database/','file'=>'cms.db','full_path'=>ROOT_PATH.'/admin/storage/database/cms.db'],'twig'=>['cache'=>STORAGE_PATH.'/cache/twig','auto_reload'=>true]];\n";
         file_put_contents($root.'/front/config/config.php',$c);

@@ -118,16 +118,6 @@ function add_seed(string $root): void {
     } catch (\Exception $e) { i_err("Seed failed: ".$e->getMessage()); }
 }
 
-// Ajax endpoints
-if (!$isCLI && ($_GET['test_key'] ?? '') === '1') {
-    header('Content-Type: application/json');
-    $key = trim($_GET['key'] ?? '');
-    if (!$key) { echo '{"ok":false,"msg":"No key"}'; exit; }
-    $ch = curl_init('https://api.openai.com/v1/models');
-    curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>8,CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$key]]);
-    $r = curl_exec($ch); $c = curl_getinfo($ch,CURLINFO_HTTP_CODE); curl_close($ch);
-    echo json_encode(['ok'=>$c===200,'msg'=>$c===200?'Valid':'Error '.$c]); exit;
-}
 
 // CLI
 if ($isCLI) {
@@ -189,7 +179,7 @@ input:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.1)}
 <div class="logo">apidcms <span>v1.0</span></div>
 <h1>Установка</h1>
 <p class="sub">Пара минут — и сайт готов к работе.</p>
-<div class="progress" id="progress"><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+<div class="progress" id="progress"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
 <form id="form" method="post"><input type="hidden" name="step" value="1">
 <div id="s1">
 <label>Логин администратора</label>
@@ -197,14 +187,8 @@ input:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.1)}
 <div class="row"><div><label>Пароль</label><input type="password" name="password" id="pw1" required minlength="4"></div><div><label>Повторите</label><input type="password" id="pw2" required minlength="4"></div></div>
 <p class="hint">Минимум 4 символа</p>
 <button type="button" class="btn" onclick="next()">Продолжить →</button></div>
+
 <div id="s2" style="display:none">
-<label>AI API-ключ</label>
-<div class="inp-group"><input type="text" name="api_key" id="apiKey" placeholder="sk-..."><button type="button" class="btn btn-s btn-gh" onclick="testKey()" id="testBtn">Тест</button></div>
-<p class="hint" id="testMsg" style="margin-top:4px">Можно пропустить. Настроите позже в админке.</p>
-<label>Модель</label><input type="text" name="model" value="deepseek-chat" placeholder="deepseek-chat">
-<p class="hint">Название модели (OpenAI-совместимый API)</p>
-<div style="display:flex;gap:8px;margin-top:4px"><button type="button" class="btn btn-gh" onclick="prev()">← Назад</button><button type="button" class="btn" onclick="next()">Продолжить →</button></div></div>
-<div id="s3" style="display:none">
 <div class="opt"><input type="checkbox" name="seed" value="1" id="seedChk"><label for="seedChk" style="margin:0;font-weight:400">Добавить тестовые страницы (Home, About, Contact, Blog)</label></div>
 <p class="hint">Примеры страниц и записей. Можно удалить позже.</p>
 <div style="display:flex;gap:8px;margin-top:4px"><button type="button" class="btn btn-gh" onclick="prev()">← Назад</button><button type="submit" class="btn" id="goBtn">🚀 Запустить установку</button></div></div>
@@ -218,9 +202,8 @@ input:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.1)}
 <a href="admin" class="btn" style="width:auto;padding:10px 20px">В админку</a></div></div></div>
 <script>
 var s=1,d=document.querySelectorAll('.progress .dot');
-function sh(n){s=n;['s1','s2','s3'].forEach(function(id,i){document.getElementById(id).style.display=(i+1===n)?'block':'none'});d.forEach(function(x,i){x.classList.toggle('active',i<n)})}
+function sh(n){s=n;['s1','s2'].forEach(function(id,i){document.getElementById(id).style.display=(i+1===n)?'block':'none'});d.forEach(function(x,i){x.classList.toggle('active',i<n)})}
 function prev(){if(s>1)sh(s-1)}
-function next(){if(s===1){var p=document.getElementById('pw1').value;if(p.length<4){alert('4+ symbols');return}if(p!==document.getElementById('pw2').value){alert('Passwords differ');return}}if(s<3)sh(s+1)}
-function testKey(){var k=document.getElementById('apiKey').value.trim();if(!k){alert('Enter key');return}var b=document.getElementById('testBtn'),r=document.getElementById('testMsg');b.disabled=true;b.textContent='...';r.textContent='Checking...';fetch('?test_key=1&key='+encodeURIComponent(k)).then(function(x){return x.json()}).then(function(d){r.textContent=d.ok?'✅ Key works':'❌ Error '+(d.msg||'');r.style.color=d.ok?'#22c55e':'#ef4444';b.disabled=false;b.textContent='Test'}).catch(function(){r.textContent='❌ Network error';r.style.color='#ef4444';b.disabled=false;b.textContent='Test'})}
-document.getElementById('form').addEventListener('submit',function(e){e.preventDefault();document.getElementById('form').style.display='none';d.forEach(function(x,i){x.classList.toggle('active',i<4)});document.getElementById('goBtn').disabled=true;var l=document.getElementById('log'),p=0;l.style.display='block';var x=new XMLHttpRequest();x.open('POST','',true);x.onreadystatechange=function(){if(x.readyState>=3){var t=x.responseText.substring(p);if(t){l.textContent+=t;l.scrollTop=l.scrollHeight;p=x.responseText.length}}if(x.readyState===4)document.getElementById('result').style.display='block'};x.send(new FormData(this))});
+function next(){if(s===1){var p=document.getElementById('pw1').value;if(p.length<4){alert('4+ symbols');return}if(p!==document.getElementById('pw2').value){alert('Passwords differ');return}}if(s<2)sh(s+1)}
+document.getElementById('form').addEventListener('submit',function(e){e.preventDefault();document.getElementById('form').style.display='none';d.forEach(function(x,i){x.classList.toggle('active',i<3)});document.getElementById('goBtn').disabled=true;var l=document.getElementById('log'),p=0;l.style.display='block';var x=new XMLHttpRequest();x.open('POST','',true);x.onreadystatechange=function(){if(x.readyState>=3){var t=x.responseText.substring(p);if(t){l.textContent+=t;l.scrollTop=l.scrollHeight;p=x.responseText.length}}if(x.readyState===4)document.getElementById('result').style.display='block'};x.send(new FormData(this))});
 </script></body></html>

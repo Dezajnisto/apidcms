@@ -82,7 +82,7 @@ function run_install(array $opts): bool {
         i_ok("admin/config/config.php created");
     }
     if (!file_exists($root.'/front/config/config.php')) {
-        $c="<?php\nif(!defined('ROOT_PATH')){define('ROOT_PATH',realpath(__DIR__.'/../..'));define('FRONT_PATH',ROOT_PATH.'/front');define('FRONT_APP_PATH',FRONT_PATH.'/app');define('PUBLIC_PATH',ROOT_PATH.'/public');define('STORAGE_PATH',ROOT_PATH.'/storage');}\nreturn ['database'=>['path'=>ROOT_PATH.'/admin/storage/database/','file'=>'cms.db','full_path'=>ROOT_PATH.'/admin/storage/database/cms.db'],'twig'=>['cache'=>STORAGE_PATH.'/cache/twig','auto_reload'=>true]];\n";
+        $c="<?php\nif(!defined('ROOT_PATH')){define('ROOT_PATH',realpath(__DIR__.'/../..'));define('FRONT_PATH',ROOT_PATH.'/front');define('FRONT_APP_PATH',FRONT_PATH.'/app');define('PUBLIC_PATH',ROOT_PATH.'/public');define('STORAGE_PATH',ROOT_PATH.'/storage');define('ADMIN_PATH',ROOT_PATH.'/admin');}\nreturn ['database'=>['path'=>ROOT_PATH.'/admin/storage/database/','file'=>'cms.db','full_path'=>ROOT_PATH.'/admin/storage/database/cms.db'],'paths'=>['root'=>ROOT_PATH,'front'=>FRONT_PATH,'front_app'=>FRONT_APP_PATH,'public'=>PUBLIC_PATH,'storage'=>STORAGE_PATH,'admin'=>ADMIN_PATH],'twig'=>['cache'=>STORAGE_PATH.'/cache/twig','auto_reload'=>true]];\n";
         file_put_contents($root.'/front/config/config.php',$c);
         i_ok("front/config/config.php created");
     } else i_ok("front/config/config.php exists");

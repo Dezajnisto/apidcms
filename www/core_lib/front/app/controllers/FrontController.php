@@ -59,7 +59,12 @@ class FrontController {
         }
         
         // Настраиваем Twig
-        $loader = new FilesystemLoader($this->config['paths']['front_app'] . '/views');
+        // Template resolution: project first, core fallback
+        $loader = new FilesystemLoader(CORE_PATH . '/front/app/views');
+        $projectViewsPath = $this->config['paths']['front_app'] . '/views';
+        if (is_dir($projectViewsPath) && $projectViewsPath !== CORE_PATH . '/front/app/views') {
+            $loader->prependPath($projectViewsPath);
+        }
         $this->twig = new Environment($loader, [
             'cache' => $this->config['twig']['cache'],
             'auto_reload' => $this->config['twig']['auto_reload'],

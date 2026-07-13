@@ -61,6 +61,28 @@ function run_install(array $opts): bool {
         i_ok("admin/index.php exists");
     }
     i_ok("Directories created");
+
+    // Copy default templates from core to project (editable by user)
+    $templatesSrc = $core . '/front/app/views';
+    $templatesDst = $root . '/front/app/views';
+    if (is_dir($templatesSrc) && !is_dir($templatesDst)) {
+        mkdir($templatesDst, 0755, true);
+        $copied = 0;
+        foreach (new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($templatesSrc, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        ) as $item) {
+            $target = $templatesDst . '/' . $item->getSubPathName();
+            if ($item->isDir()) {
+                mkdir($target, 0755);
+            } else {
+                copy($item, $target);
+                $copied++;
+            }
+        }
+        i_ok("Templates copied to project ($copied files)");
+    }
+
     i_step("Config");
     $adminConfigPath = $root.'/admin/config/config.php';
     if (file_exists($adminConfigPath)) {

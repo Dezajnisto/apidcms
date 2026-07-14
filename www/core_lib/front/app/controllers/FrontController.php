@@ -462,6 +462,18 @@ class FrontController {
                             foreach ($structure as $col) {
                                 if ($col['name'] === 'sort_order') { $orderField = 'sort_order'; break; }
                             }
+                            // page_config can override order field and direction
+                            $pageConfig = json_decode($navItem->page_config ?: '{}', true);
+                            if (!empty($pageConfig['order_field'])) {
+                                $customField = preg_replace('/[^a-zA-Z_]/', '', $pageConfig['order_field']);
+                                $validFields = array_column($structure, 'name');
+                                if (in_array($customField, $validFields)) {
+                                    $orderField = $customField;
+                                }
+                            }
+                            if (!empty($pageConfig['order_dir'])) {
+                                $orderDir = strtoupper($pageConfig['order_dir']) === 'DESC' ? 'DESC' : 'ASC';
+                            }
                             $items = $this->database->query(
                                 "SELECT * FROM {$table} WHERE status = 'active' ORDER BY {$orderField} {$orderDir}"
                             )->fetchAll();

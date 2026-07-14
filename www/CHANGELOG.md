@@ -1,3 +1,29 @@
+## 2026-07-14 — Сортировка dynamic-страниц и синхронизация версионирования
+
+### order_field / order_dir в page_config
+
+- **Проблема:** записи на dynamic-страницах (например changelog) выводились в порядке sort_order ASC — старые сверху
+- **Причина:** `showDynamicList` использовал только `sort.field`/`sort.order` из page_config, без поддержки переопределения
+- **Решение:** добавлена поддержка ключей `order_field` и `order_dir` в page_config:
+  - `order_field` — колонка для сортировки (валидируется по структуре таблицы)
+  - `order_dir` — ASC или DESC
+  - Работает в `showDynamicList` (dynamic-страницы) и в landing-обработчике
+- **Использование:** `{"sort": {"field": "sort_order", "order": "DESC"}}` или `{"order_dir": "DESC"}`
+
+### Синхронизация версионирования
+
+- Git-теги приведены к схеме из БД changelog на apidcms.dezajno.ru (SemVer)
+- Старые git-теги (v1.0.0–v1.0.2) удалены — это была параллельная система
+- VERSION и INSTALLER_VERSION синхронизированы с актуальной версией 1.2.0
+- Добавлен VERSIONING.md: правила MAJOR.MINOR.PATCH, release-чеклист, источники истины
+
+### Файлы
+
+- `front/app/controllers/FrontController.php` (showDynamicList: +14 строк, order_field/order_dir)
+- `VERSIONING.md` (новый)
+- `VERSION` (1.2.0)
+- `www/install.php` (INSTALLER_VERSION → 1.2.0)
+
 ## 2026-07-13 — UX-тестирование установщика и восстановление core_lib
 
 ### Восстановление после аварии

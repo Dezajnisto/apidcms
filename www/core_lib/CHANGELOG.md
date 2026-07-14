@@ -1,3 +1,54 @@
+## 2026-07-13 — UX-тестирование установщика и восстановление core_lib
+
+### Восстановление после аварии
+
+- **Проблема:** старый sync-core с rsync --delete удалил core_lib/ на всех проектах после реструктуризации репозитория
+- **Восстановление:** core_lib восстановлен на всех 5 проектах через rsync из apidcms-core/www/core_lib/
+- **sync-core починен:** 7 правок путей на $CORE_DIR/core_lib/
+- **Авто-синхронизация views:** для проектов без собственного front/app/ теперь синхронизируются дефолтные views
+
+### CSS-фиксы
+
+- **admin.css перекомпилирован:** после реструктуризации admin.css потерял критичные spacing-классы (px-1/2/3/6, py-0.5/1/1.5, mb-1, ml-1/2)
+- **Восстановлен:** рабочий admin.css (31KB) из wearefun, содержащий все spacing-утилиты
+- **Cache-шаблон:** admin/app/views/cache/index.html.twig восстановлен после случайного удаления при реструктуризации
+- **.gitignore исправлен:** admin/app/views/cache/* ошибочно игнорировал исходники (это НЕ runtime-кэш)
+
+### UX-тестирование установки с нуля (3 раунда: izkino.ru, prosto-stihi.ru, daristihi.ru, nldb.ru)
+
+#### Раунд 1 — базовые проблемы
+- **403 на /admin:** install.php не создавал .htaccess и admin/index.php — добавлена генерация обоих файлов
+- **Session warnings:** PHP session.save_path не задан явно — добавлен session_save_path в init.php, .htaccess запрещает доступ к /tmp/
+- **API-ключ:** шаг ввода API-ключа убран из установщика (не нужен для базовой установки)
+
+#### Раунд 2 — структура и конфигурация
+- **Seed-данные:** установщик создаёт 6 страниц (главная, блог, каталог и др.) и 3 тестовых блог-поста
+- **front/config:** создаётся папка front/config/ с файлом config.php (ключ paths)
+- **core_lib/front/config/config.php:** разморожен из .gitignore, теперь доступен как fallback
+- **base.html.twig:** добавлен padding на <main> для корректных отступов
+
+#### Раунд 3 — совместимость и стили
+- **Template fallback:** проект -> core_lib через prependPath в Twig, гарантирует загрузку шаблонов из ядра
+- **custom.css:** дефолтные стили создаются при установке
+- **PHP 8.1 compat:** scandir вместо RecursiveDirectoryIterator/SplFileInfo::getSubPathName()
+- **sync-core защита:** apidcms-core исключён из списка синхронизации (он сам — источник)
+- **Скелетон больше не нужен:** install.php делает всё, apidcms-skeleton устарел
+
+### Ключевые уроки
+- admin/app/views/cache/ — исходные Twig-шаблоны, НЕ удалять при очистке кэша
+- storage/cache/ — runtime-кэш, можно удалять
+- Scandir надёжнее RecursiveDirectoryIterator для PHP 8.1
+- front/config/ обязательно создавать установщиком
+- custom.css — правильный путь для стилей, не Twig-шаблоны
+
+### Файлы
+- www/install.php (+генерация .htaccess, admin/index.php, seed-данные, -шаг API-ключа, INSTALLER_VERSION)
+- core_lib/front/app/core/init.php (+session_save_path)
+- core_lib/front/config/config.php (разморожен из .gitignore)
+- core_lib/admin/app/views/cache/index.html.twig (восстановлен)
+- core_lib/static/admin.css (восстановлен рабочий)
+- bin/sync-core (7 правок путей, авто-синхронизация views, защита apidcms-core)
+
 ## 2026-07-12 — Автоустановка и безопасность БД
 
 ### install.php — скрипт установки

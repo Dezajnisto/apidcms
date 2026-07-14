@@ -20,8 +20,8 @@ class NavigationItem {
     public $location;
     public $status;
     public $description;
-    public $form_config;
-    public $page_config;
+    public $form_config = null;
+    public $page_config = null;
     public $page_id;
     
     /**

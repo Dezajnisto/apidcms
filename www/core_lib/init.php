@@ -98,19 +98,19 @@ spl_autoload_register(function ($class_name) {
     }
 });
 
-// === Плагины ===
-
-$pluginsDir = PROJECT_ROOT . '/plugins';
-$pm = \Core\PluginManager::getInstance($pluginsDir);
-$pm->loadPlugins(); // загружает init.php всех активных плагинов
-$pm->doAction('core.init');
-
 // === Настройка сессий ===
 $sessionPath = PROJECT_ROOT . '/tmp/php/sessions';
 if (!is_dir($sessionPath)) {
     @mkdir($sessionPath, 0755, true);
 }
 session_save_path($sessionPath);
+
+// === Плагины ===
+
+$pluginsDir = PROJECT_ROOT . '/plugins';
+$pm = \Core\PluginManager::getInstance($pluginsDir);
+$pm->loadPlugins(); // загружает init.php всех активных плагинов
+$pm->doAction('core.init');
 
 // === Маршрутизация ===
 

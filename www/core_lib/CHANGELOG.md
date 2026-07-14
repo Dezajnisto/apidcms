@@ -1,3 +1,28 @@
+## 2026-07-14 (fix) — Порядок инициализации сессий и NavigationItem::$page_config
+
+### session_save_path: перенос перед плагинами
+
+- **Проблема:** `session_save_path()` вызывался ПОСЛЕ `loadPlugins()` + `doAction('core.init')`
+- Плагин `account` на хуке `core.init` вызывает `session_start()`, что делало невозможным смену пути сессий
+- **Решение:** блок настройки сессий (`session_save_path`) перенесён в `init.php` ДО загрузки плагинов
+
+### NavigationItem::$page_config = null
+
+- **Проблема:** свойство `$page_config` не имело значения по умолчанию → PHP 8.1+ выдавал Warning при чтении
+- **Решение:** `public $page_config = null` (и `$form_config` тоже)
+
+### Удаление старых копий NavigationItem в проектах
+
+- **Проблема:** 6 проектов имели устаревшие копии `front/app/models/NavigationItem.php` без `$page_config`/`$page_id`
+- Автозагрузчик брал проектную версию вместо каноничной ядерной
+- **Решение:** все проектные копии удалены, используется единая версия из `core_lib/`
+
+### Файлы
+
+- `core_lib/init.php` (порядок блоков: сессии → плагины)
+- `core_lib/front/app/models/NavigationItem.php` (+ = null)
+- Удалены `front/app/models/NavigationItem.php` на: wearefun, dezajno, apidcms.dezajno, izkino, prosto-stihi, my-project
+
 ## 2026-07-14 — Сортировка dynamic-страниц и синхронизация версионирования
 
 ### order_field / order_dir в page_config

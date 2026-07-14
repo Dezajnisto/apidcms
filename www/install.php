@@ -5,7 +5,7 @@
  * CLI: php install.php [--auto]
  * Web: open /install.php in browser
  */
-define('INSTALLER_VERSION', '1.0.2');
+define('INSTALLER_VERSION', '1.2.0');
 $isCLI = (php_sapi_name() === 'cli');
 
 function i_log(string $msg): void { echo "  $msg\n"; if (ob_get_level()) { ob_flush(); flush(); } }

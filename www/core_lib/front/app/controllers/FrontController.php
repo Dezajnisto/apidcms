@@ -752,7 +752,21 @@ class FrontController {
         )->fetch()['count'];
         
         // Получаем записи
-        $orderBy = "{$config['sort']['field']} {$config['sort']['order']}";
+        // page_config can override order field and direction
+        $orderField = $config['sort']['field'];
+        $orderDir = $config['sort']['order'];
+        if (!empty($config['order_field'])) {
+            $structureAll = $this->database->getTableStructure($tableName);
+            $customField = preg_replace('/[^a-zA-Z_]/', '', $config['order_field']);
+            $validFields = array_column($structureAll, 'name');
+            if (in_array($customField, $validFields)) {
+                $orderField = $customField;
+            }
+        }
+        if (!empty($config['order_dir'])) {
+            $orderDir = strtoupper($config['order_dir']) === 'DESC' ? 'DESC' : 'ASC';
+        }
+        $orderBy = "{$orderField} {$orderDir}";
         $data = $this->database->query(
             "SELECT * FROM {$tableName} WHERE {$whereClause} ORDER BY {$orderBy} LIMIT ? OFFSET ?",
             array_merge($params, [$perPage, $offset])

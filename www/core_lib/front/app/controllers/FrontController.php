@@ -490,6 +490,10 @@ class FrontController {
                 ]);
                 break;
                 
+            case 'search':
+                $this->handleSearch($navItem);
+                break;
+
             default:
             // ЛЮБОЙ ДРУГОЙ ТИП - обрабатываем как динамический контент!
             $page = $_GET['page'] ?? 1;
@@ -1376,5 +1380,190 @@ private function handleFormSubmission() {
             ], JSON_UNESCAPED_UNICODE);
             exit;
         }
+    }
+
+    /**
+     * Обработка страницы поиска
+     */
+    private function handleSearch($navItem) {
+        $query = trim($_GET['q'] ?? '');
+        $results = [];
+
+        if (!empty($query) && mb_strlen($query) >= 2) {
+            $searchTerm = '%' . $query . '%';
+            $allTables = $this->database->getTables();
+            $skipTables = ['sqlite_sequence', 'system_settings', 'navigation', 'visit_stats'];
+
+            // Collect searchable tables from active navigation
+            $navItems = $this->database->query(
+                "SELECT source_table, url FROM navigation WHERE status = 'active' AND source_table IS NOT NULL AND source_table != ''"
+            )->fetchAll();
+
+            // Map: table_name => base_url
+            $tableUrls = [];
+            $seen = [];
+            foreach ($navItems as $nav) {
+                $t = $nav['source_table'];
+                if (!isset($seen[$t])) {
+                    $tableUrls[$t] = '/' . ltrim($nav['url'], '/');
+                    $seen[$t] = true;
+                }
+            }
+            // Always search pages
+            $tableUrls['pages'] = '/';
+
+            foreach ($tableUrls as $tableName => $baseUrl) {
+                if (!in_array($tableName, $allTables)) continue;
+                if (in_array($tableName, $skipTables)) continue;
+
+                // Find text columns via PRAGMA
+                $structure = $this->database->getTableStructure($tableName);
+                $textColumns = [];
+                foreach ($structure as $col) {
+                    $type = strtolower($col['type']);
+                    $name = strtolower($col['name']);
+                    if (strpos($type, 'text') !== false ||
+                        strpos($type, 'varchar') !== false ||
+                        strpos($type, 'char') !== false) {
+                        if (in_array($name, ['status', 'slug', 'url', 'image', 'email', 'phone', 'password', 'token', 'api_key', 'meta_title', 'meta_description'])) continue;
+                        $textColumns[] = $col['name'];
+                    }
+                }
+                if (empty($textColumns)) continue;
+
+                // Build WHERE with LIKE on all text columns
+                $likeParts = [];
+                $params = [];
+                foreach ($textColumns as $col) {
+                    $likeParts[] = '"' . $col . '" LIKE ?';
+                    $params[] = $searchTerm;
+                }
+                $whereClause = implode(' OR ', $likeParts);
+
+                // Add status filter if column exists
+                $colNames = array_column($structure, 'name');
+                $hasStatus = in_array('status', $colNames);
+                $statusClause = $hasStatus ? " AND status = 'active'" : '';
+
+                try {
+                    $rows = $this->database->query(
+                        "SELECT * FROM \"{$tableName}\" WHERE ({$whereClause}){$statusClause} LIMIT 20",
+                        $params
+                    )->fetchAll();
+                } catch (\Exception $e) {
+                    continue; // Skip broken tables
+                }
+
+                $hasSlug = in_array('slug', $colNames);
+
+                foreach ($rows as $row) {
+                    // Best title column
+                    $title = $row['title'] ?? $row['name'] ?? $row['summary'] ?? $row['heading'] ?? 'Untitled';
+
+                    // Build URL
+                    if ($tableName === 'pages') {
+                        $itemUrl = '/' . ltrim(($row['slug'] ?? ''), '/');
+                    } else {
+                        $slug = $row['slug'] ?? $row['id'] ?? '';
+                        $itemUrl = rtrim($baseUrl, '/') . '/' . $slug;
+                    }
+
+                    // Build snippet with highlight
+                    $snippet = $this->buildSearchSnippet($row, $query, $textColumns);
+
+                    // Calculate relevance score
+                    $relevance = $this->calculateSearchRelevance($row, $query, $textColumns);
+
+                    $results[] = [
+                        'title' => $title,
+                        'url' => $itemUrl,
+                        'snippet' => $snippet,
+                        'relevance' => $relevance
+                    ];
+                }
+            }
+
+            // Deduplicate by URL
+            $seenUrls = [];
+            $results = array_values(array_filter($results, function($r) use (&$seenUrls) {
+                $key = $r['url'];
+                if (isset($seenUrls[$key])) return false;
+                $seenUrls[$key] = true;
+                return true;
+            }));
+
+            // Sort by relevance (highest first)
+            usort($results, function($a, $b) {
+                return $b['relevance'] - $a['relevance'];
+            });
+        }
+
+        $this->render('search.html.twig', [
+            'title' => $navItem->title,
+            'query' => $query,
+            'results' => $results,
+            'results_count' => count($results)
+        ]);
+    }
+
+    /**
+     * Build search result snippet with highlighted query
+     */
+    private function buildSearchSnippet($row, $query, $textColumns) {
+        $fullText = '';
+        foreach ($textColumns as $col) {
+            if (!empty($row[$col])) {
+                $fullText .= strip_tags($row[$col]) . ' ';
+            }
+        }
+
+        $pos = mb_stripos($fullText, $query);
+        $maxLen = 200;
+
+        if ($pos !== false) {
+            $start = max(0, $pos - 80);
+            $snippet = mb_substr($fullText, $start, $maxLen);
+            if ($start > 0) $snippet = '...' . $snippet;
+            if (mb_strlen($fullText) > $start + $maxLen) $snippet .= '...';
+            $snippet = preg_replace('/(' . preg_quote($query, '/') . ')/iu', '<mark>$1</mark>', $snippet);
+            return $snippet;
+        }
+
+        return mb_substr($fullText, 0, $maxLen) . (mb_strlen($fullText) > $maxLen ? '...' : '');
+    }
+
+    /**
+     * Calculate relevance score for a search result
+     */
+    private function calculateSearchRelevance($row, $query, $textColumns) {
+        $score = 0;
+        $queryLower = mb_strtolower($query);
+
+        // Priority title columns (highest weight)
+        $titleCols = ['title', 'name', 'summary', 'heading'];
+        foreach ($titleCols as $col) {
+            if (!empty($row[$col])) {
+                $val = mb_strtolower(strip_tags($row[$col]));
+                if ($val === $queryLower) {
+                    $score += 100;
+                } elseif (mb_strpos($val, $queryLower) === 0) {
+                    $score += 50;
+                } elseif (mb_strpos($val, $queryLower) !== false) {
+                    $score += 30;
+                }
+                break;
+            }
+        }
+
+        // Content columns
+        foreach ($textColumns as $col) {
+            if (in_array(strtolower($col), $titleCols)) continue;
+            if (!empty($row[$col])) {
+                $val = mb_strtolower(strip_tags($row[$col]));
+                $score += mb_substr_count($val, $queryLower) * 5;
+            }
+        }
+
+        return $score;
     }
 }

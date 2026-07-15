@@ -16,7 +16,7 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php [QSA,L]
 
 # Protect sensitive files
-<Files ~ "\.(env|json|config\.js|md|gitignore|gitattributes|lock|sql)$">
+<Files ~ "\.(env|json|config\.js|md|gitignore|gitattributes|lock|sql|db)$">
     Order allow,deny
     Deny from all
 </Files>

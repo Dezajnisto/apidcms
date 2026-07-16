@@ -1,0 +1,12 @@
+{% extends "base.html.twig" %}
+{% block title %}{{ meta_title is defined and meta_title ? meta_title : title }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto"><div class="bg-white rounded-lg shadow-sm border p-6">
+{% if pageContent is not empty %}<div class="page-content mb-8">{{ pageContent|raw }}</div>{% endif %}
+{% if pageContent is empty %}<h1 class="text-2xl font-bold text-gray-900 mb-2">{{ title }}</h1>{% endif %}
+{% if config.form_title %}<h2 class="text-xl font-semibold text-gray-800 mb-2">{{ config.form_title }}</h2>{% endif %}
+{% if config.form_description %}<p class="text-gray-600 mb-6">{{ config.form_description }}</p>{% endif %}
+{% if errors is defined and errors.general %}<div class="bg-red-50 border border-red-200 rounded-md p-4 mb-6"><div class="text-red-700">{{ errors.general }}</div></div>{% endif %}
+{{ form_html|raw }}
+</div></div>
+{% endblock %}

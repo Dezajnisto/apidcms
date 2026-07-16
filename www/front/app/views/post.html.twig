@@ -1,0 +1,22 @@
+{% extends "base.html.twig" %}
+
+{% block title %}{{ post.title }} | {{ parent() }}{% endblock %}
+{% block description %}{{ post.excerpt|default(site_description) }}{% endblock %}
+
+{% block content %}
+    <article class="post">
+        <h1 class="page-title">{{ post.title }}</h1>
+        
+        <div class="post-meta">
+            Опубликовано: {{ post.published_at|date('d.m.Y H:i') }}
+        </div>
+        
+        {% if post.featured_image %}
+            <img src="{{ post.featured_image }}" alt="{{ post.title }}" style="max-width: 100%; height: auto; margin-bottom: 1rem;">
+        {% endif %}
+        
+        <div class="post-content">
+            {{ post.content|raw }}
+        </div>
+    </article>
+{% endblock %}

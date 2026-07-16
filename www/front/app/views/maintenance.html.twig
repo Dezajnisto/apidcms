@@ -1,0 +1,14 @@
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div style="min-height: 60vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 2rem;">
+    <div>
+        <div style="font-size: 4rem; margin-bottom: 1rem;">🔧</div>
+        <h1 style="font-size: 2rem; font-weight: 700; color: #1a1a2e;">{{ title }}</h1>
+        <p style="font-size: 1.1rem; color: #6b7280; max-width: 400px; margin: 0 auto;">{{ message }}</p>
+        <p style="margin-top: 2rem; color: #9ca3af; font-size: 0.9rem;">Попробуйте зайти позже</p>
+    </div>
+</div>
+{% endblock %}

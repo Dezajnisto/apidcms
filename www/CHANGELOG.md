@@ -1,3 +1,28 @@
+## 2026-07-14 (fix) — Порядок инициализации сессий и NavigationItem::$page_config
+
+### session_save_path: перенос перед плагинами
+
+- **Проблема:** `session_save_path()` вызывался ПОСЛЕ `loadPlugins()` + `doAction('core.init')`
+- Плагин `account` на хуке `core.init` вызывает `session_start()`, что делало невозможным смену пути сессий
+- **Решение:** блок настройки сессий (`session_save_path`) перенесён в `init.php` ДО загрузки плагинов
+
+### NavigationItem::$page_config = null
+
+- **Проблема:** свойство `$page_config` не имело значения по умолчанию → PHP 8.1+ выдавал Warning при чтении
+- **Решение:** `public $page_config = null` (и `$form_config` тоже)
+
+### Удаление старых копий NavigationItem в проектах
+
+- **Проблема:** 6 проектов имели устаревшие копии `front/app/models/NavigationItem.php` без `$page_config`/`$page_id`
+- Автозагрузчик брал проектную версию вместо каноничной ядерной
+- **Решение:** все проектные копии удалены, используется единая версия из `core_lib/`
+
+### Файлы
+
+- `core_lib/init.php` (порядок блоков: сессии → плагины)
+- `core_lib/front/app/models/NavigationItem.php` (+ = null)
+- Удалены `front/app/models/NavigationItem.php` на: wearefun, dezajno, apidcms.dezajno, izkino, prosto-stihi, my-project
+
 ## 2026-07-14 — Сортировка dynamic-страниц и синхронизация версионирования
 
 ### order_field / order_dir в page_config
@@ -28,9 +53,9 @@
 
 ### Восстановление после аварии
 
-- **Проблема:** старый sync-core с rsync --delete удалил core_lib/ на всех проектах после реструктуризации репозитория
+- **Проблема:** старый обновление ядра с rsync --delete удалил core_lib/ на всех проектах после реструктуризации репозитория
 - **Восстановление:** core_lib восстановлен на всех 5 проектах через rsync из apidcms-core/www/core_lib/
-- **sync-core починен:** 7 правок путей на $CORE_DIR/core_lib/
+- **обновление ядра починено:** 7 правок путей на $CORE_DIR/core_lib/
 - **Авто-синхронизация views:** для проектов без собственного front/app/ теперь синхронизируются дефолтные views
 
 ### CSS-фиксы
@@ -57,7 +82,7 @@
 - **Template fallback:** проект -> core_lib через prependPath в Twig, гарантирует загрузку шаблонов из ядра
 - **custom.css:** дефолтные стили создаются при установке
 - **PHP 8.1 compat:** scandir вместо RecursiveDirectoryIterator/SplFileInfo::getSubPathName()
-- **sync-core защита:** apidcms-core исключён из списка синхронизации (он сам — источник)
+- **защита при обновлении:** apidcms-core исключён из списка синхронизации (он сам — источник)
 - **Скелетон больше не нужен:** install.php делает всё, apidcms-skeleton устарел
 
 ### Ключевые уроки
@@ -73,7 +98,7 @@
 - core_lib/front/config/config.php (разморожен из .gitignore)
 - core_lib/admin/app/views/cache/index.html.twig (восстановлен)
 - core_lib/static/admin.css (восстановлен рабочий)
-- bin/sync-core (7 правок путей, авто-синхронизация views, защита apidcms-core)
+- инструмент обновления (7 правок путей, авто-синхронизация views, защита apidcms-core)
 
 ## 2026-07-12 — Автоустановка и безопасность БД
 
@@ -88,7 +113,7 @@
   - Устанавливает зависимости Composer (`composer install --no-dev`)
   - Инициализирует БД через init_system_tables.php
 - **Запуск:** `php install.php` в папке проекта
-- **Защита:** sync-core не разносит install.php на рабочие проекты (исключён из rsync)
+- **Защита:** обновление ядра не разносит install.php на рабочие проекты (исключён из rsync)
 
 ### WAL-режим SQLite и busy_timeout
 
@@ -104,9 +129,9 @@
 - Удалён дубликат таблицы `forms` (ошибочно была под комментарием «Страницы», второй экземпляр под «Формы» имел битый SQL-quoting)
 - Первый экземпляр переименован в `forms`, echo исправлен с `[OK] pages` на `[OK] forms`
 
-### sync-core — защита от рекурсии и stray-файлов
+### Защита от рекурсии при обновлении
 
-- **Рекурсия:** каждый запуск sync-core создавал вложенный `core_lib/core_lib/` (до 5 уровней), разнося это по всем проектам
+- **Рекурсия:** каждый запуск обновление ядра создавал вложенный `core_lib/core_lib/` (до 5 уровней), разнося это по всем проектам
 - **Исправление:** `--exclude=core_lib` в rsync + apidcms-core исключён из списка синхронизации (он сам — источник)
 - **Stray-файлы:** добавлены исключения `--exclude=storage`, `--exclude=CHANGELOG.md`, `--exclude=README.md`, `--exclude=LICENSE` — файлы из корня www/ ядра больше не попадают в core_lib проектов
 
@@ -121,7 +146,7 @@
 - `core/Database.php` (+2 PRAGMA)
 - `www/init_system_tables.php` (удалён дубликат, исправлен SQL-quoting)
 - `www/README.md` (+69 строк, раздел установки)
-- `bin/sync-core` (защита от рекурсии, исключения)
+- инструмент обновления ядра (защита от рекурсии, исключения)
 
 
 # Changelog

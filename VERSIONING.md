@@ -22,16 +22,16 @@ apidcms follows **Semantic Versioning** (SemVer): `MAJOR.MINOR.PATCH`
 - [ ] Add entry to `changelog` table on apidcms.dezajno.ru
 - [ ] Update `VERSION` file
 - [ ] Update `INSTALLER_VERSION` in `install.php`
-- [ ] Update `CHANGELOG.md` (both `www/` and `www/core_lib/`)
+- [ ] Update `www/CHANGELOG.md`
 - [ ] Git commit + tag (e.g. `v1.3.0`)
-- [ ] `sync-core all` to distribute to projects
+- [ ] Deploy updated core to projects
 
 ## History
 
 | Version | Date | Highlights |
 |---------|------|------------|
 | v1.3.1 | 13 Jul 2026 | Installer fixes, core_lib recovery |
-| v1.3.0 | 12 Jul 2026 | Auto-installer, WAL mode, sync-core protection |
+| v1.3.0 | 12 Jul 2026 | Auto-installer, WAL mode, core update protection |
 | v1.2.0 | 10 Jul 2026 | Dynamic type, docs section, new landing |
 | v1.1.0 | 18 Jun 2026 | Plugin system, AI security, visit stats |
 | v1.0.1 | 15 Jun 2026 | File manager, Markdown filter |

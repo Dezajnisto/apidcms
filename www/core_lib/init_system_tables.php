@@ -269,18 +269,4 @@ $pdo->exec("INSERT OR IGNORE INTO pages (id, title, slug, content, status) VALUE
 $pdo->exec("INSERT OR IGNORE INTO navigation (id, title, url, page_id, page_type, location, menu_order, status) VALUES (1, 'Main', 'home', 1, 'page', 'header', 1, 'active')");
 echo "[OK] default pages\n";
 
-// Migration: catalog table - version + changelog columns
-$tables = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='catalog'")->fetchAll();
-if (count($tables) > 0) {
-    $cols = $pdo->query("PRAGMA table_info(catalog)")->fetchAll(\PDO::FETCH_COLUMN, 1);
-    if (!in_array('version', $cols)) {
-        $pdo->exec("ALTER TABLE catalog ADD COLUMN version TEXT DEFAULT '1.0.0'");
-        echo "[MIGRATION] catalog.version added\n";
-    }
-    if (!in_array('changelog', $cols)) {
-        $pdo->exec("ALTER TABLE catalog ADD COLUMN changelog TEXT DEFAULT NULL");
-        echo "[MIGRATION] catalog.changelog added\n";
-    }
-}
-
 echo "\n=== Инициализация завершена ===\n";

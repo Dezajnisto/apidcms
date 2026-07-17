@@ -18,9 +18,23 @@
 | `created_at` | Сортировка и prev/next-навигация |
 | `views_count` | **Новое:** авто-инкремент при просмотре |
 
+### `_GET` в шаблонах фронтенда
+
+- **Суть:** в `FrontController::render()` добавлен `$data['_GET'] = $_GET`
+- GET-параметры теперь доступны в любом Twig-шаблоне через переменную `_GET`
+- Позволяет строить серверные фильтры без JS: `{% if _GET.category == 'text' %} active{% endif %}`
+
+### `get_filters` в page_config (документирование)
+
+- **Суть:** dynamic-страницы поддерживают GET-фильтры через `page_config.get_filters`
+- Конфиг: `{"get_filters": {"category": "category", "tool": "ai_tool"}}`
+- `?category=text&tool=GPT` → автоматический WHERE в SQL
+- Пагинация и `total_count` учитывают фильтры
+- Комбинируются с `filters` (жёсткие фильтры из конфига)
+
 ### Файлы
 
-- `core_lib/front/app/controllers/FrontController.php` (+12 строк)
+- `core_lib/front/app/controllers/FrontController.php` (+12 строк views_count, +1 строка _GET)
 
 ### session_save_path: перенос перед плагинами
 

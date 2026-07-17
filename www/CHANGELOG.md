@@ -1,5 +1,27 @@
 ## 2026-07-14 (fix) — Порядок инициализации сессий и NavigationItem::$page_config
 
+## 2026-07-17 — v1.3.7 — Авто-инкремент views_count в dynamic-страницах
+
+### showDynamicItem: авто-инкремент views_count
+
+- **Суть:** если в таблице есть колонка `views_count`, при каждом просмотре записи значение автоматически увеличивается на 1
+- **Где:** `core_lib/front/app/controllers/FrontController.php` → `showDynamicItem()`
+- **Безопасность:** обёрнуто в try/catch — ошибка инкремента не ломает страницу
+
+### Авто-поддерживаемые колонки dynamic-страниц
+
+| Колонка | Назначение |
+|---------|-----------|
+| `slug` | URL-идентификатор записи (поиск для `_single`) |
+| `status` | Фильтрация: только `active` записи в списке |
+| `sort_order` | Сортировка списка (приоритетнее `created_at`) |
+| `created_at` | Сортировка и prev/next-навигация |
+| `views_count` | **Новое:** авто-инкремент при просмотре |
+
+### Файлы
+
+- `core_lib/front/app/controllers/FrontController.php` (+12 строк)
+
 ### session_save_path: перенос перед плагинами
 
 - **Проблема:** `session_save_path()` вызывался ПОСЛЕ `loadPlugins()` + `doAction('core.init')`

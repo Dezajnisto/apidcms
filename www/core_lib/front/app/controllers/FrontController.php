@@ -595,6 +595,7 @@ class FrontController {
      */
     private function render($template, $data = []) {
         // Добавляем общие данные для всех шаблонов
+        $data['_GET'] = $_GET;
         $data['navigation'] = $this->getNavigation();
         $data['site_title'] = $this->getSetting('site_title') ?: 'Мой сайт';
         $data['site_description'] = $this->getSetting('site_description') ?: 'Описание сайта';

@@ -869,6 +869,18 @@ class FrontController {
                 return false; // ДОБАВЛЕНО: возвращаем false
             }
             
+            // Increment view count if column exists
+            if (in_array('views_count', $columnNames) && isset($item['id'])) {
+                try {
+                    $this->database->query(
+                        "UPDATE {$tableName} SET views_count = views_count + 1 WHERE id = ?",
+                        [$item['id']]
+                    );
+                } catch (\Exception $e) {
+                    // Ignore view count errors
+                }
+            }
+            
             // Получаем соседние записи для навигации (если есть created_at)
             $prevItem = null;
             $nextItem = null;

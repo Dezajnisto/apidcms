@@ -771,6 +771,17 @@ class FrontController {
         if (!empty($config['order_dir'])) {
             $orderDir = strtoupper($config['order_dir']) === 'DESC' ? 'DESC' : 'ASC';
         }
+        // GET-based sort override (from sort_options in page_config)
+        if (!empty($_GET['sort']) && !empty($config['sort_options'][$_GET['sort']])) {
+            $opt = $config['sort_options'][$_GET['sort']];
+            $structureAll = $this->database->getTableStructure($tableName);
+            $customField = preg_replace('/[^a-zA-Z_]/', '', $opt['field']);
+            $validFields = array_column($structureAll, 'name');
+            if (in_array($customField, $validFields)) {
+                $orderField = $customField;
+                $orderDir = strtoupper($opt['order']) === 'DESC' ? 'DESC' : 'ASC';
+            }
+        }
         $orderBy = "{$orderField} {$orderDir}";
         $data = $this->database->query(
             "SELECT * FROM {$tableName} WHERE {$whereClause} ORDER BY {$orderBy} LIMIT ? OFFSET ?",

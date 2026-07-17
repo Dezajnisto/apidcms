@@ -90,9 +90,6 @@ class FrontController {
         $this->twig->addFilter(new TwigFilter('markdown_to_html', function($text) {
             $parsedown = new Parsedown();
             $parsedown->setSafeMode(true);
-        $this->twig->addFilter(new TwigFilter('json_decode', function(\$str) {
-            return \$str ? json_decode(\$str, true) : [];
-        }));
             return $parsedown->text($text ?? '');
         }));
         $this->twig->addFilter(new TwigFilter('json_decode', function($str) {

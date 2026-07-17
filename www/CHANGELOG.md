@@ -42,7 +42,15 @@
 
 ### Файлы
 
-- `core_lib/front/app/controllers/FrontController.php` (+24 строки: views_count, _GET, sort_options)
+### `json_decode` Twig-фильтр
+
+- **Суть:** добавлен фильтр `|json_decode` для разбора JSON-строк в шаблонах
+- Пример: `{% set features = plan.features|json_decode %}`
+- Полезно для данных из колонок с JSON (features, settings, variables и т.д.)
+
+### Файлы
+
+- `core_lib/front/app/controllers/FrontController.php` (+27 строк: views_count, _GET, sort_options, json_decode)
 
 ### session_save_path: перенос перед плагинами
 

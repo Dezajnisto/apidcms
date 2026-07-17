@@ -32,9 +32,17 @@
 - Пагинация и `total_count` учитывают фильтры
 - Комбинируются с `filters` (жёсткие фильтры из конфига)
 
+### `sort_options` — серверная сортировка через GET
+
+- **Суть:** dynamic-страницы поддерживают `?sort=` через `page_config.sort_options`
+- Конфиг: `{"sort_options": {"newest": {"field": "created_at", "order": "DESC"}}}`
+- Валидация имени колонки через структуру таблицы (защита от SQL-инъекций)
+- Комбинируется с `get_filters`: `?category=text&sort=popular`
+- **Безопасность:** только если `sort_options` задан в конфиге — существующие проекты не затронуты
+
 ### Файлы
 
-- `core_lib/front/app/controllers/FrontController.php` (+12 строк views_count, +1 строка _GET)
+- `core_lib/front/app/controllers/FrontController.php` (+24 строки: views_count, _GET, sort_options)
 
 ### session_save_path: перенос перед плагинами
 

@@ -164,18 +164,31 @@ class PluginAdminController extends BaseController
         if (!empty($plugin['settings'])) {
             foreach ($plugin['settings'] as &$setting) {
                 $key = $setting['key'];
-                if (isset($_POST['setting_' . $key])) {
+                if ($setting['type'] === 'checkbox') {
+                    // Checkbox: unchecked = not present in POST = false
+                    $setting['value'] = isset($_POST['setting_' . $key]);
+                } elseif (isset($_POST['setting_' . $key])) {
                     $setting['value'] = $_POST['setting_' . $key];
-                    if ($setting['type'] === 'checkbox') {
-                        $setting['value'] = (bool)$_POST['setting_' . $key];
-                    }
                 }
             }
             unset($setting);
         }
+        // Save only original plugin.json fields (exclude runtime fields like 'path')
+        $saveData = [
+            'name' => $plugin['name'],
+            'version' => $plugin['version'],
+            'description' => $plugin['description'] ?? '',
+            'enabled' => $plugin['enabled'] ?? false,
+        ];
+        if (!empty($plugin['dependencies'])) {
+            $saveData['dependencies'] = $plugin['dependencies'];
+        }
+        if (!empty($plugin['settings'])) {
+            $saveData['settings'] = $plugin['settings'];
+        }
         $saved = file_put_contents(
             $pluginJsonPath,
-            json_encode($plugin, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+            json_encode($saveData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
         if ($saved !== false) {
             $this->setFlash('success', "Настройки плагина '{$name}' сохранены");

@@ -98,6 +98,12 @@
                                             Обязательное
                                         </span>
                                     {% endif %}
+                                    {% if relations is defined and relations[column.name] is defined %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                            <i class="fas fa-link mr-1"></i>
+                                            Связь: {{ relations[column.name].table }}
+                                        </span>
+                                    {% endif %}
                                 </div>
                             </div>
 
@@ -109,6 +115,17 @@
                                 <p class="text-xs text-gray-500">
                                     <i class="fas fa-info-circle mr-1"></i> Заполняется автоматически
                                 </p>
+                            {% elseif relations is defined and relations[column.name] is defined %}
+                                <select id="{{ column.name }}" name="{{ column.name }}"
+                                        {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white">
+                                    <option value="">-- Выберите --</option>
+                                    {% for opt in relations[column.name].options %}
+                                        <option value="{{ opt.value }}" {% if item is not null and item[column.name] == opt.value %}selected{% endif %}>
+                                            {{ opt.label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
                             {% elseif 'TEXT' in column.type|upper %}
                                 <textarea id="{{ column.name }}" name="{{ column.name }}" rows="5"
                                           {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
@@ -205,7 +222,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const firstInput = document.querySelector('input:not([readonly]), textarea:not([readonly])');
+    const firstInput = document.querySelector('input:not([readonly]), textarea:not([readonly]), select:not([readonly])');
     if (firstInput) firstInput.focus();
 
     const textareas = document.querySelectorAll('textarea');

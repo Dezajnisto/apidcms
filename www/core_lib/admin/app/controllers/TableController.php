@@ -13,6 +13,64 @@ use Exception;
 class TableController extends BaseController {
     
     /**
+     * Load relations from page_config for a table
+     * Returns [column_name => ['table', 'label', 'value', 'options' => [...]]]
+     */
+    private function getRelations($table) {
+        $relations = [];
+        
+        try {
+            $navItems = $this->db->query(
+                "SELECT page_config FROM navigation WHERE source_table = ? AND page_type = 'dynamic' AND status = 'active'",
+                [$table]
+            )->fetchAll(\PDO::FETCH_ASSOC);
+            
+            foreach ($navItems as $nav) {
+                if (empty($nav['page_config'])) continue;
+                $config = json_decode($nav['page_config'], true);
+                if (empty($config['relations']) || !is_array($config['relations'])) continue;
+                
+                foreach ($config['relations'] as $columnName => $rel) {
+                    if (isset($relations[$columnName])) continue; // first wins
+                    
+                    $relTable = $rel['table'] ?? '';
+                    $relLabel = $rel['label'] ?? 'title';
+                    $relValue = $rel['value'] ?? 'id';
+                    
+                    if (empty($relTable)) continue;
+                    
+                    // Check if related table exists
+                    if (!in_array($relTable, $this->db->getTables())) continue;
+                    
+                    // Load options
+                    try {
+                        $rows = $this->db->getAll($relTable);
+                        $options = [];
+                        foreach ($rows as $row) {
+                            $options[] = [
+                                'value' => $row[$relValue] ?? '',
+                                'label' => $row[$relLabel] ?? ($row[$relValue] ?? '')
+                            ];
+                        }
+                        $relations[$columnName] = [
+                            'table' => $relTable,
+                            'label' => $relLabel,
+                            'value' => $relValue,
+                            'options' => $options
+                        ];
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently ignore
+        }
+        
+        return $relations;
+    }
+    
+    /**
      * Просмотр содержимого таблицы с поддержкой поиска и сортировки
      * 
      * @param string $table Название таблицы
@@ -131,6 +189,9 @@ class TableController extends BaseController {
         // Получаем структуру таблицы
         $structure = $this->db->getTableStructure($table);
         
+        // Load relations from page_config
+        $relations = $this->getRelations($table);
+        
         // Отображаем форму создания
         $this->render('table/form', [
             'tableName' => $table,
@@ -138,6 +199,7 @@ class TableController extends BaseController {
             'title' => "Добавление записи в таблицу: {$table}",
             'action' => 'create',
             'item' => null,
+            'relations' => $relations,
             'currentPage' => $_GET['page'] ?? 1
         ]);
     }
@@ -195,12 +257,14 @@ class TableController extends BaseController {
             
         } catch (Exception $e) {
             // В случае ошибки показываем форму снова
+            $relations = $this->getRelations($table);
             $this->render('table/form', [
                 'tableName' => $table,
                 'structure' => $structure,
                 'title' => "Добавление записи в таблицу: {$table}",
                 'action' => 'create',
                 'item' => $_POST,
+                'relations' => $relations,
                 'error' => $e->getMessage()
             ]);
         }
@@ -236,6 +300,9 @@ class TableController extends BaseController {
         // Получаем структуру таблицы
         $structure = $this->db->getTableStructure($table);
         
+        // Load relations from page_config
+        $relations = $this->getRelations($table);
+        
         // Отображаем форму редактирования
         $this->render('table/form', [
             'tableName' => $table,
@@ -244,6 +311,7 @@ class TableController extends BaseController {
             'action' => 'edit',
             'item' => $item,
             'itemId' => $id,
+            'relations' => $relations,
             'currentPage' => $_GET['page'] ?? 1
         ]);
     }
@@ -314,6 +382,7 @@ class TableController extends BaseController {
             
         } catch (Exception $e) {
             // В случае ошибки показываем форму снова
+            $relations = $this->getRelations($table);
             $this->render('table/form', [
                 'tableName' => $table,
                 'structure' => $structure,
@@ -321,6 +390,7 @@ class TableController extends BaseController {
                 'action' => 'edit',
                 'item' => array_merge($existingItem, $_POST),
                 'itemId' => $id,
+                'relations' => $relations,
                 'error' => $e->getMessage()
             ]);
         }

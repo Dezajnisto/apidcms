@@ -819,9 +819,13 @@ class FrontController {
         unset($queryParams['page']);
         $queryString = http_build_query($queryParams);
 
-                // Fetch categories tree for sidebar
+                // Fetch categories tree for sidebar (only if table exists)
         $categoriesTree = [];
         try {
+            $tables = $this->database->getTables();
+            if (!in_array('categories', $tables)) {
+                throw new \Exception('categories table not found');
+            }
             $allCats = $this->database->query(
                 "SELECT id, parent_id, name, slug, sort_order FROM categories WHERE status = 'active' ORDER BY parent_id, sort_order"
             )->fetchAll();

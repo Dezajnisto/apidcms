@@ -16,6 +16,10 @@ class TableController extends BaseController {
      * Load relations from page_config for a table
      * Returns [column_name => ['table', 'label', 'value', 'options' => [...]]]
      */
+    /**
+     * Load relations from page_config for a table
+     * Returns [column_name => ['table', 'label', 'value', 'tree', 'search', 'options' => [...]]]
+     */
     private function getRelations($table) {
         $relations = [];
         
@@ -36,26 +40,36 @@ class TableController extends BaseController {
                     $relTable = $rel['table'] ?? '';
                     $relLabel = $rel['label'] ?? 'title';
                     $relValue = $rel['value'] ?? 'id';
+                    $useTree = !empty($rel['tree']);
+                    $useSearch = !empty($rel['search']);
                     
                     if (empty($relTable)) continue;
                     
                     // Check if related table exists
                     if (!in_array($relTable, $this->db->getTables())) continue;
                     
-                    // Load options
+                    // Load options (flat or tree)
                     try {
-                        $rows = $this->db->getAll($relTable);
-                        $options = [];
-                        foreach ($rows as $row) {
-                            $options[] = [
-                                'value' => $row[$relValue] ?? '',
-                                'label' => $row[$relLabel] ?? ($row[$relValue] ?? '')
-                            ];
+                        if ($useTree && $this->tableHasColumn($relTable, 'parent_id')) {
+                            $options = $this->buildTreeOptions($relTable, $relValue, $relLabel);
+                        } else {
+                            $rows = $this->db->getAll($relTable);
+                            $options = [];
+                            foreach ($rows as $row) {
+                                $options[] = [
+                                    'value' => $row[$relValue] ?? '',
+                                    'label' => $row[$relLabel] ?? ($row[$relValue] ?? ''),
+                                    'level' => 0
+                                ];
+                            }
                         }
+                        
                         $relations[$columnName] = [
                             'table' => $relTable,
                             'label' => $relLabel,
                             'value' => $relValue,
+                            'tree' => $useTree,
+                            'search' => $useSearch,
                             'options' => $options
                         ];
                     } catch (\Exception $e) {
@@ -71,6 +85,38 @@ class TableController extends BaseController {
     }
     
     /**
+     * Build hierarchical options for a tree-structured table
+     */
+    private function buildTreeOptions($table, $valueCol, $labelCol, $parentId = 0, $level = 0) {
+        $rows = $this->db->query(
+            "SELECT * FROM " . $this->db->quoteIdentifier($table) . " WHERE parent_id = ? ORDER BY " . $this->db->quoteIdentifier($labelCol) ,
+            [$parentId]
+        )->fetchAll(\PDO::FETCH_ASSOC);
+        
+        $options = [];
+        foreach ($rows as $row) {
+            $options[] = [
+                'value' => $row[$valueCol] ?? '',
+                'label' => $row[$labelCol] ?? '',
+                'level' => $level
+            ];
+            // Recursively add children
+            $children = $this->buildTreeOptions($table, $valueCol, $labelCol, $row[$valueCol], $level + 1);
+            $options = array_merge($options, $children);
+        }
+        return $options;
+    }
+    
+    /**
+     * Check if a table has a specific column
+     */
+    private function tableHasColumn($table, $columnName) {
+        $structure = $this->db->getTableStructure($table);
+        foreach ($structure as $col) {
+            if ($col['name'] === $columnName) return true;
+        }
+        return false;
+    }    /**
      * Просмотр содержимого таблицы с поддержкой поиска и сортировки
      * 
      * @param string $table Название таблицы

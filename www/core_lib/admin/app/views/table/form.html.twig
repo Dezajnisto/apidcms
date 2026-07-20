@@ -85,7 +85,7 @@
                                     {% endif %}
                                 </label>
                                 
-                                <!-- Бейджи (stack on small) -->
+                                <!-- Бейджи -->
                                 <div class="flex items-center space-x-2">
                                     {% if column.pk == 1 %}
                                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -115,14 +115,43 @@
                                 <p class="text-xs text-gray-500">
                                     <i class="fas fa-info-circle mr-1"></i> Заполняется автоматически
                                 </p>
+                            {% elseif relations is defined and relations[column.name] is defined and relations[column.name].search %}
+                                <!-- Searchable combobox -->
+                                {% set rel = relations[column.name] %}
+                                {% set currentValue = item[column.name] ?? '' %}
+                                {% set currentLabel = '' %}
+                                {% for opt in rel.options %}
+                                    {% if currentValue == opt.value %}{% set currentLabel = opt.label %}{% endif %}
+                                {% endfor %}
+                                <div class="relation-combobox relative" data-name="{{ column.name }}">
+                                    <input type="text" 
+                                           class="relation-search-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                           placeholder="Поиск..."
+                                           autocomplete="off"
+                                           value="{{ currentLabel|e('html_attr') }}">
+                                    <input type="hidden" name="{{ column.name }}" value="{{ currentValue|e('html_attr') }}">
+                                    <div class="relation-dropdown hidden absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
+                                        <div class="relation-option px-3 py-2 hover:bg-blue-50 cursor-pointer text-gray-400 text-sm" data-value="">-- Выберите --</div>
+                                        {% for opt in rel.options %}
+                                            <div class="relation-option px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm {% if currentValue == opt.value %}bg-blue-100 font-medium{% endif %}"
+                                                 data-value="{{ opt.value|e('html_attr') }}"
+                                                 data-label="{{ opt.label|e('html_attr') }}">
+                                                {% if opt.level > 0 %}<span class="text-gray-400">{% for i in 1..opt.level %}&mdash;&nbsp;{% endfor %}</span>{% endif %}
+                                                {{ opt.label }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
                             {% elseif relations is defined and relations[column.name] is defined %}
+                                <!-- Native select (with tree indentation if applicable) -->
+                                {% set rel = relations[column.name] %}
                                 <select id="{{ column.name }}" name="{{ column.name }}"
                                         {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white">
                                     <option value="">-- Выберите --</option>
-                                    {% for opt in relations[column.name].options %}
+                                    {% for opt in rel.options %}
                                         <option value="{{ opt.value }}" {% if item is not null and item[column.name] == opt.value %}selected{% endif %}>
-                                            {{ opt.label }}
+                                            {% for i in 1..opt.level %}&mdash;&nbsp;{% endfor %}{{ opt.label }}
                                         </option>
                                     {% endfor %}
                                 </select>
@@ -229,11 +258,11 @@ document.addEventListener('DOMContentLoaded', function() {
     textareas.forEach(textarea => {
         const counter = document.createElement('div');
         counter.className = 'text-xs text-gray-500 mt-1 text-right';
-        counter.textContent = `Символов: ${textarea.value.length}`;
+        counter.textContent = 'Символов: ' + textarea.value.length;
         textarea.parentNode.appendChild(counter);
         
         textarea.addEventListener('input', function() {
-            counter.textContent = `Символов: ${this.value.length}`;
+            counter.textContent = 'Символов: ' + this.value.length;
         });
     });
 
@@ -255,6 +284,98 @@ document.addEventListener('DOMContentLoaded', function() {
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             input.value = now.toISOString().slice(0, 16);
         }
+    });
+
+    // --- Relation combobox init ---
+    document.querySelectorAll('.relation-combobox').forEach(function(box) {
+        var searchInput = box.querySelector('.relation-search-input');
+        var hiddenInput = box.querySelector('input[type="hidden"]');
+        var dropdown = box.querySelector('.relation-dropdown');
+        var options = dropdown.querySelectorAll('.relation-option');
+        var isOpen = false;
+
+        function openDropdown() {
+            dropdown.classList.remove('hidden');
+            isOpen = true;
+            filterOptions(searchInput.value);
+        }
+
+        function closeDropdown() {
+            dropdown.classList.add('hidden');
+            isOpen = false;
+        }
+
+        function filterOptions(query) {
+            var q = query.toLowerCase().trim();
+            var hasVisible = false;
+            options.forEach(function(opt) {
+                if (!opt.dataset.value) return; // skip placeholder
+                var label = (opt.dataset.label || '').toLowerCase();
+                var match = !q || label.indexOf(q) !== -1;
+                opt.style.display = match ? '' : 'none';
+                if (match) hasVisible = true;
+            });
+            // Show/hide placeholder
+            var placeholder = dropdown.querySelector('.relation-option[data-value=""]');
+            if (placeholder) {
+                placeholder.style.display = q ? 'none' : '';
+            }
+        }
+
+        function selectOption(opt) {
+            var value = opt.dataset.value;
+            hiddenInput.value = value;
+            searchInput.value = value ? (opt.dataset.label || '') : '';
+            // Update selected state
+            options.forEach(function(o) {
+                o.classList.remove('bg-blue-100', 'font-medium');
+            });
+            if (value) {
+                opt.classList.add('bg-blue-100', 'font-medium');
+            }
+            closeDropdown();
+        }
+
+        searchInput.addEventListener('focus', function() {
+            openDropdown();
+        });
+
+        searchInput.addEventListener('input', function() {
+            if (!isOpen) openDropdown();
+            filterOptions(this.value);
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDropdown();
+                searchInput.blur();
+            }
+        });
+
+        // Click on option
+        dropdown.addEventListener('mousedown', function(e) {
+            var opt = e.target.closest('.relation-option');
+            if (opt) {
+                e.preventDefault();
+                selectOption(opt);
+            }
+        });
+
+        // Blur - close but not immediately (allow mousedown first)
+        searchInput.addEventListener('blur', function() {
+            setTimeout(function() {
+                if (!dropdown.contains(document.activeElement)) {
+                    closeDropdown();
+                }
+            }, 150);
+        });
+
+        // Close on outside click
+        document.addEventListener('click', function(e) {
+            if (!box.contains(e.target)) {
+                closeDropdown();
+            }
+        });
     });
 });
 </script>

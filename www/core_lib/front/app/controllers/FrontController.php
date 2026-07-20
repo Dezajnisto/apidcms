@@ -745,8 +745,18 @@ class FrontController {
         if (!empty($config['get_filters'])) {
             foreach ($config['get_filters'] as $param => $field) {
                 if (!empty($_GET[$param])) {
-                    $whereConditions[] = "{$field} = ?";
-                    $params[] = $_GET[$param];
+                    $val = $_GET[$param];
+                    if (strpos($val, ',') !== false) {
+                        $ids = array_map('intval', explode(',', $val));
+                        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                        $whereConditions[] = "{$field} IN ({$placeholders})";
+                        foreach ($ids as $id) {
+                            $params[] = $id;
+                        }
+                    } else {
+                        $whereConditions[] = "{$field} = ?";
+                        $params[] = $val;
+                    }
                 }
             }
         }
@@ -809,6 +819,55 @@ class FrontController {
         unset($queryParams['page']);
         $queryString = http_build_query($queryParams);
 
+                // Fetch categories tree for sidebar
+        $categoriesTree = [];
+        try {
+            $allCats = $this->database->query(
+                "SELECT id, parent_id, name, slug, sort_order FROM categories WHERE status = 'active' ORDER BY parent_id, sort_order"
+            )->fetchAll();
+            $catCounts = [];
+            $countRows = $this->database->query(
+                "SELECT category_id, COUNT(*) as cnt FROM catalog WHERE status = 'active' AND category_id IS NOT NULL GROUP BY category_id"
+            )->fetchAll();
+            foreach ($countRows as $cr) { $catCounts[$cr['category_id']] = $cr['cnt']; }
+            $catById = [];
+            foreach ($allCats as $c) {
+                $c['count'] = $catCounts[$c['id']] ?? 0;
+                $c['total'] = $c['count'];
+                $c['children'] = [];
+                $catById[$c['id']] = $c;
+            }
+            foreach ($allCats as $c) {
+                if ($c['parent_id'] > 0 && isset($catById[$c['parent_id']])) {
+                    $catById[$c['parent_id']]['children'][] = &$catById[$c['id']];
+                }
+            }
+            // Calculate subtree totals bottom-up
+            $calcTotal = function(&$cat) use (&$calcTotal) {
+                $t = $cat['count'];
+                foreach ($cat['children'] as &$ch) { $t += $calcTotal($ch); }
+                $cat['total'] = $t;
+                return $t;
+            };
+            foreach ($catById as $id => &$cat) {
+                if ($cat['parent_id'] == 0) { $calcTotal($cat); $categoriesTree[] = $cat; }
+            }
+                    // Compute active and open category IDs
+            $activeIds = array_map('intval', array_filter(explode(',', $_GET['category_id'] ?? '')));
+            $openIds = [];
+            foreach ($activeIds as $aid) {
+                if (isset($catById[$aid])) {
+                    $openIds[] = $aid;
+                    $pid = $catById[$aid]['parent_id'];
+                    while ($pid > 0 && isset($catById[$pid])) {
+                        $openIds[] = $pid;
+                        $pid = $catById[$pid]['parent_id'];
+                    }
+                }
+            }
+            $openIds = array_unique($openIds);
+        } catch (\Exception $e) { $activeIds = []; $openIds = []; /* categories table may not exist yet */ }
+
         $this->render($template, [
             'items' => $data,
             'nav_item' => $navItem,
@@ -818,7 +877,10 @@ class FrontController {
             'total_pages' => $totalPages,
             'total_count' => $totalCount,
             'config' => $config,
-            'query_string' => $queryString
+            'query_string' => $queryString,
+            'categories_tree' => $categoriesTree,
+            'active_category_ids' => $activeIds,
+            'open_category_ids' => $openIds
         ]);
     }
 

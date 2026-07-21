@@ -94,6 +94,8 @@ class FrontController {
             return $parsedown->text($text ?? '');
         }));
         $this->twig->addFilter(new TwigFilter('json_decode', function($str) {
+            if (is_array($str)) return $str;
+            if (is_object($str)) return (array)$str;
             return $str ? json_decode($str, true) : [];
         }));
 

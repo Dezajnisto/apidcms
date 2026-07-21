@@ -902,7 +902,8 @@ class FrontController {
                 if ($cat['parent_id'] == 0) { $calcTotal($cat); $categoriesTree[] = $cat; }
             }
                     // Compute active and open category IDs
-            $activeIds = array_map('intval', array_filter(explode(',', $_GET['category_id'] ?? '')));
+                        $catParam = $_GET['categories'] ?? $_GET['category_id'] ?? '';
+            $activeIds = array_map('intval', array_filter(explode(',', $catParam)));
             $openIds = [];
             foreach ($activeIds as $aid) {
                 if (isset($catById[$aid])) {

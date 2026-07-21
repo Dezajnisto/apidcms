@@ -323,6 +323,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+        // --- Many-to-many multiselect search ---
+    document.querySelectorAll('.relation-multiselect').forEach(function(box) {
+        var searchInput = box.querySelector('.multiselect-search');
+        var items = box.querySelectorAll('.multiselect-item');
+        
+        if (!searchInput || !items.length) return;
+        
+        searchInput.addEventListener('input', function() {
+            var q = this.value.toLowerCase().trim();
+            items.forEach(function(item) {
+                var label = (item.querySelector('span') || {}).textContent || '';
+                item.style.display = (!q || label.toLowerCase().indexOf(q) !== -1) ? '' : 'none';
+            });
+        });
+    });
+
     // --- Relation combobox init ---
     document.querySelectorAll('.relation-combobox').forEach(function(box) {
         var searchInput = box.querySelector('.relation-search-input');

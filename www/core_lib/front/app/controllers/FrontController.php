@@ -873,8 +873,10 @@ class FrontController {
                 "SELECT id, parent_id, name, slug, sort_order FROM categories WHERE status = 'active' ORDER BY parent_id, sort_order"
             )->fetchAll();
             $catCounts = [];
+            // Use entity_relations pivot for counts (M:M-aware, falls back to direct column)
             $countRows = $this->database->query(
-                "SELECT category_id, COUNT(*) as cnt FROM catalog WHERE status = 'active' AND category_id IS NOT NULL GROUP BY category_id"
+                "SELECT er.target_id as category_id, COUNT(DISTINCT er.source_id) as cnt FROM entity_relations er INNER JOIN {$tableName} t ON t.id = er.source_id WHERE er.source_table = ? AND er.relation_name = 'categories' AND t.status = 'active' GROUP BY er.target_id",
+                [$tableName]
             )->fetchAll();
             foreach ($countRows as $cr) { $catCounts[$cr['category_id']] = $cr['cnt']; }
             $catById = [];

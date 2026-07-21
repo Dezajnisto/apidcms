@@ -498,7 +498,7 @@ class FrontController {
                                 if ($col['name'] === 'sort_order') { $orderField = 'sort_order'; break; }
                             }
                             // page_config can override order field and direction
-                            $pageConfig = json_decode($navItem->page_config ?: '{}', true);
+                            $pageConfig = is_string($navItem->page_config) ? json_decode($navItem->page_config, true) : ($navItem->page_config ?: []);
                             if (!empty($pageConfig['order_field'])) {
                                 $customField = preg_replace('/[^a-zA-Z_]/', '', $pageConfig['order_field']);
                                 $validFields = array_column($structure, 'name');

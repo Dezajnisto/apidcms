@@ -13,6 +13,32 @@ use Exception;
 class TableController extends BaseController {
     
     /**
+     * Save many-to-many pivot entries for a record (create/update)
+     */
+    private function savePivotRelations($table, $entityId, $post, $relations) {
+        foreach ($relations as $colName => $rel) {
+            if (($rel['type'] ?? '') !== 'many-to-many') continue;
+            
+            // Delete old pivot entries for this relation
+            $this->db->query(
+                "DELETE FROM entity_relations WHERE source_table = ? AND source_id = ? AND relation_name = ?",
+                [$table, $entityId, $colName]
+            );
+            
+            // Insert new pivot entries
+            $values = $post[$colName] ?? [];
+            if (!is_array($values)) $values = [$values];
+            foreach ($values as $targetId) {
+                if ($targetId === '' || $targetId === null) continue;
+                $this->db->query(
+                    "INSERT INTO entity_relations (source_table, source_id, relation_name, target_id) VALUES (?, ?, ?, ?)",
+                    [$table, $entityId, $colName, $targetId]
+                );
+            }
+        }
+    }
+
+    /**
      * Load relations from page_config for a table
      * Returns [column_name => ['table', 'label', 'value', 'options' => [...]]]
      */
@@ -70,7 +96,8 @@ class TableController extends BaseController {
                             'value' => $relValue,
                             'tree' => $useTree,
                             'search' => $useSearch,
-                            'options' => $options
+                            'options' => $options,
+                            'type' => $rel['type'] ?? 'one-to-many'
                         ];
                     } catch (\Exception $e) {
                         continue;
@@ -107,6 +134,26 @@ class TableController extends BaseController {
         return $options;
     }
     
+    /**
+     * Load currently selected pivot entries for many-to-many relations
+     * Returns [column_name => [target_id, ...]]
+     */
+    private function getPivotSelected($table, $entityId) {
+        $selected = [];
+        try {
+            $rows = $this->db->query(
+                "SELECT relation_name, target_id FROM entity_relations WHERE source_table = ? AND source_id = ?",
+                [$table, $entityId]
+            )->fetchAll(\PDO::FETCH_ASSOC);
+            foreach ($rows as $row) {
+                $selected[$row['relation_name']][] = $row['target_id'];
+            }
+        } catch (\Exception $e) {
+            // Table might not exist yet
+        }
+        return $selected;
+    }
+
     /**
      * Check if a table has a specific column
      */
@@ -238,6 +285,14 @@ class TableController extends BaseController {
         // Load relations from page_config
         $relations = $this->getRelations($table);
         
+        // Mark many-to-many relations with empty selected
+        foreach ($relations as $colName => &$rel) {
+            if (($rel['type'] ?? '') === 'many-to-many') {
+                $rel['selected'] = [];
+            }
+        }
+        unset($rel);
+        
         // Отображаем форму создания
         $this->render('table/form', [
             'tableName' => $table,
@@ -297,6 +352,9 @@ class TableController extends BaseController {
             // Вставляем данные
             $newId = $this->db->insert($table, $data);
             
+            // Save many-to-many pivot entries
+            $this->savePivotRelations($table, $newId, $_POST, $this->getRelations($table));
+            
             // Перенаправляем на просмотр созданной записи
                             $page = $_GET['page'] ?? 1;
                 $this->redirect("/table/{$table}/id/{$newId}?created=1&page={$page}");
@@ -348,6 +406,15 @@ class TableController extends BaseController {
         
         // Load relations from page_config
         $relations = $this->getRelations($table);
+        
+        // Load many-to-many pivot selections for edit
+        $pivotSelected = $this->getPivotSelected($table, $id);
+        foreach ($relations as $colName => &$rel) {
+            if (($rel['type'] ?? '') === 'many-to-many' && isset($pivotSelected[$colName])) {
+                $rel['selected'] = $pivotSelected[$colName];
+            }
+        }
+        unset($rel);
         
         // Отображаем форму редактирования
         $this->render('table/form', [
@@ -418,6 +485,9 @@ class TableController extends BaseController {
             // Обновляем данные
             $success = $this->db->update($table, $id, $data);
             
+            // Save many-to-many pivot entries
+            $this->savePivotRelations($table, $id, $_POST, $this->getRelations($table));
+            
             if ($success) {
                 // Перенаправляем на просмотр обновленной записи
                                 $page = $_GET['page'] ?? 1;
@@ -460,18 +530,11 @@ class TableController extends BaseController {
         }
         
         try {
-            // Для известных таблиц сначала удаляем связанные записи
-            if ($table === 'poetry' && in_array('poetry_category', $tables)) {
-                // Удаляем связи из poetry_category
+            // Clean up many-to-many pivot entries
+            if (in_array('entity_relations', $tables)) {
                 $this->db->query(
-                    "DELETE FROM poetry_category WHERE poetry_id = ?", 
-                    [$id]
-                );
-            } elseif ($table === 'category' && in_array('poetry_category', $tables)) {
-                // Удаляем связи из poetry_category
-                $this->db->query(
-                    "DELETE FROM poetry_category WHERE category_id = ?", 
-                    [$id]
+                    "DELETE FROM entity_relations WHERE source_table = ? AND source_id = ?",
+                    [$table, $id]
                 );
             }
             

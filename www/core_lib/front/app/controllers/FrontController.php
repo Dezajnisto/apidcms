@@ -85,6 +85,7 @@ class FrontController {
         $this->twig->addFunction(new TwigFunction('get_record', [$this, 'getRecord']));
         $this->twig->addFunction(new TwigFunction('get_records', [$this, 'getRecords']));
         $this->twig->addFunction(new TwigFunction('get_all', [$this, 'getAll']));
+        $this->twig->addFunction(new TwigFunction('get_pivot', [$this, 'getPivot']));
 
         // Фильтр для Markdown → HTML
         $this->twig->addFilter(new TwigFilter('markdown_to_html', function($text) {
@@ -202,6 +203,35 @@ class FrontController {
         return $this->database->query(
             "SELECT * FROM \"" . $table . "\" ORDER BY \"" . $orderBy . "\" " . $orderDir
         )->fetchAll();
+    }
+
+    /**
+     * Получить связанные записи через pivot-таблицу (many-to-many)
+     * 
+     * @param string $sourceTable Таблица сущности
+     * @param int $sourceId ID сущности
+     * @param string $relationName Имя связи из page_config
+     * @param string $targetTable Таблица-справочник (напр. "categories")
+     * @return array Массив связанных записей из target-таблицы
+     */
+    public function getPivot($sourceTable, $sourceId, $relationName, $targetTable) {
+        $tables = $this->database->getTables();
+        if (!in_array('entity_relations', $tables) || !in_array($targetTable, $tables)) {
+            return [];
+        }
+        
+        $sourceId = (int)$sourceId;
+        if ($sourceId <= 0) return [];
+        
+        $rows = $this->database->query(
+            "SELECT t.* FROM \"{$targetTable}\" t 
+             INNER JOIN entity_relations er ON er.target_id = t.id 
+             WHERE er.source_table = ? AND er.source_id = ? AND er.relation_name = ? 
+             ORDER BY t.id",
+            [$sourceTable, $sourceId, $relationName]
+        )->fetchAll();
+        
+        return $rows ?: [];
     }
 
     /**
@@ -746,7 +776,20 @@ class FrontController {
             foreach ($config['get_filters'] as $param => $field) {
                 if (!empty($_GET[$param])) {
                     $val = $_GET[$param];
-                    if (strpos($val, ',') !== false) {
+                    // Check if this filter is a many-to-many relation
+                    $isManyToMany = !empty($config['relations'][$field]['type']) 
+                        && $config['relations'][$field]['type'] === 'many-to-many';
+                    
+                    if ($isManyToMany) {
+                        $ids = array_map('intval', explode(',', $val));
+                        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                        $whereConditions[] = "id IN (SELECT source_id FROM entity_relations WHERE source_table = ? AND relation_name = ? AND target_id IN ({$placeholders}))";
+                        $params[] = $tableName;
+                        $params[] = $field;
+                        foreach ($ids as $id) {
+                            $params[] = $id;
+                        }
+                    } elseif (strpos($val, ',') !== false) {
                         $ids = array_map('intval', explode(',', $val));
                         $placeholders = implode(',', array_fill(0, count($ids), '?'));
                         $whereConditions[] = "{$field} IN ({$placeholders})";

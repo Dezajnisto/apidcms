@@ -186,6 +186,23 @@ $pdo->exec('
     )
 ');
 echo "[OK] menu_items\n";
+// 9. Pivot table for many-to-many relations
+$pdo->exec('
+    CREATE TABLE IF NOT EXISTS entity_relations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source_table TEXT NOT NULL,
+        source_id INTEGER NOT NULL,
+        relation_name TEXT NOT NULL,
+        target_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+');
+echo "[OK] entity_relations\n";
+
+// Indexes for entity_relations
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_er_lookup ON entity_relations(source_table, source_id, relation_name)");
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_er_reverse ON entity_relations(relation_name, target_id, source_table)");
+
 
 echo "\n=== Базовые настройки ===\n";
 
@@ -268,5 +285,27 @@ if (class_exists('Core\VisitStats')) {
 $pdo->exec("INSERT OR IGNORE INTO pages (id, title, slug, content, status) VALUES (1, 'Main', 'home', '<h1>Welcome!</h1><p>Site installed. <a href=/admin>Go to admin</a> to add content.</p>', 'active')");
 $pdo->exec("INSERT OR IGNORE INTO navigation (id, title, url, page_id, page_type, location, menu_order, status) VALUES (1, 'Main', 'home', 1, 'page', 'header', 1, 'active')");
 echo "[OK] default pages\n";
+
+
+/**
+ * MIGRATION: entity_relations table (many-to-many support)
+ * Added v1.3.12 — safe to run on existing projects
+ */
+$tables = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='entity_relations'")->fetchAll();
+if (count($tables) === 0) {
+    $pdo->exec("
+        CREATE TABLE entity_relations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_table TEXT NOT NULL,
+            source_id INTEGER NOT NULL,
+            relation_name TEXT NOT NULL,
+            target_id INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+    $pdo->exec("CREATE INDEX idx_er_lookup ON entity_relations(source_table, source_id, relation_name)");
+    $pdo->exec("CREATE INDEX idx_er_reverse ON entity_relations(relation_name, target_id, source_table)");
+    echo "[MIGRATION] entity_relations table created\n";
+}
 
 echo "\n=== Инициализация завершена ===\n";

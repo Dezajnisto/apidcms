@@ -115,26 +115,7 @@
                                 <p class="text-xs text-gray-500">
                                     <i class="fas fa-info-circle mr-1"></i> Заполняется автоматически
                                 </p>
-                            {% elseif relations is defined and relations[column.name] is defined and relations[column.name].type is defined and relations[column.name].type == 'many-to-many' %}
-                                <!-- Many-to-many checkboxes with search filter -->
-                                {% set rel = relations[column.name] %}
-                                {% set sel = rel.selected ?? [] %}
-                                <div class="relation-multiselect border border-gray-300 rounded-md" data-name="{{ column.name }}">
-                                    <input type="text" 
-                                           class="multiselect-search w-full px-3 py-2 border-b border-gray-200 text-sm focus:outline-none focus:ring-0 rounded-t-md"
-                                           placeholder="Поиск..."
-                                           autocomplete="off">
-                                    <div class="multiselect-options max-h-48 overflow-y-auto p-2 space-y-1">
-                                        {% for opt in rel.options %}
-                                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded multiselect-item">
-                                                <input type="checkbox" name="{{ column.name }}[]" value="{{ opt.value }}"
-                                                    {% if opt.value in sel %}checked{% endif %}
-                                                    class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                                <span class="text-sm">{% for i in 1..opt.level %}&mdash;&nbsp;{% endfor %}{{ opt.label }}</span>
-                                            </label>
-                                        {% endfor %}
-                                    </div>
-                                </div>
+
                             {% elseif relations is defined and relations[column.name] is defined and relations[column.name].search %}
                                 <!-- Searchable combobox -->
                                 {% set rel = relations[column.name] %}
@@ -216,6 +197,84 @@
                         </div>
                     {% endif %}
                 {% endfor %}
+
+                <!-- Many-to-many relations (virtual, not DB columns) -->
+                {% if relations is defined %}
+                    {% for relName, rel in relations %}
+                        {% if rel.type is defined and rel.type == 'many-to-many' %}
+                            {% set sel = rel.selected ?? [] %}
+                            <div class="space-y-2">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        {{ relName }}
+                                    </label>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                        <i class="fas fa-link mr-1"></i>
+                                        Связь M:M: {{ rel.table }}
+                                    </span>
+                                </div>
+                                <div class="relation-multiselect border border-gray-300 rounded-md" data-name="{{ relName }}">
+                                    <input type="text" 
+                                           class="multiselect-search w-full px-3 py-2 border-b border-gray-200 text-sm focus:outline-none focus:ring-0 rounded-t-md"
+                                           placeholder="Поиск..."
+                                           autocomplete="off">
+                                    <div class="multiselect-options max-h-48 overflow-y-auto p-2 space-y-1">
+                                        {% for opt in rel.options %}
+                                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded multiselect-item">
+                                                <input type="checkbox" name="{{ relName }}[]" value="{{ opt.value }}"
+                                                    {% if opt.value in sel %}checked{% endif %}
+                                                    class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                                <span class="text-sm">{% for i in 1..opt.level %}&mdash;&nbsp;{% endfor %}{{ opt.label }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-500 gap-1">
+                                    <span>Связь многие-ко-многим</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                <!-- Many-to-many relations (virtual, not DB columns) -->
+                {% if relations is defined %}
+                    {% for relName, rel in relations %}
+                        {% if rel.type is defined and rel.type == 'many-to-many' %}
+                            {% set sel = rel.selected ?? [] %}
+                            <div class="space-y-2">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        {{ relName }}
+                                    </label>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                        <i class="fas fa-link mr-1"></i>
+                                        M:M: {{ rel.table }}
+                                    </span>
+                                </div>
+                                <div class="relation-multiselect border border-gray-300 rounded-md" data-name="{{ relName }}">
+                                    <input type="text"
+                                           class="multiselect-search w-full px-3 py-2 border-b border-gray-200 text-sm focus:outline-none focus:ring-0 rounded-t-md"
+                                           placeholder="Search..."
+                                           autocomplete="off">
+                                    <div class="multiselect-options max-h-48 overflow-y-auto p-2 space-y-1">
+                                        {% for opt in rel.options %}
+                                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded multiselect-item">
+                                                <input type="checkbox" name="{{ relName }}[]" value="{{ opt.value }}"
+                                                    {% if opt.value in sel %}checked{% endif %}
+                                                    class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                                <span class="text-sm">{% for i in 1..opt.level %}&mdash;&nbsp;{% endfor %}{{ opt.label }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-500 gap-1">
+                                    <span>Many-to-many relation</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+
+                {% endif %}
 
                 <!-- Кнопки действий -->
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 md:pt-6 border-t">

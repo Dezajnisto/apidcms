@@ -220,11 +220,11 @@
                                            autocomplete="off">
                                     <div class="multiselect-options max-h-48 overflow-y-auto p-2 space-y-1">
                                         {% for opt in rel.options %}
-                                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded multiselect-item">
+                                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded multiselect-item" style="padding-left: {{ opt.level * 16 + 4 }}px">
                                                 <input type="checkbox" name="{{ relName }}[]" value="{{ opt.value }}"
                                                     {% if opt.value in sel %}checked{% endif %}
                                                     class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                                <span class="text-sm">{{ opt.label }}</span>
+                                                <span class="text-sm">{% for i in 1..opt.level %}&mdash;&nbsp;{% endfor %}{{ opt.label }}</span>
                                             </label>
                                         {% endfor %}
                                     </div>

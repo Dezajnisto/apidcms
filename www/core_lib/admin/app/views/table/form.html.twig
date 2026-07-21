@@ -196,8 +196,9 @@
                         </div>
                     {% endif %}
                 {% endfor %}
-                
-                <!-- Many-to-many relations (virtual fields, not DB columns) -->
+
+
+                <!-- Many-to-many relations (virtual fields) -->
                 {% if relations is defined %}
                     {% for relName, rel in relations %}
                         {% if rel.type is defined and rel.type == 'many-to-many' %}

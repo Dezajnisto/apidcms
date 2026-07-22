@@ -753,6 +753,23 @@ class TableController extends BaseController {
             }
         }
 
+        // Make slug unique on duplicate
+        if (isset($data['slug'])) {
+            $base = $data['slug'];
+            $testSlug = $base;
+            $i = 1;
+            while (true) {
+                $existingRow = $this->db->query(
+                    'SELECT id FROM "' . $table . '" WHERE slug = ? LIMIT 1',
+                    [$testSlug]
+                )->fetch();
+                if (!$existingRow) break;
+                $testSlug = $base . '-' . $i;
+                $i++;
+            }
+            $data['slug'] = $testSlug;
+        }
+
         try {
             $newId = $this->db->insert($table, $data);
             $this->setFlash("success", "Запись скопирована. Новый ID: {$newId}");

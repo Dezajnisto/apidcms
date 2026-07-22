@@ -110,82 +110,6 @@ $pdo->exec('
     )
 ');
 echo "[OK] system_settings\n";
-
-
-// ========== ОПЦИОНАЛЬНЫЕ ТАБЛИЦЫ ==========
-
-// 4. Секции (для landing-страниц)
-$pdo->exec('
-    CREATE TABLE IF NOT EXISTS sections (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        page_id INTEGER NOT NULL,
-        type TEXT NOT NULL,
-        title TEXT,
-        content TEXT,
-        sort_order INTEGER DEFAULT 0,
-        settings TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
-    )
-');
-echo "[OK] sections\n";
-
-// 5. Галерея
-$pdo->exec('
-    CREATE TABLE IF NOT EXISTS gallery (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        section_id INTEGER,
-        image_url TEXT NOT NULL,
-        alt_text TEXT,
-        sort_order INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE CASCADE
-    )
-');
-echo "[OK] gallery\n";
-
-// 6. Отзывы
-$pdo->exec('
-    CREATE TABLE IF NOT EXISTS reviews (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        author TEXT NOT NULL,
-        text TEXT NOT NULL,
-        rating INTEGER DEFAULT 5,
-        sort_order INTEGER DEFAULT 0,
-        status TEXT DEFAULT "active",
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-');
-echo "[OK] reviews\n";
-
-// 7. Меню
-$pdo->exec('
-    CREATE TABLE IF NOT EXISTS menus (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        location TEXT DEFAULT "header",
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-');
-echo "[OK] menus\n";
-
-// 8. Пункты меню
-$pdo->exec('
-    CREATE TABLE IF NOT EXISTS menu_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        menu_id INTEGER NOT NULL,
-        page_id INTEGER,
-        title TEXT NOT NULL,
-        url TEXT,
-        parent_id INTEGER DEFAULT 0,
-        sort_order INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (menu_id) REFERENCES menus(id) ON DELETE CASCADE,
-        FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE SET NULL
-    )
-');
-echo "[OK] menu_items\n";
 // 9. Pivot table for many-to-many relations
 $pdo->exec('
     CREATE TABLE IF NOT EXISTS entity_relations (
@@ -286,26 +210,5 @@ $pdo->exec("INSERT OR IGNORE INTO pages (id, title, slug, content, status) VALUE
 $pdo->exec("INSERT OR IGNORE INTO navigation (id, title, url, page_id, page_type, location, menu_order, status) VALUES (1, 'Main', 'home', 1, 'page', 'header', 1, 'active')");
 echo "[OK] default pages\n";
 
-
-/**
- * MIGRATION: entity_relations table (many-to-many support)
- * Added v1.3.12 — safe to run on existing projects
- */
-$tables = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='entity_relations'")->fetchAll();
-if (count($tables) === 0) {
-    $pdo->exec("
-        CREATE TABLE entity_relations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            source_table TEXT NOT NULL,
-            source_id INTEGER NOT NULL,
-            relation_name TEXT NOT NULL,
-            target_id INTEGER NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ");
-    $pdo->exec("CREATE INDEX idx_er_lookup ON entity_relations(source_table, source_id, relation_name)");
-    $pdo->exec("CREATE INDEX idx_er_reverse ON entity_relations(relation_name, target_id, source_table)");
-    echo "[MIGRATION] entity_relations table created\n";
-}
 
 echo "\n=== Инициализация завершена ===\n";

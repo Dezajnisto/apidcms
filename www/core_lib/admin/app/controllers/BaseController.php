@@ -212,9 +212,9 @@ class BaseController {
         $count = 0;
         
         try {
-            // Получаем все таблицы форм
+            // Get all form tables from forms registry
             $forms = $this->db->query(
-                "SELECT source_table FROM navigation WHERE page_type = 'form' AND status = 'active'"
+                "SELECT source_table FROM forms WHERE status = 'active'"
             )->fetchAll();
             
             foreach ($forms as $form) {

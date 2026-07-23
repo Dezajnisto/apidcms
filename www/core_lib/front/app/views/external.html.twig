@@ -1,0 +1,39 @@
+{# default external page template #}
+{% extends 'base.html.twig' %}
+
+{% block content %}
+<section class="external-page max-w-5xl mx-auto px-4 py-8">
+    {% if from_cache %}
+    <div class="text-xs text-gray-400 mb-4">
+        <i class="fas fa-database mr-1"></i> cached
+    </div>
+    {% endif %}
+
+    {% if items is empty %}
+    <div class="text-center py-12 text-gray-500">
+        <i class="fas fa-inbox text-4xl mb-3 block"></i>
+        <p>No data available</p>
+    </div>
+    {% else %}
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {% for item in items %}
+        <div class="bg-white rounded-lg shadow p-5 hover:shadow-md transition">
+            {% if item.title or item.name %}
+            <h3 class="font-semibold text-lg mb-2">{{ item.title ?? item.name }}</h3>
+            {% endif %}
+            {% if item.description or item.summary %}
+            <p class="text-gray-600 text-sm">{{ item.description ?? item.summary }}</p>
+            {% endif %}
+            {% if item.url or item.link %}
+            <a href="{{ item.url ?? item.link }}"
+               class="inline-block mt-3 text-blue-600 hover:underline text-sm"
+               {% if item.url starts with 'http' %}target="_blank" rel="noopener"{% endif %}>
+                Learn more &rarr;
+            </a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

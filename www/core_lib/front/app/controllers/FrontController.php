@@ -525,6 +525,10 @@ class FrontController {
                 ]);
                 break;
                 
+            case 'external':
+                $this->handleExternalPage($navItem);
+                break;
+                
             case 'search':
                 $this->handleSearch($navItem);
                 break;
@@ -1645,6 +1649,67 @@ private function handleFormSubmission() {
             'results' => $results,
             'results_count' => count($results)
         ]);
+    }
+
+    /**
+     * Handle external page type - fetch data from external JSON API/URL
+     */
+    private function handleExternalPage($navItem) {
+        $config = $navItem->getPageConfig();
+        $sourceUrl = $config['source_url'] ?? '';
+
+        if (empty($sourceUrl)) {
+            $this->show404();
+            return;
+        }
+
+        // Resolve placeholders in headers: {{ token }}, {{ setting.KEY }}
+        if (!empty($config['headers']) && is_array($config['headers'])) {
+            foreach ($config['headers'] as $key => $value) {
+                // {{ setting.KEY }}
+                $value = preg_replace_callback(
+                    '/\{\{\s*setting\.(\w+)\s*\}\}/',
+                    function ($m) {
+                        return $this->getSetting($m[1]) ?? '';
+                    },
+                    $value
+                );
+                // {{ token }}
+                $value = str_replace(
+                    ['{{ token }}', '{{token}}'],
+                    $this->getSetting('external_default_token') ?? '',
+                    $value
+                );
+                $config['headers'][$key] = $value;
+            }
+        }
+
+        try {
+            $loader = new \Core\ExternalPageLoader($config);
+            $data = $loader->fetch($_GET);
+
+            $template = ($config['template'] !== 'default')
+                ? $config['template'] . '.html.twig'
+                : 'external.html.twig';
+
+            $this->render($template, [
+                'items' => $data['items'],
+                'raw' => $data['raw'],
+                'from_cache' => $data['from_cache'],
+                'page_config' => $config,
+                'source_url' => $sourceUrl,
+                'title' => $navItem->title,
+                'nav_item' => $navItem,
+            ]);
+        } catch (\RuntimeException $e) {
+            // Log error and show a friendly page
+            error_log('ExternalPageLoader error: ' . $e->getMessage());
+            $this->render('external_error.html.twig', [
+                'title' => $navItem->title,
+                'error' => $e->getMessage(),
+                'source_url' => $sourceUrl,
+            ]);
+        }
     }
 
     /**

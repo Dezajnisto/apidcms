@@ -16,7 +16,8 @@ class CacheController extends BaseController {
      */
     private $cachePaths = [
         'twig_admin' => ROOT_PATH . '/storage/cache/twig_admin/',
-        'twig_front' => ROOT_PATH . '/storage/cache/twig/'
+        'twig_front' => ROOT_PATH . '/storage/cache/twig/',
+        'external' => ROOT_PATH . '/admin/views/cache/'
     ];
     
     /**
@@ -55,10 +56,16 @@ class CacheController extends BaseController {
                     $cleared[] = $this->clearTwigCache($this->cachePaths['twig_front']);
                     break;
                     
+                case 'external':
+                    $count = \Core\ExternalPageLoader::clearAllCache();
+                    $cleared[] = $count >= 0;
+                    break;
+
                 case 'all':
                 default:
                     $cleared[] = $this->clearTwigCache($this->cachePaths['twig_admin']);
                     $cleared[] = $this->clearTwigCache($this->cachePaths['twig_front']);
+                    $cleared[] = \Core\ExternalPageLoader::clearAllCache() >= 0;
                     break;
             }
             
@@ -94,6 +101,20 @@ class CacheController extends BaseController {
                 'writable' => is_writable($path)
             ];
             
+            // External cache: only count external_*.json files
+            if ($name === 'external') {
+                if ($info[$name]['exists']) {
+                    $externalFiles = glob($path . '/external_*.json');
+                    $info[$name]['file_count'] = count($externalFiles);
+                    $size = 0;
+                    foreach ($externalFiles as $f) {
+                        $size += filesize($f);
+                    }
+                    $info[$name]['total_size'] = $this->formatBytes($size);
+                }
+                continue;
+            }
+
             if ($info[$name]['exists']) {
                 $size = 0;
                 $count = 0;

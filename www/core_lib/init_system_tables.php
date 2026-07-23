@@ -169,6 +169,7 @@ $settings = [
     ['posts_per_page', '10', 'string'],
     ['site_favicon', null, 'string'],
     ['maintenance_mode', '0', 'string'],
+    ['external_default_token', null, 'string'],
 
     
     // Email — настройки почты

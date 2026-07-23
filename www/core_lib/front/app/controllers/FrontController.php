@@ -849,7 +849,15 @@ class FrontController {
                 $orderDir = strtoupper($opt['order']) === 'DESC' ? 'DESC' : 'ASC';
             }
         }
-        $orderBy = "{$orderField} {$orderDir}";
+        // Build multi-column ORDER BY with optional secondary sorts (then)
+        $orderBy = "\"{$orderField}\" {$orderDir}";
+        if (!empty($config['sort']['then'])) {
+            foreach ($config['sort']['then'] as $s) {
+                $sf = preg_replace('/[^a-zA-Z_]/', '', $s['field']);
+                $so = strtoupper($s['order'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
+                $orderBy .= ", \"{$sf}\" {$so}";
+            }
+        }
         $data = $this->database->query(
             "SELECT * FROM {$tableName} WHERE {$whereClause} ORDER BY {$orderBy} LIMIT ? OFFSET ?",
             array_merge($params, [$perPage, $offset])

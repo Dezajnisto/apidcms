@@ -16,6 +16,7 @@
         </div>
         <div class="cell-modal-footer">
             <span style="font-size:0.75rem;color:#9ca3af;margin-right:auto;">Ctrl+Enter = save, Esc = cancel</span>
+            <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-mdeditor">MD Editor</button>
             <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-cancel">Cancel</button>
             <button type="button" class="cell-btn cell-btn-save" id="cell-modal-save">Save</button>
         </div>
@@ -39,6 +40,7 @@
         </div>
         <div class="cell-modal-footer">
             <span style="font-size:0.75rem;color:#9ca3af;margin-right:auto;">Ctrl+Enter = save, Esc = cancel</span>
+            <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-mdeditor">MD Editor</button>
             <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-cancel">Cancel</button>
             <button type="button" class="cell-btn cell-btn-save" id="cell-modal-save">Save</button>
         </div>
@@ -227,6 +229,45 @@
     font-size: 0.8125rem;
     margin-bottom: 0.75rem;
     display: none;
+}
+
+/* === EasyMDE overrides for modal === */
+.cell-modal-body .EasyMDEContainer {
+    height: 100%;
+}
+.cell-modal-body .EasyMDEContainer .CodeMirror {
+    height: 280px !important;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+}
+.cell-modal-body .EasyMDEContainer .editor-toolbar {
+    border: 1px solid #d1d5db;
+    border-bottom: none;
+    border-radius: 0.5rem 0.5rem 0 0;
+    background: #f9fafb;
+}
+.cell-modal-body .EasyMDEContainer .editor-toolbar button {
+    color: #374151;
+}
+.cell-modal-body .EasyMDEContainer .editor-toolbar button:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+}
+.cell-modal-body .EasyMDEContainer .editor-toolbar button.active {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+.cell-modal-body .EasyMDEContainer .editor-preview {
+    background: #fff;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-top: none;
+}
+.cell-modal-body .EasyMDEContainer .editor-statusbar {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    padding: 0.25rem 0.5rem;
 }
 </style>
 
@@ -650,6 +691,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+<script src="/admin/storage/js/easymde.min.js"></script>
+<script>
 // ===== Inline cell editing =====
 (function() {
     var modal = document.getElementById('cell-edit-modal');
@@ -659,12 +702,14 @@ document.addEventListener('DOMContentLoaded', function() {
     var saveBtn = document.getElementById('cell-modal-save');
     var cancelBtn = document.getElementById('cell-modal-cancel');
     var closeBtn = document.getElementById('cell-modal-close-btn');
+    var mdToggleBtn = document.getElementById('cell-modal-mdeditor');
 
     var currentCell = null;
     var currentTable = null;
     var currentRowId = null;
     var currentColumn = null;
     var currentOriginal = '';
+    var easyMDEInstance = null;
 
     // Open modal on double-click
     document.querySelector('.data-table tbody').addEventListener('dblclick', function(e) {
@@ -688,6 +733,14 @@ document.addEventListener('DOMContentLoaded', function() {
         modalError.style.display = 'none';
         modalError.textContent = '';
 
+        // Reset MD editor state
+        if (easyMDEInstance) {
+            easyMDEInstance.toTextArea();
+            easyMDEInstance = null;
+        }
+        mdToggleBtn.textContent = 'MD Editor';
+        modalTextarea.style.display = '';
+
         // Show modal
         modal.style.display = 'flex';
         modal.setAttribute('aria-hidden', 'false');
@@ -703,6 +756,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Close modal
     function closeModal() {
+        // Destroy EasyMDE instance if active
+        if (easyMDEInstance) {
+            easyMDEInstance.toTextArea();
+            easyMDEInstance = null;
+        }
+        mdToggleBtn.textContent = 'MD Editor';
+        modalTextarea.style.display = '';
+
         modal.style.display = 'none';
         modal.setAttribute('aria-hidden', 'true');
         currentCell = null;
@@ -712,7 +773,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function doSave() {
         if (!currentCell) return;
 
-        var newValue = modalTextarea.value;
+        var newValue = easyMDEInstance ? easyMDEInstance.value() : modalTextarea.value;
         if (newValue === currentOriginal) {
             closeModal();
             return;
@@ -769,6 +830,34 @@ document.addEventListener('DOMContentLoaded', function() {
         closeModal();
     }
 
+    // EasyMDE toggle handler
+    mdToggleBtn.addEventListener('click', function() {
+        if (easyMDEInstance) {
+            // Switch back to plain textarea
+            modalTextarea.value = easyMDEInstance.value();
+            easyMDEInstance.toTextArea();
+            easyMDEInstance = null;
+            mdToggleBtn.textContent = 'MD Editor';
+            modalTextarea.style.display = '';
+        } else {
+            // Switch to EasyMDE
+            modalTextarea.style.display = 'none';
+            easyMDEInstance = new EasyMDE({
+                element: modalTextarea,
+                spellChecker: false,
+                status: ['lines', 'words'],
+                minHeight: '280px',
+                toolbar: ['bold', 'italic', 'heading', '|',
+                          'quote', 'unordered-list', 'ordered-list', '|',
+                          'link', 'image', '|',
+                          'preview', 'side-by-side', 'fullscreen', '|',
+                          'guide']
+            });
+            easyMDEInstance.value(modalTextarea.value);
+            mdToggleBtn.textContent = 'Plain Text';
+        }
+    });
+
     // Button handlers
     saveBtn.addEventListener('click', doSave);
     cancelBtn.addEventListener('click', doCancel);
@@ -816,6 +905,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         <div class="cell-modal-footer">
             <span style="font-size:0.75rem;color:#9ca3af;margin-right:auto;">Ctrl+Enter = save, Esc = cancel</span>
+            <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-mdeditor">MD Editor</button>
             <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-cancel">Cancel</button>
             <button type="button" class="cell-btn cell-btn-save" id="cell-modal-save">Save</button>
         </div>

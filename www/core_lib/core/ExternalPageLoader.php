@@ -250,6 +250,55 @@ class ExternalPageLoader
     }
 
     /**
+     * Fetch raw text content from a URL (e.g. README.md for detail pages).
+     * Returns null on 404, throws on other errors.
+     *
+     * @param string $url
+     * @return string|null
+     * @throws \RuntimeException
+     */
+    public function fetchContent(string $url): ?string
+    {
+        $opts = [
+            'http' => [
+                'method' => 'GET',
+                'header' => "Accept: text/plain,text/markdown,text/html\r\nUser-Agent: apidcms/ExternalPageLoader",
+                'timeout' => 15,
+                'ignore_errors' => true,
+            ],
+        ];
+
+        $context = stream_context_create($opts);
+        $response = @file_get_contents($url, false, $context);
+
+        if ($response === false) {
+            $error = error_get_last();
+            throw new \RuntimeException(
+                'ExternalPageLoader::fetchContent failed: ' . $url .
+                ($error ? ' - ' . $error['message'] : '')
+            );
+        }
+
+        // 404 = no content, not an error
+        if (isset($http_response_header) && !empty($http_response_header)) {
+            $statusLine = $http_response_header[0] ?? '';
+            if (preg_match('#^HTTP/\d+\.\d+\s+(\d+)#', $statusLine, $m)) {
+                $statusCode = (int)$m[1];
+                if ($statusCode === 404) {
+                    return null;
+                }
+                if ($statusCode >= 400) {
+                    throw new \RuntimeException(
+                        "ExternalPageLoader::fetchContent HTTP {$statusCode} from {$url}"
+                    );
+                }
+            }
+        }
+
+        return $response;
+    }
+
+    /**
      * Clear this loader's cache.
      */
     public function clearCache(): void

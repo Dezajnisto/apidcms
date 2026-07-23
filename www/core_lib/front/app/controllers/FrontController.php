@@ -1701,6 +1701,17 @@ private function handleFormSubmission() {
                     return;
                 }
 
+                // Fetch detail content if item has content_url
+                $detailContent = null;
+                if (!empty($item['content_url'])) {
+                    try {
+                        $detailContent = $loader->fetchContent($item['content_url']);
+                    } catch (\RuntimeException $e) {
+                        error_log('ExternalPageLoader content fetch error: ' . $e->getMessage());
+                        // Graceful: show page without content
+                    }
+                }
+
                 $baseTemplate = ($config['template'] !== 'default')
                     ? $config['template']
                     : 'external';
@@ -1713,6 +1724,7 @@ private function handleFormSubmission() {
                     'from_cache' => $data['from_cache'],
                     'page_config' => $config,
                     'source_url' => $sourceUrl,
+                    'detail_content' => $detailContent,
                     'title' => $item['title'] ?? $item['name'] ?? $navItem->title,
                     'nav_item' => $navItem,
                 ]);

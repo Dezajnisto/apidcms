@@ -781,4 +781,60 @@ class TableController extends BaseController {
         }
     }
 
+
+    /**
+     * Update a single cell via AJAX (inline editing)
+     *
+     * @param string $table Table name
+     * @param int $id Record ID
+     */
+    public function cellUpdate($table, $id) {
+        header('Content-Type: application/json');
+
+        // Verify table exists
+        $tables = $this->db->getTables();
+        if (!in_array($table, $tables)) {
+            echo json_encode(['success' => false, 'error' => "Table '{$table}' not found"]);
+            return;
+        }
+
+        // Read JSON body
+        $input = json_decode(file_get_contents('php://input'), true);
+        $column = $input['column'] ?? '';
+        $value = $input['value'] ?? '';
+
+        if (empty($column)) {
+            echo json_encode(['success' => false, 'error' => 'Column name is required']);
+            return;
+        }
+
+        // Verify column exists
+        $structure = $this->db->getTableStructure($table);
+        $validColumns = array_map(function($col) { return $col['name']; }, $structure);
+        if (!in_array($column, $validColumns)) {
+            echo json_encode(['success' => false, 'error' => "Column '{$column}' not found in table '{$table}'"]);
+            return;
+        }
+
+        // Verify record exists
+        $existing = $this->db->getById($table, $id);
+        if (!$existing) {
+            echo json_encode(['success' => false, 'error' => "Record #{$id} not found in table '{$table}'"]);
+            return;
+        }
+
+        // Update the cell
+        try {
+            $sql = "UPDATE " . $this->db->quoteIdentifier($table)
+                 . " SET " . $this->db->quoteIdentifier($column) . " = ?"
+                 . " WHERE id = ?";
+            $this->db->query($sql, [$value, $id]);
+
+            echo json_encode(['success' => true, 'value' => $value]);
+        } catch (\Exception $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+
 }

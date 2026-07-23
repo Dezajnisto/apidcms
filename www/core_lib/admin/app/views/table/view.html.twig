@@ -1,11 +1,235 @@
 {# twig #}
 {% extends "base.html.twig" %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}{{ title }}
 
-{% block page_title %}{{ title }}{% endblock %}
+<!-- Inline cell editing modal (hidden by default) -->
+<div id="cell-edit-modal" class="cell-modal-overlay" style="display:none;" aria-hidden="true">
+    <div class="cell-modal">
+        <div class="cell-modal-header">
+            <div class="cell-modal-title" id="cell-modal-title"></div>
+            <button type="button" class="cell-modal-close" id="cell-modal-close-btn" title="Escape">&times;</button>
+        </div>
+        <div class="cell-modal-body">
+            <div class="cell-modal-error" id="cell-modal-error"></div>
+            <textarea id="cell-modal-textarea" rows="10"></textarea>
+        </div>
+        <div class="cell-modal-footer">
+            <span style="font-size:0.75rem;color:#9ca3af;margin-right:auto;">Ctrl+Enter = save, Esc = cancel</span>
+            <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-cancel">Cancel</button>
+            <button type="button" class="cell-btn cell-btn-save" id="cell-modal-save">Save</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block page_title %}{{ title }}
+
+<!-- Inline cell editing modal (hidden by default) -->
+<div id="cell-edit-modal" class="cell-modal-overlay" style="display:none;" aria-hidden="true">
+    <div class="cell-modal">
+        <div class="cell-modal-header">
+            <div class="cell-modal-title" id="cell-modal-title"></div>
+            <button type="button" class="cell-modal-close" id="cell-modal-close-btn" title="Escape">&times;</button>
+        </div>
+        <div class="cell-modal-body">
+            <div class="cell-modal-error" id="cell-modal-error"></div>
+            <textarea id="cell-modal-textarea" rows="10"></textarea>
+        </div>
+        <div class="cell-modal-footer">
+            <span style="font-size:0.75rem;color:#9ca3af;margin-right:auto;">Ctrl+Enter = save, Esc = cancel</span>
+            <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-cancel">Cancel</button>
+            <button type="button" class="cell-btn cell-btn-save" id="cell-modal-save">Save</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
 
 {% block content %}
+<style>
+/* === Inline cell editing styles === */
+
+/* Vertical cell separators */
+.data-table td {
+    border-right: 1px solid rgba(0,0,0,0.06);
+}
+.data-table td:last-child {
+    border-right: none;
+}
+
+/* Cell hover effect */
+.data-table td.td-cell {
+    cursor: cell;
+    transition: background-color 0.15s ease;
+}
+.data-table td.td-cell:hover {
+    background-color: rgba(59, 130, 246, 0.06);
+}
+
+/* Saved flash animation */
+.td-cell-saved {
+    animation: cell-flash-green 0.8s ease;
+}
+@keyframes cell-flash-green {
+    0%   { background-color: #bbf7d0; }
+    100% { background-color: transparent; }
+}
+
+/* Error flash animation */
+.td-cell-error {
+    animation: cell-flash-red 0.8s ease;
+}
+@keyframes cell-flash-red {
+    0%   { background-color: #fecaca; }
+    100% { background-color: transparent; }
+}
+
+/* === Modal overlay === */
+.cell-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+/* Modal card */
+.cell-modal {
+    background: #fff;
+    border-radius: 0.75rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    width: 100%;
+    max-width: 640px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Modal header */
+.cell-modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+.cell-modal-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+.cell-modal-title code {
+    background: #f3f4f6;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+}
+
+/* Modal close button */
+.cell-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    line-height: 1;
+}
+.cell-modal-close:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* Modal body */
+.cell-modal-body {
+    padding: 1rem 1.5rem;
+    flex: 1;
+    overflow-y: auto;
+}
+.cell-modal-body textarea {
+    width: 100%;
+    min-height: 200px;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+.cell-modal-body textarea:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* Modal footer */
+.cell-modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* Modal buttons */
+.cell-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+.cell-btn-save {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+.cell-btn-save:hover {
+    background: #1d4ed8;
+}
+.cell-btn-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.cell-btn-cancel {
+    background: #fff;
+    color: #374151;
+    border-color: #d1d5db;
+}
+.cell-btn-cancel:hover {
+    background: #f9fafb;
+}
+
+/* Modal error message */
+.cell-modal-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    padding: 0.625rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.8125rem;
+    margin-bottom: 0.75rem;
+    display: none;
+}
+</style>
+
 <div class="max-w-7xl mx-auto">
     <!-- Навигация -->
     <div class="mb-4 md:mb-6">
@@ -245,7 +469,7 @@
                                 {% for column in structure %}
                                     {% if column.name != 'id' %}
                                         {% set value = row[column.name] ?? '' %}
-                                        <td class="px-4 md:px-6 py-4 text-sm text-gray-900" data-col="{{ td_col }}" data-label="{{ column.name }}">
+                                        <td class="td-cell px-4 md:px-6 py-4 text-sm text-gray-900" data-col="{{ td_col }}" data-label="{{ column.name }}" data-table="{{ tableName }}" data-row-id="{{ row.id }}" data-column="{{ column.name }}">
                                             {% if value is iterable %}
                                                 <span class="italic">[Массив]</span>
                                             {% else %}
@@ -425,5 +649,177 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.focus();
     }
 });
+
+// ===== Inline cell editing =====
+(function() {
+    var modal = document.getElementById('cell-edit-modal');
+    var modalTitle = document.getElementById('cell-modal-title');
+    var modalTextarea = document.getElementById('cell-modal-textarea');
+    var modalError = document.getElementById('cell-modal-error');
+    var saveBtn = document.getElementById('cell-modal-save');
+    var cancelBtn = document.getElementById('cell-modal-cancel');
+    var closeBtn = document.getElementById('cell-modal-close-btn');
+
+    var currentCell = null;
+    var currentTable = null;
+    var currentRowId = null;
+    var currentColumn = null;
+    var currentOriginal = '';
+
+    // Open modal on double-click
+    document.querySelector('.data-table tbody').addEventListener('dblclick', function(e) {
+        var td = e.target.closest('td.td-cell');
+        if (!td) return;
+
+        currentCell = td;
+        currentTable = td.getAttribute('data-table');
+        currentRowId = td.getAttribute('data-row-id');
+        currentColumn = td.getAttribute('data-column');
+
+        if (!currentTable || !currentRowId || !currentColumn) return;
+
+        // Get current value
+        var span = td.querySelector('.cell-value, span');
+        currentOriginal = span ? span.textContent.trim() : td.textContent.trim();
+
+        // Set modal
+        modalTitle.innerHTML = 'Column <code>' + escapeHtml(currentColumn) + '</code> &middot; Record <code>#' + escapeHtml(currentRowId) + '</code> in <code>' + escapeHtml(currentTable) + '</code>';
+        modalTextarea.value = currentOriginal;
+        modalError.style.display = 'none';
+        modalError.textContent = '';
+
+        // Show modal
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+
+        // Focus textarea and select all
+        setTimeout(function() {
+            modalTextarea.focus();
+            modalTextarea.select();
+        }, 50);
+
+        e.preventDefault();
+    });
+
+    // Close modal
+    function closeModal() {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        currentCell = null;
+    }
+
+    // Save handler
+    function doSave() {
+        if (!currentCell) return;
+
+        var newValue = modalTextarea.value;
+        if (newValue === currentOriginal) {
+            closeModal();
+            return;
+        }
+
+        saveBtn.disabled = true;
+        modalError.style.display = 'none';
+
+        fetch('/admin/table/' + encodeURIComponent(currentTable) + '/cell/' + encodeURIComponent(currentRowId), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ column: currentColumn, value: newValue })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            saveBtn.disabled = false;
+            if (data.success) {
+                // Update cell display
+                var span = currentCell.querySelector('.cell-value, span');
+                if (span) {
+                    span.textContent = newValue;
+                    span.setAttribute('title', newValue);
+                } else {
+                    // For cells without a span wrapper
+                    var textNode = Array.from(currentCell.childNodes).find(function(n) { return n.nodeType === 3 && n.textContent.trim(); });
+                    if (textNode) textNode.textContent = newValue;
+                }
+
+                // Flash green
+                currentCell.classList.add('td-cell-saved');
+                setTimeout(function() { currentCell.classList.remove('td-cell-saved'); }, 800);
+
+                closeModal();
+            } else {
+                modalError.textContent = data.error || 'Unknown error';
+                modalError.style.display = 'block';
+            }
+        })
+        .catch(function(err) {
+            saveBtn.disabled = false;
+            modalError.textContent = 'Network error: ' + err.message;
+            modalError.style.display = 'block';
+
+            // Flash red on original cell
+            if (currentCell) {
+                currentCell.classList.add('td-cell-error');
+                setTimeout(function() { currentCell.classList.remove('td-cell-error'); }, 800);
+            }
+        });
+    }
+
+    // Cancel handler
+    function doCancel() {
+        closeModal();
+    }
+
+    // Button handlers
+    saveBtn.addEventListener('click', doSave);
+    cancelBtn.addEventListener('click', doCancel);
+    closeBtn.addEventListener('click', doCancel);
+
+    // Click outside modal = close
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) doCancel();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (modal.style.display !== 'flex') return;
+
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            doCancel();
+        } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            doSave();
+        }
+    });
+
+    // Escape HTML helper
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+})();
+
 </script>
+
+
+<!-- Inline cell editing modal (hidden by default) -->
+<div id="cell-edit-modal" class="cell-modal-overlay" style="display:none;" aria-hidden="true">
+    <div class="cell-modal">
+        <div class="cell-modal-header">
+            <div class="cell-modal-title" id="cell-modal-title"></div>
+            <button type="button" class="cell-modal-close" id="cell-modal-close-btn" title="Escape">&times;</button>
+        </div>
+        <div class="cell-modal-body">
+            <div class="cell-modal-error" id="cell-modal-error"></div>
+            <textarea id="cell-modal-textarea" rows="10"></textarea>
+        </div>
+        <div class="cell-modal-footer">
+            <span style="font-size:0.75rem;color:#9ca3af;margin-right:auto;">Ctrl+Enter = save, Esc = cancel</span>
+            <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-cancel">Cancel</button>
+            <button type="button" class="cell-btn cell-btn-save" id="cell-modal-save">Save</button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

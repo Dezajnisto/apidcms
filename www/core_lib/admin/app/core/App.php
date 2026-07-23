@@ -65,6 +65,8 @@ class App {
         $this->addRoute('/table/{table}/update/{id}', 'TableController', 'update');
         $this->addRoute('/table/{table}/delete/{id}', 'TableController', 'delete');
         $this->addRoute('/table/{table}/duplicate/{id}', 'TableController', 'duplicate');
+        // Inline cell editing (AJAX)
+        $this->addRoute('/table/{table}/cell/{id}', 'TableController', 'cellUpdate');
         
         // Управление структурой таблиц
         $this->addRoute('/table/{table}/structure', 'TableController', 'structure');

@@ -554,7 +554,12 @@ class FrontController {
             // Ищем родительскую страницу в навигации
             $parentNav = $this->getNavigationItemByUrl($parentSlug);
             
-            if ($parentNav && in_array($parentNav->page_type, ['dynamic'])) {
+            if ($parentNav && in_array($parentNav->page_type, ['dynamic', 'external'])) {
+                // External pages: handle single item differently
+                if ($parentNav->page_type === 'external') {
+                    $this->handleExternalPage($parentNav, $itemSlug);
+                    return;
+                }
                 // Это отдельная запись блога/каталога
                 $success = $this->showDynamicItem($parentNav, $itemSlug);
                 if ($success) {
@@ -1654,7 +1659,7 @@ private function handleFormSubmission() {
     /**
      * Handle external page type - fetch data from external JSON API/URL
      */
-    private function handleExternalPage($navItem) {
+    private function handleExternalPage($navItem, $itemSlug = null) {
         $config = $navItem->getPageConfig();
         $sourceUrl = $config['source_url'] ?? '';
 
@@ -1688,6 +1693,33 @@ private function handleFormSubmission() {
             $loader = new \Core\ExternalPageLoader($config);
             $data = $loader->fetch($_GET);
 
+            // Single-item mode: find matching item by slug/name
+            if ($itemSlug !== null) {
+                $item = $this->findExternalItem($data['items'], $itemSlug);
+                if (!$item) {
+                    $this->show404();
+                    return;
+                }
+
+                $baseTemplate = ($config['template'] !== 'default')
+                    ? $config['template']
+                    : 'external';
+                $template = $baseTemplate . '_single.html.twig';
+
+                $this->render($template, [
+                    'item' => $item,
+                    'items' => $data['items'],
+                    'raw' => $data['raw'],
+                    'from_cache' => $data['from_cache'],
+                    'page_config' => $config,
+                    'source_url' => $sourceUrl,
+                    'title' => $item['title'] ?? $item['name'] ?? $navItem->title,
+                    'nav_item' => $navItem,
+                ]);
+                return;
+            }
+
+            // List mode
             $template = ($config['template'] !== 'default')
                 ? $config['template'] . '.html.twig'
                 : 'external.html.twig';
@@ -1710,6 +1742,25 @@ private function handleFormSubmission() {
                 'source_url' => $sourceUrl,
             ]);
         }
+    }
+
+    /**
+     * Find an item in external data by slug or name.
+     * Tries exact match on 'slug', 'name', and 'id' fields.
+     *
+     * @param array $items
+     * @param string $slug
+     * @return array|null
+     */
+    private function findExternalItem(array $items, string $slug): ?array
+    {
+        foreach ($items as $item) {
+            // Try various slug-like fields
+            if (($item['slug'] ?? '') === $slug) return $item;
+            if (($item['name'] ?? '') === $slug) return $item;
+            if ((string)($item['id'] ?? '') === $slug) return $item;
+        }
+        return null;
     }
 
     /**

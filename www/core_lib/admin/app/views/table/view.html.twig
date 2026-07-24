@@ -739,7 +739,6 @@ document.addEventListener('DOMContentLoaded', function() {
             easyMDEInstance = null;
         }
         mdToggleBtn.textContent = 'MD Editor';
-        modalTextarea.style.display = '';
 
         // Show modal
         modal.style.display = 'flex';
@@ -762,7 +761,6 @@ document.addEventListener('DOMContentLoaded', function() {
             easyMDEInstance = null;
         }
         mdToggleBtn.textContent = 'MD Editor';
-        modalTextarea.style.display = '';
 
         modal.style.display = 'none';
         modal.setAttribute('aria-hidden', 'true');
@@ -834,14 +832,14 @@ document.addEventListener('DOMContentLoaded', function() {
     mdToggleBtn.addEventListener('click', function() {
         if (easyMDEInstance) {
             // Switch back to plain textarea
-            modalTextarea.value = easyMDEInstance.value();
+            var currentValue = easyMDEInstance.value();
             easyMDEInstance.toTextArea();
             easyMDEInstance = null;
+            modalTextarea.value = currentValue;
             mdToggleBtn.textContent = 'MD Editor';
-            modalTextarea.style.display = '';
         } else {
-            // Switch to EasyMDE
-            modalTextarea.style.display = 'none';
+            // Switch to EasyMDE - do NOT hide textarea first,
+            // EasyMDE wraps it and hides it itself
             easyMDEInstance = new EasyMDE({
                 element: modalTextarea,
                 spellChecker: false,
@@ -853,7 +851,9 @@ document.addEventListener('DOMContentLoaded', function() {
                           'preview', 'side-by-side', 'fullscreen', '|',
                           'guide']
             });
-            easyMDEInstance.value(modalTextarea.value);
+            // Set value after EasyMDE initializes with the textarea content
+            easyMDEInstance.codemirror.setValue(modalTextarea.value);
+            easyMDEInstance.codemirror.refresh();
             mdToggleBtn.textContent = 'Plain Text';
         }
     });

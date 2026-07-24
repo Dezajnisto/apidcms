@@ -1709,6 +1709,15 @@ private function handleFormSubmission() {
                     return;
                 }
 
+                // Auto-generate content_url from item ID for same-API endpoints
+                if (empty($item['content_url']) && !empty($item['id'])) {
+                    $item['content_url'] = preg_replace(
+                        '#/v2/search.*$#',
+                        '/v2/pages/' . $item['id'] . '/content/markdown',
+                        $sourceUrl
+                    );
+                }
+
                 // Fetch detail content if item has content_url
                 $detailContent = null;
                 if (!empty($item['content_url'])) {

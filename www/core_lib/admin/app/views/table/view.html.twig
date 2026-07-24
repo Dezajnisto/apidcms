@@ -6,10 +6,6 @@
 {% block page_title %}{{ title }}{% endblock %}
 
 {% block content %}
-
-<!-- EasyMDE: loaded first so available to all scripts -->
-<script src="/admin/storage/js/easymde.min.js"></script>
-
 <style>
 /* === Inline cell editing styles === */
 
@@ -244,7 +240,6 @@
         </div>
         <div class="cell-modal-footer">
             <span style="font-size:0.75rem;color:#9ca3af;margin-right:auto;">Ctrl+Enter = save, Esc = cancel</span>
-            <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-mdeditor">MD Editor</button>
             <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-cancel">Cancel</button>
             <button type="button" class="cell-btn cell-btn-save" id="cell-modal-save">Save</button>
         </div>
@@ -672,6 +667,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+<script src="/admin/storage/js/easymde.min.js"></script>
 <script>
 // ===== Inline cell editing =====
 (function() {
@@ -682,14 +678,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var saveBtn = document.getElementById('cell-modal-save');
     var cancelBtn = document.getElementById('cell-modal-cancel');
     var closeBtn = document.getElementById('cell-modal-close-btn');
-    var mdToggleBtn = document.getElementById('cell-modal-mdeditor');
 
     var currentCell = null;
     var currentTable = null;
     var currentRowId = null;
     var currentColumn = null;
     var currentOriginal = '';
-    var easyMDEInstance = null;
 
     // Open modal on double-click
     document.querySelector('.data-table tbody').addEventListener('dblclick', function(e) {
@@ -713,12 +707,21 @@ document.addEventListener('DOMContentLoaded', function() {
         modalError.style.display = 'none';
         modalError.textContent = '';
 
-        // Reset MD editor state
-        if (easyMDEInstance) {
-            easyMDEInstance.toTextArea();
-            easyMDEInstance = null;
+        // Initialize EasyMDE on the textarea
+        if (modalTextarea._easyMDE) {
+            modalTextarea._easyMDE.toTextArea();
         }
-        mdToggleBtn.textContent = 'MD Editor';
+        modalTextarea._easyMDE = new EasyMDE({
+            element: modalTextarea,
+            spellChecker: false,
+            status: false,
+            minHeight: '280px',
+            toolbar: ['bold', 'italic', 'heading', '|',
+                      'quote', 'unordered-list', 'ordered-list', '|',
+                      'link', 'image', '|',
+                      'preview', 'side-by-side', 'fullscreen', '|',
+                      'guide']
+        });
 
         // Show modal
         modal.style.display = 'flex';
@@ -735,12 +738,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Close modal
     function closeModal() {
-        // Destroy EasyMDE instance if active
-        if (easyMDEInstance) {
-            easyMDEInstance.toTextArea();
-            easyMDEInstance = null;
+        // Destroy EasyMDE instance
+        if (modalTextarea._easyMDE) {
+            modalTextarea._easyMDE.toTextArea();
+            modalTextarea._easyMDE = null;
         }
-        mdToggleBtn.textContent = 'MD Editor';
 
         modal.style.display = 'none';
         modal.setAttribute('aria-hidden', 'true');
@@ -751,7 +753,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function doSave() {
         if (!currentCell) return;
 
-        var newValue = easyMDEInstance ? easyMDEInstance.value() : modalTextarea.value;
+        var newValue = modalTextarea._easyMDE ? modalTextarea._easyMDE.value() : modalTextarea.value;
         if (newValue === currentOriginal) {
             closeModal();
             return;
@@ -808,35 +810,7 @@ document.addEventListener('DOMContentLoaded', function() {
         closeModal();
     }
 
-    // EasyMDE toggle handler
-    mdToggleBtn.addEventListener('click', function() {
-        if (easyMDEInstance) {
-            // Switch back to plain textarea
-            var currentValue = easyMDEInstance.value();
-            easyMDEInstance.toTextArea();
-            easyMDEInstance = null;
-            modalTextarea.value = currentValue;
-            mdToggleBtn.textContent = 'MD Editor';
-        } else {
-            // Switch to EasyMDE - do NOT hide textarea first,
-            // EasyMDE wraps it and hides it itself
-            easyMDEInstance = new EasyMDE({
-                element: modalTextarea,
-                spellChecker: false,
-                status: ['lines', 'words'],
-                minHeight: '280px',
-                toolbar: ['bold', 'italic', 'heading', '|',
-                          'quote', 'unordered-list', 'ordered-list', '|',
-                          'link', 'image', '|',
-                          'preview', 'side-by-side', 'fullscreen', '|',
-                          'guide']
-            });
-            // Set value after EasyMDE initializes with the textarea content
-            easyMDEInstance.codemirror.setValue(modalTextarea.value);
-            easyMDEInstance.codemirror.refresh();
-            mdToggleBtn.textContent = 'Plain Text';
-        }
-    });
+
 
     // Button handlers
     saveBtn.addEventListener('click', doSave);

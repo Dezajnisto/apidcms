@@ -1710,12 +1710,11 @@ private function handleFormSubmission() {
                 }
 
                 // Auto-generate content_url from item ID for same-API endpoints
+                // Replaces the API path with /v2/pages/{id}/content/markdown
                 if (empty($item['content_url']) && !empty($item['id'])) {
-                    $item['content_url'] = preg_replace(
-                        '#/v2/search.*$#',
-                        '/v2/pages/' . $item['id'] . '/content/markdown',
-                        $sourceUrl
-                    );
+                    $parsed = parse_url($sourceUrl);
+                    $baseUrl = ($parsed['scheme'] ?? 'https') . '://' . ($parsed['host'] ?? '');
+                    $item['content_url'] = $baseUrl . '/v2/pages/' . $item['id'] . '/content/markdown';
                 }
 
                 // Fetch detail content if item has content_url

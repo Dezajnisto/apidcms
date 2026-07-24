@@ -227,6 +227,27 @@
 }
 </style>
 
+<!-- Inline cell editing modal (hidden by default) -->
+<div id="cell-edit-modal" class="cell-modal-overlay" style="display:none;" aria-hidden="true">
+    <div class="cell-modal">
+        <div class="cell-modal-header">
+            <div class="cell-modal-title" id="cell-modal-title"></div>
+            <button type="button" class="cell-modal-close" id="cell-modal-close-btn" title="Escape">&times;</button>
+        </div>
+        <div class="cell-modal-body">
+            <div class="cell-modal-error" id="cell-modal-error"></div>
+            <textarea id="cell-modal-textarea" rows="10"></textarea>
+        </div>
+        <div class="cell-modal-footer">
+            <span style="font-size:0.75rem;color:#9ca3af;margin-right:auto;">Ctrl+Enter = save, Esc = cancel</span>
+            <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-mdeditor">MD Editor</button>
+            <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-cancel">Cancel</button>
+            <button type="button" class="cell-btn cell-btn-save" id="cell-modal-save">Save</button>
+        </div>
+    </div>
+</div>
+
+
 <div class="max-w-7xl mx-auto">
     <!-- Навигация -->
     <div class="mb-4 md:mb-6">
@@ -846,26 +867,5 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 
 </script>
-
-
-<!-- Inline cell editing modal (hidden by default) -->
-<div id="cell-edit-modal" class="cell-modal-overlay" style="display:none;" aria-hidden="true">
-    <div class="cell-modal">
-        <div class="cell-modal-header">
-            <div class="cell-modal-title" id="cell-modal-title"></div>
-            <button type="button" class="cell-modal-close" id="cell-modal-close-btn" title="Escape">&times;</button>
-        </div>
-        <div class="cell-modal-body">
-            <div class="cell-modal-error" id="cell-modal-error"></div>
-            <textarea id="cell-modal-textarea" rows="10"></textarea>
-        </div>
-        <div class="cell-modal-footer">
-            <span style="font-size:0.75rem;color:#9ca3af;margin-right:auto;">Ctrl+Enter = save, Esc = cancel</span>
-            <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-mdeditor">MD Editor</button>
-            <button type="button" class="cell-btn cell-btn-cancel" id="cell-modal-cancel">Cancel</button>
-            <button type="button" class="cell-btn cell-btn-save" id="cell-modal-save">Save</button>
-        </div>
-    </div>
-</div>
 
 {% endblock %}

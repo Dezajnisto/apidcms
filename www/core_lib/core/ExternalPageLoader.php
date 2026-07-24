@@ -259,10 +259,15 @@ class ExternalPageLoader
      */
     public function fetchContent(string $url): ?string
     {
+        $headerStr = "Accept: text/plain,text/markdown,text/html\r\nUser-Agent: apidcms/ExternalPageLoader";
+        if (!empty($this->headers['Authorization'])) {
+            $headerStr .= "\r\nAuthorization: " . $this->headers['Authorization'];
+        }
+
         $opts = [
             'http' => [
                 'method' => 'GET',
-                'header' => "Accept: text/plain,text/markdown,text/html\r\nUser-Agent: apidcms/ExternalPageLoader",
+                'header' => $headerStr,
                 'timeout' => 15,
                 'ignore_errors' => true,
             ],

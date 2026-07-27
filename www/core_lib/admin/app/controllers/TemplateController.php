@@ -190,45 +190,6 @@ class TemplateController extends BaseController {
     }
     
     /**
-     * Предпросмотр шаблона
-     * 
-     * @param string $templateName Название шаблона
-     */
-    public function preview($templateName) {
-        try {
-            // Проверяем безопасность имени файла
-            if (!$this->isValidTemplateName($templateName)) {
-                throw new Exception('Некорректное имя шаблона');
-            }
-            
-            $templatePath = $this->templatesPath . $templateName;
-            
-            // Проверяем существование файла
-            if (!file_exists($templatePath)) {
-                throw new Exception("Шаблон '{$templateName}' не найден");
-            }
-            
-            // Читаем содержимое файла
-            $content = file_get_contents($templatePath);
-            
-            if ($content === false) {
-                throw new Exception("Не удалось прочитать файл шаблона");
-            }
-            
-            $this->render('template/preview', [
-                'title' => 'Предпросмотр шаблона: ' . $templateName,
-                'templateName' => $templateName,
-                'content' => $content  // УБРАЛИ htmlspecialchars()!
-            ]);
-            
-        } catch (Exception $e) {
-            $this->render('error/404', [
-                'message' => $e->getMessage()
-            ]);
-        }
-    }
-    
-    /**
      * Получить список всех шаблонов
      * 
      * @return array Массив с информацией о шаблонах

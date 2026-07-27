@@ -26,9 +26,8 @@
             <form method="post" class="space-y-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Содержимое шаблона</label>
-                    <textarea name="content" id="templateContent" rows="25"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
-                              placeholder="Введите Twig код...">{{ content }}</textarea>
+                    <div id="cm-editor-container" class="w-full border border-gray-300 rounded-lg shadow-sm overflow-hidden" style="min-height:500px"></div>
+                    <textarea name="content" id="cm-hidden-input" class="hidden">{{ content }}</textarea>
                 </div>
                 <div class="flex items-center justify-between text-sm text-gray-500">
                     <span id="lineCount">Строк: {{ content|split('\n')|length }}</span>
@@ -57,22 +56,25 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const textarea = document.getElementById('templateContent');
-    if (textarea) {
-        textarea.addEventListener('input', function() {
-            var lines = this.value.split('\n').length;
-            document.getElementById('lineCount').textContent = 'Строк: ' + lines;
-            document.getElementById('charCount').textContent = 'Символов: ' + this.value.length;
-        });
+<script type="module">
+import { initCodeMirror } from '/admin/storage/js/cm-editor.bundle.js?v=1';
+
+const content = document.getElementById('cm-hidden-input').value;
+const view = initCodeMirror('cm-editor-container', 'cm-hidden-input', 'html', content, 500, false);
+
+if (view) {
+    setInterval(function() {
+        var doc = view.state.doc;
+        document.getElementById('lineCount').textContent = 'Lines: ' + doc.lines;
+        document.getElementById('charCount').textContent = 'Chars: ' + doc.length;
+    }, 500);
+}
+
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        document.querySelector('button[type="submit"]').click();
     }
-    document.addEventListener('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-            e.preventDefault();
-            document.querySelector('button[type="submit"]').click();
-        }
-    });
 });
 </script>
 {% endblock %}

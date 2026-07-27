@@ -156,10 +156,8 @@
                                     {% endfor %}
                                 </select>
                             {% elseif 'TEXT' in column.type|upper %}
-                                <textarea id="{{ column.name }}" name="{{ column.name }}" rows="5"
-                                          {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical text-sm"
-                                          placeholder="Введите текст...">{{ item[column.name] ?? '' }}</textarea>
+                                <div id="cm-{{ column.name }}" class="w-full border border-gray-300 rounded-md shadow-sm overflow-hidden" style="min-height:150px"></div>
+                                        <textarea name="{{ column.name }}" id="cm-hidden-{{ column.name }}" class="hidden">{{ item[column.name] ?? '' }}</textarea>
                             {% elseif 'INT' in column.type|upper or 'INTEGER' in column.type|upper %}
                                 <input type="number" id="{{ column.name }}" name="{{ column.name }}" 
                                        value="{{ item[column.name] ?? '' }}"
@@ -291,17 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const firstInput = document.querySelector('input:not([readonly]), textarea:not([readonly]), select:not([readonly])');
     if (firstInput) firstInput.focus();
 
-    const textareas = document.querySelectorAll('textarea');
-    textareas.forEach(textarea => {
-        const counter = document.createElement('div');
-        counter.className = 'text-xs text-gray-500 mt-1 text-right';
-        counter.textContent = 'Символов: ' + textarea.value.length;
-        textarea.parentNode.appendChild(counter);
-        
-        textarea.addEventListener('input', function() {
-            counter.textContent = 'Символов: ' + this.value.length;
-        });
-    });
+    // Character counters are handled by CM6 editors below
 
     const numberInputs = document.querySelectorAll('input[type="number"]');
     numberInputs.forEach(input => {
@@ -430,6 +418,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // --- CodeMirror 6 editors for TEXT columns ---
+    import('/admin/storage/js/cm-editor.bundle.js?v=1').then(function(m) {
+        const initCM = m.initCodeMirror || window.initCodeMirror;
+        if (!initCM) return;
+
+        document.querySelectorAll('[id^="cm-"][id]').forEach(function(container) {
+            const colId = container.id.replace('cm-', '');
+            if (document.getElementById('cm-' + colId) === container) {
+                const hiddenId = 'cm-hidden-' + colId;
+                const hiddenEl = document.getElementById(hiddenId);
+                if (!hiddenEl) return;
+                const content = hiddenEl.value;
+                initCM('cm-' + colId, hiddenId, 'auto', content, 150, false, colId);
+            }
+        });
+    }).catch(function(e) { console.warn('CM6 load failed:', e); });
 });
 </script>
 {% endblock %}

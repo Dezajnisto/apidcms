@@ -182,6 +182,13 @@
                     <span class="nav-text">Шаблоны</span>
                 </a>
 
+                <!-- Дизайн -->
+                <a href="{{ admin_url('design/css') }}" 
+                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'design' ? 'bg-gray-700' : '' }}">
+                    <i class="fas fa-paint-brush w-5 text-center"></i>
+                    <span class="nav-text">CSS-стили</span>
+                </a>
+
                 <!-- Файловый менеджер -->
                 <a href="{{ admin_url('filemanager') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'filemanager' ? 'bg-gray-700' : '' }}">
@@ -191,6 +198,13 @@
 
                 <!-- Разделитель -->
                 <div class="border-t border-gray-700 my-2"></div>
+
+                <!-- Формы -->
+                <a href="{{ admin_url('forms') }}" 
+                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'forms' ? 'bg-gray-700' : '' }}">
+                    <i class="fas fa-file-lines w-5 text-center"></i>
+                    <span class="nav-text">Формы</span>
+                </a>
 
                 <!-- Уведомления -->
                 <a href="{{ admin_url('notifications') }}" 
@@ -204,27 +218,14 @@
                     {% endif %}
                 </a>
 
-                <!-- Формы -->
-                <a href="{{ admin_url('forms') }}" 
-                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'forms' ? 'bg-gray-700' : '' }}">
-                    <i class="fas fa-file-lines w-5 text-center"></i>
-                    <span class="nav-text">Формы</span>
-                </a>
-
-
+                <!-- Разделитель -->
+                <div class="border-t border-gray-700 my-2"></div>
 
                 <!-- Плагины -->
                 <a href="{{ admin_url('plugins') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'plugins' ? 'bg-gray-700' : '' }}">
                     <i class="fas fa-puzzle-piece w-5 text-center"></i>
                     <span class="nav-text">Плагины</span>
-                </a>
-
-                <!-- Дизайн -->
-                <a href="{{ admin_url('design/css') }}" 
-                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'design' ? 'bg-gray-700' : '' }}">
-                    <i class="fas fa-paint-brush w-5 text-center"></i>
-                    <span class="nav-text">CSS-стили</span>
                 </a>
 
                 <!-- Статистика -->

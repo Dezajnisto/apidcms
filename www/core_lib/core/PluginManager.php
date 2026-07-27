@@ -164,6 +164,22 @@ class PluginManager
     }
 
     /**
+     * Get plugin-to-tables mapping from plugin.json declarations
+     *
+     * @return array<string, string[]> [plugin_name => [table1, table2, ...]]
+     */
+    public function getPluginTables(): array
+    {
+        $result = [];
+        foreach ($this->plugins as $name => $config) {
+            if (!empty($config['tables']) && is_array($config['tables'])) {
+                $result[$name] = $config['tables'];
+            }
+        }
+        return $result;
+    }
+
+    /**
      * Активировать плагин
      */
     public function activate(string $name): bool

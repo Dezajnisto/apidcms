@@ -18,25 +18,66 @@ class HomeController extends BaseController {
      * Показывает список всех таблиц в базе данных
      */
     public function index() {
-        // Получаем список всех таблиц
+        // Get all tables
         $tables = $this->db->getTables();
-        
-        // Подготавливаем информацию о таблицах
-        $tablesInfo = [];
-        foreach ($tables as $tableName) {
-            $structure = $this->db->getTableStructure($tableName);
-            $tablesInfo[] = [
-                'name' => $tableName,
-                'columns' => count($structure),
-                'structure' => $structure
-            ];
+
+        // System tables (created by init_system_tables.php + VisitStats)
+        $systemTableNames = ['pages', 'forms', 'navigation', 'system_settings', 'entity_relations', 'visit_stats'];
+
+        // Plugin tables (declared in plugin.json)
+        $pm = \Core\PluginManager::getInstance();
+        $pluginTablesMap = $pm->getPluginTables();
+        $pluginTableNames = [];
+        foreach ($pluginTablesMap as $pluginTables) {
+            $pluginTableNames = array_merge($pluginTableNames, $pluginTables);
         }
-        
-        // Отображаем шаблон
+
+        // Build grouped table info
+        $groups = [];
+
+        // Helper: build table info list for given names
+        $buildInfo = function(array $tableNames) use ($tables) {
+            $info = [];
+            foreach ($tableNames as $tableName) {
+                if (in_array($tableName, $tables, true)) {
+                    $structure = $this->db->getTableStructure($tableName);
+                    $info[] = [
+                        'name' => $tableName,
+                        'columns' => count($structure),
+                        'structure' => $structure,
+                    ];
+                }
+            }
+            return $info;
+        };
+
+        // System group
+        $systemInfo = $buildInfo($systemTableNames);
+        if (!empty($systemInfo)) {
+            $groups[] = ['label' => 'System tables', 'tables' => $systemInfo];
+        }
+
+        // Plugin groups (one per plugin that has tables)
+        foreach ($pluginTablesMap as $pluginName => $pluginTables) {
+            $pluginInfo = $buildInfo($pluginTables);
+            if (!empty($pluginInfo)) {
+                $groups[] = ['label' => 'Plugin: ' . $pluginName, 'tables' => $pluginInfo];
+            }
+        }
+
+        // User tables (everything not in system or plugin lists)
+        $allKnown = array_merge($systemTableNames, $pluginTableNames);
+        $userTableNames = array_diff($tables, $allKnown);
+        $userInfo = $buildInfo($userTableNames);
+        if (!empty($userInfo)) {
+            $groups[] = ['label' => 'User tables', 'tables' => $userInfo];
+        }
+
+        // Render
         $this->render('home/index', [
-            'tables' => $tablesInfo,
-            'title' => 'Главная страница CMS',
-            '_GET' => $_GET
+            'groups' => $groups,
+            'title' => 'CMS Dashboard',
+            '_GET' => $_GET,
         ]);
     }
 

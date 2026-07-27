@@ -54,14 +54,14 @@ class HomeController extends BaseController {
         // System group
         $systemInfo = $buildInfo($systemTableNames);
         if (!empty($systemInfo)) {
-            $groups[] = ['label' => 'System tables', 'tables' => $systemInfo];
+            $groups[] = ['label' => 'Системные таблицы', 'tables' => $systemInfo];
         }
 
         // Plugin groups (one per plugin that has tables)
         foreach ($pluginTablesMap as $pluginName => $pluginTables) {
             $pluginInfo = $buildInfo($pluginTables);
             if (!empty($pluginInfo)) {
-                $groups[] = ['label' => 'Plugin: ' . $pluginName, 'tables' => $pluginInfo];
+                $groups[] = ['label' => 'Плагин: ' . $pluginName, 'tables' => $pluginInfo];
             }
         }
 
@@ -70,13 +70,13 @@ class HomeController extends BaseController {
         $userTableNames = array_diff($tables, $allKnown);
         $userInfo = $buildInfo($userTableNames);
         if (!empty($userInfo)) {
-            $groups[] = ['label' => 'User tables', 'tables' => $userInfo];
+            $groups[] = ['label' => 'Пользовательские таблицы', 'tables' => $userInfo];
         }
 
         // Render
         $this->render('home/index', [
             'groups' => $groups,
-            'title' => 'CMS Dashboard',
+            'title' => 'Панель управления',
             '_GET' => $_GET,
         ]);
     }

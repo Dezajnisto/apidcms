@@ -49,6 +49,9 @@ class App {
         // Главная страница
         $this->addRoute('/', 'HomeController', 'index');
         
+        // Таблицы
+        $this->addRoute('/tables', 'HomeController', 'tables');
+        
         // Выход из системы
         $this->addRoute('/logout', 'AuthController', 'logout');
         

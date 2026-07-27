@@ -73,16 +73,6 @@ class BaseController {
         // Определяем текущий раздел для подсветки меню
         $currentSection = $this->getCurrentSection();
         
-        // Получаем список таблиц для меню
-        $tables = $this->db->getTables();
-        $tablesInfo = [];
-        foreach ($tables as $tableName) {
-            $tablesInfo[] = [
-                'name' => $tableName,
-                'columns' => count($this->db->getTableStructure($tableName))
-            ];
-        }
-        
         // Получаем favicon
         $favicon = '';
         try {
@@ -98,7 +88,6 @@ class BaseController {
         $globalData = [
             'total_unread' => $this->getUnreadNotificationsCount(),
             'current_section' => $currentSection,
-            'tables' => $tablesInfo,
             'flash' => $this->getFlash(),
             '_GET' => $_GET,
             'site_favicon' => $favicon
@@ -128,7 +117,8 @@ class BaseController {
         // поэтому проверяем без префикса /admin/
         if (strpos($path, '/templates') !== false) {
             return 'templates';
-        } elseif (strpos($path, '/table/') !== false || 
+        } elseif (strpos($path, '/tables') !== false ||
+                strpos($path, '/table/') !== false || 
                 strpos($path, '/create-table') !== false ||
                 strpos($path, '/store-table') !== false) {
             return 'tables';

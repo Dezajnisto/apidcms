@@ -13,11 +13,22 @@ use Exception;
 class HomeController extends BaseController {
     
     /**
-     * Главная страница
-     * 
-     * Показывает список всех таблиц в базе данных
+     * Главная страница - дашборд
      */
     public function index() {
+        // Count tables for dashboard
+        $tableCount = count($this->db->getTables());
+
+        $this->render('home/index', [
+            'title' => 'Панель управления',
+            'table_count' => $tableCount,
+        ]);
+    }
+
+    /**
+     * Страница "Таблицы" - список всех таблиц в базе данных
+     */
+    public function tables() {
         // Get all tables
         $tables = $this->db->getTables();
 
@@ -74,9 +85,9 @@ class HomeController extends BaseController {
         }
 
         // Render
-        $this->render('home/index', [
+        $this->render('home/tables', [
             'groups' => $groups,
-            'title' => 'Панель управления',
+            'title' => 'Таблицы',
             '_GET' => $_GET,
         ]);
     }
@@ -222,7 +233,7 @@ class HomeController extends BaseController {
             $this->db->dropTable($table);
             
             // Перенаправляем на главную с сообщением
-            $this->redirect("/?table_deleted=1");
+            $this->redirect("/tables?table_deleted=1");
             
         } catch (Exception $e) {
             $this->render('error/404', [

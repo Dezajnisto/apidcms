@@ -1,0 +1,198 @@
+{# Context help panel - slides in from right #}
+<div id="help-overlay" class="help-overlay hidden" onclick="toggleHelp()"></div>
+<div id="help-panel" class="help-panel hidden">
+    <div class="help-panel-header">
+        <h3 class="help-panel-title">
+            <i class="fas fa-question-circle"></i>
+            <span id="help-title">Справка</span>
+        </h3>
+        <button class="help-close" onclick="toggleHelp()" title="Закрыть (Esc)">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="help-panel-body" id="help-content">
+        <div class="help-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Загрузка...</span>
+        </div>
+    </div>
+    <div class="help-panel-footer">
+        <a href="https://apidcms.dezajno.ru/docs" target="_blank" class="help-footer-link">
+            <i class="fas fa-external-link-alt"></i> Вся документация
+        </a>
+    </div>
+</div>
+
+<script>
+(function() {
+    var MANIFEST_URL = 'https://raw.githubusercontent.com/Dezajnisto/apidcms-docs/master/manifest.json';
+    var RAW_BASE = 'https://raw.githubusercontent.com/Dezajnisto/apidcms-docs/master/';
+    var CACHE_KEY = 'apidcms_help_manifest';
+    var CACHE_TTL = 24 * 60 * 60 * 1000;
+
+    var manifestCache = null;
+
+    function getCurrentRoute() {
+        var path = window.location.pathname;
+        path = path.replace(/^\/admin/, '') || '/';
+        path = path.replace(/\/$/, '') || '/';
+        return path;
+    }
+
+    function matchRoute(pattern, path) {
+        var pp = pattern.split('/');
+        var pt = path.split('/');
+        if (pp.length !== pt.length) return false;
+        for (var i = 0; i < pp.length; i++) {
+            if (pp[i].charAt(0) === '{' && pp[i].slice(-1) === '}') continue;
+            if (pp[i] !== pt[i]) return false;
+        }
+        return true;
+    }
+
+    function findDoc(manifest, route) {
+        var routes = manifest.admin_routes || {};
+        if (routes[route]) return routes[route];
+        var patterns = Object.keys(routes).sort(function(a,b){return b.length-a.length;});
+        for (var i = 0; i < patterns.length; i++) {
+            if (matchRoute(patterns[i], route)) return routes[patterns[i]];
+        }
+        return null;
+    }
+
+    function renderMarkdown(md) {
+        if (!md) return '<p class="help-empty">No content</p>';
+        md = md.replace(/^---[\s\S]*?---\n*/, '');
+        var html = md
+            .replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+                return '<pre><code>' + code.replace(/</g, '&lt;').replace(/>/g, '&gt;').trim() + '</code></pre>';
+            })
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/^#### (.+)$/gm, '<h5>$1</h5>')
+            .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+            .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+            .replace(/^---$/gm, '<hr>')
+            .replace(/^- (.+)$/gm, '<li>$1</li>')
+            .replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>')
+            .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+            .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+            .replace(/((?:<blockquote>.*<\/blockquote>\n?)+)/g, function(m) {
+                return m.replace(/<\/blockquote>\n?<blockquote>/g, '<br>');
+            })
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>');
+        html = html.replace(/<p>\s*<\/p>/g, '');
+        return html;
+    }
+
+    function loadManifest(cb) {
+        if (manifestCache && manifestCache.ts && (Date.now() - manifestCache.ts) < CACHE_TTL) {
+            return cb(null, manifestCache.data);
+        }
+        try {
+            var stored = localStorage.getItem(CACHE_KEY);
+            if (stored) {
+                var cached = JSON.parse(stored);
+                if (cached.data && cached.ts && (Date.now() - cached.ts) < CACHE_TTL) {
+                    manifestCache = cached;
+                    return cb(null, cached.data);
+                }
+            }
+        } catch(e) {}
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', MANIFEST_URL, true);
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var data = JSON.parse(xhr.responseText);
+                manifestCache = {ts: Date.now(), data: data};
+                try { localStorage.setItem(CACHE_KEY, JSON.stringify(manifestCache)); } catch(e) {}
+                cb(null, data);
+            } else {
+                if (manifestCache && manifestCache.data) cb(null, manifestCache.data);
+                else cb(new Error('HTTP ' + xhr.status));
+            }
+        };
+        xhr.onerror = function() {
+            if (manifestCache && manifestCache.data) cb(null, manifestCache.data);
+            else cb(new Error('Network error'));
+        };
+        xhr.send();
+    }
+
+    function loadDoc(filePath, cb) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', RAW_BASE + filePath, true);
+        xhr.onload = function() {
+            if (xhr.status === 200) cb(null, xhr.responseText);
+            else cb(new Error('HTTP ' + xhr.status));
+        };
+        xhr.onerror = function() { cb(new Error('Network error')); };
+        xhr.send();
+    }
+
+    function showHelp() {
+        var panel = document.getElementById('help-panel');
+        var overlay = document.getElementById('help-overlay');
+        var content = document.getElementById('help-content');
+        var title = document.getElementById('help-title');
+        panel.classList.remove('hidden');
+        overlay.classList.remove('hidden');
+        content.innerHTML = '<div class="help-loading"><i class="fas fa-spinner fa-spin"></i><span>Loading...</span></div>';
+
+        loadManifest(function(err, manifest) {
+            if (err) {
+                content.innerHTML = '<div class="help-error">Cannot load manifest</div>';
+                return;
+            }
+            var route = getCurrentRoute();
+            var docFile = findDoc(manifest, route);
+            if (!docFile) {
+                content.innerHTML = '<div class="help-empty">No help available for this page.<br><br><a href="https://apidcms.dezajno.ru/docs" target="_blank">Open documentation</a></div>';
+                return;
+            }
+            loadDoc(docFile, function(err2, md) {
+                if (err2) {
+                    content.innerHTML = '<div class="help-error">Failed to load: ' + err2.message + '</div>';
+                    return;
+                }
+                var html = renderMarkdown(md);
+                var h1 = html.match(/<h2>(.+?)<\/h2>/);
+                title.textContent = h1 ? h1[1] : 'Help';
+                content.innerHTML = '<div class="help-doc">' + html + '</div>';
+            });
+        });
+    }
+
+    window.toggleHelp = function() {
+        var panel = document.getElementById('help-panel');
+        if (panel.classList.contains('hidden')) {
+            showHelp();
+        } else {
+            panel.classList.add('hidden');
+            document.getElementById('help-overlay').classList.add('hidden');
+        }
+    };
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            var panel = document.getElementById('help-panel');
+            if (panel && !panel.classList.contains('hidden')) {
+                panel.classList.add('hidden');
+                document.getElementById('help-overlay').classList.add('hidden');
+            }
+        }
+        if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+            var tag = document.activeElement.tagName;
+            if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+                e.preventDefault();
+                var p2 = document.getElementById('help-panel');
+                if (p2 && p2.classList.contains('hidden')) showHelp();
+            }
+        }
+    });
+})();
+</script>

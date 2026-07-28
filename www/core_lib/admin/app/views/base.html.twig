@@ -282,6 +282,9 @@
                         </button>
                         <a href="/" target="_blank" class="inline-flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-xs md:text-sm">
                             <i class="fas fa-external-link-alt"></i>
+                    <button class="help-toggle-btn" onclick="toggleHelp()" title="Справка (? — горячая клавиша)">
+                        <i class="fas fa-question"></i>
+                    </button>
                             <span class="hidden sm:inline">Просмотр сайта</span>
                             <span class="sm:hidden">Сайт</span>
                         </a>
@@ -483,5 +486,7 @@ window.openFileManager = FileManagerHelper.openFileManager;
 window.selectFile = FileManagerHelper.selectFile;
 </script>
 
+
+{% include "_help_panel.html.twig" %}
 </body>
 </html>

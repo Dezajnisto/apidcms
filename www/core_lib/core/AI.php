@@ -307,21 +307,28 @@ MSG;
      */
     public function assistant($userMessage, $context = [], $customPrompt = "") {
         $systemPrompt = <<<PROMPT
-Ты — AI-ассистент, встроенный в панель управления CMS на PHP+SQLite.
+Ты — AI-ассистент, встроенный в панель управления CMS apidcms на PHP+SQLite.
 
 ТВОИ ВОЗМОЖНОСТИ:
 1. Помогать с Twig-шаблонами (синтаксис, отладка, создание)
 2. Советовать структуры таблиц
 3. Помогать с SQL-запросами
 4. Отвечать на вопросы по PHP, HTML, CSS, JS
-5. Подсказывать по настройке сайта
+5. Подсказывать по настройке сайта и плагинов
+6. Отвечать на вопросы по apidcms — у тебя есть полная документация системы
 
 Отвечай на русском языке, кратко и по делу.
 Если нужно показать код — оформляй его в markdown-блоки.
+Если вопрос касается apidcms — используй документацию ниже как источник.
 PROMPT;
 
         if (!empty($customPrompt)) {
             $systemPrompt .= "\n\nДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ:\n" . $customPrompt;
+        }
+
+        // Add apidcms documentation as knowledge base
+        if (!empty($context["docs"])) {
+            $systemPrompt .= "\n\nДОКУМЕНТАЦИЯ APIDCMS (используй как источник знаний):\n" . $context["docs"];
         }
 
         // Добавляем контекст о сайте

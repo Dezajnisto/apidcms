@@ -94,9 +94,24 @@ class AIController extends BaseController {
             }
 
             $tablesContext = $this->getTablesContext();
+
+            // Load apidcms documentation as AI knowledge base
+            $docsContext = "";
+            try {
+                $docsFetcher = new \Core\DocsFetcher();
+                $docsKb = $docsFetcher->getKnowledgeBase();
+                if (!empty($docsKb)) {
+                    $docsContext = $docsKb;
+                }
+            } catch (\Throwable $e) {
+                // Docs loading is optional - fallback to no documentation
+                // AI will still work with DB context and its own knowledge
+            }
+
             $response = $this->ai->assistant($message, [
                 "tables" => $tablesContext,
-                "current_page" => $currentPage
+                "current_page" => $currentPage,
+                "docs" => $docsContext
             ], $this->aiPrompts["assistant"] ?? "");
 
             $this->jsonResponse(["response" => $response]);

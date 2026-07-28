@@ -21,12 +21,58 @@
         </a>
     </div>
 
+
+    <!-- Сообщения об успехе -->
+    {% if _GET.created == '1' %}
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-check-circle"></i>
+                <span>Запись успешно создана</span>
+            </div>
+        </div>
+    {% endif %}
+    {% if _GET.updated == '1' %}
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded-lg text-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-info-circle"></i>
+                <span>Запись успешно обновлена</span>
+            </div>
+        </div>
+    {% endif %}
     <!-- Заголовок -->
     <div class="mb-4 md:mb-6">
         <h1 class="text-xl md:text-2xl font-bold text-gray-900">{{ title }}</h1>
         <p class="text-sm text-gray-600 mt-1">Таблица: <code class="bg-gray-100 px-2 py-1 rounded">{{ tableName }}</code></p>
     </div>
 
+
+    <!-- Действия с записью (для режима редактирования) -->
+    {% if action == 'edit' and itemId is defined %}
+    <div class="mb-4 md:mb-6 flex flex-wrap gap-2 md:gap-3">
+        <button type="submit" form="table-edit-form"
+                class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm">
+            <i class="fas fa-save"></i>
+            <span>Сохранить</span>
+        </button>
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/duplicate/' ~ (itemId ?? '')) }}"
+           class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition text-sm"
+           onclick="return confirm('Создать копию этой записи?')">
+            <i class="fas fa-copy"></i>
+            <span>Копировать</span>
+        </a>
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/delete/' ~ (itemId ?? '') ~ '?page=' ~ (currentPage|default(1))) }}"
+           class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition text-sm"
+           onclick="return confirm('Вы уверены, что хотите удалить эту запись?')">
+            <i class="fas fa-trash"></i>
+            <span>Удалить</span>
+        </a>
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/create') }}"
+           class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition text-sm">
+            <i class="fas fa-plus"></i>
+            <span>Создать новую</span>
+        </a>
+    </div>
+    {% endif %}
     <!-- Ошибки -->
     {% if error is defined %}
         <div class="mb-4 md:mb-6 p-3 md:p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
@@ -40,6 +86,28 @@
         </div>
     {% endif %}
 
+
+    <!-- Информация о записи -->
+    <div class="mb-4 md:mb-6 p-3 md:p-4 bg-gray-50 rounded-lg border text-sm">
+        <div class="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2 md:gap-4">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-table"></i>
+                <span>Таблица: <code class="bg-gray-200 px-2 py-1 rounded">{{ tableName }}</code></span>
+            </div>
+            {% if itemId is defined %}
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-key"></i>
+                <span>ID: <code class="bg-gray-200 px-2 py-1 rounded cursor-pointer" title="Кликните для копирования" onclick="navigator.clipboard.writeText('{{ itemId|e('js') }}').then(function(){var n=document.createElement('div');n.className='fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';n.textContent='ID скопирован!';document.body.appendChild(n);setTimeout(function(){n.remove()},2000)})">{{ itemId }}</code></span>
+            </div>
+            {% endif %}
+            {% if action == 'create' %}
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-plus-circle text-green-600"></i>
+                <span class="text-green-700">Новая запись</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
     <!-- Подсказка -->
     <div class="mb-4 md:mb-6 p-3 md:p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm">
         <div class="flex items-start space-x-3">
@@ -71,7 +139,7 @@
             [{% for column in structure %}{"name":"{{ column.name|e('js') }}","type":"{{ column.type|e('js') }}","pk":{{ column.pk }},"notnull":{{ column.notnull }},"dflt_value":"{{ (column.dflt_value ?? '')|e('js') }}"}{% if not loop.last %},{% endif %}{% endfor %}]
             </script>
 
-            <form method="POST" action="{{ admin_url('table/' ~ tableName|url_encode ~ '/' ~ (action == 'create' ? 'store' : 'update/' ~ itemId) ~ '?page=' ~ (currentPage|default(1))) }}" class="space-y-4 md:space-y-6">
+            <form id="table-edit-form" method="POST" action="{{ admin_url('table/' ~ tableName|url_encode ~ '/' ~ (action == 'create' ? 'store' : 'update/' ~ itemId) ~ '?page=' ~ (currentPage|default(1))) }}" class="space-y-4 md:space-y-6">
                 {% for column in structure %}
                     {% if (action == 'create' and column.pk == 1) or (action == 'create' and column.name == 'created_at') %}
                     {% else %}
@@ -436,5 +504,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }).catch(function(e) { console.warn('CM6 load failed:', e); });
 });
+    // --- Keyboard shortcuts ---
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+Backspace or Ctrl+ArrowLeft -> Back to table
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'Backspace' || e.key === 'ArrowLeft')) {
+            // Don't navigate if focus is in an input/textarea (allow normal editing)
+            var tag = document.activeElement.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+            e.preventDefault();
+            window.location.href = "{{ admin_url('table/' ~ tableName|url_encode ~ '?page=' ~ (currentPage|default(1))) }}";
+        }
+        // Ctrl+S -> Save form
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            var form = document.getElementById('table-edit-form');
+            if (form) form.submit();
+        }
+    });
+
 </script>
+
 {% endblock %}

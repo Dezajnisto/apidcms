@@ -222,46 +222,6 @@ class TableController extends BaseController {
         ]);
     }
     
-    /**
-     * Просмотр отдельной записи
-     * 
-     * @param string $table Название таблицы
-     * @param int $id ID записи
-     */
-    public function viewItem($table, $id) {
-        // Проверяем существование таблицы
-        $tables = $this->db->getTables();
-        
-        if (!in_array($table, $tables)) {
-            $this->render('error/404', [
-                'message' => "Таблица '{$table}' не найдена в базе данных"
-            ]);
-            return;
-        }
-        
-        // Получаем запись по ID
-        $item = $this->db->getById($table, $id);
-        
-        if (!$item) {
-            $this->render('error/404', [
-                'message' => "Запись с ID {$id} не найдена в таблице '{$table}'"
-            ]);
-            return;
-        }
-        
-        // Получаем структуру таблицы для отображения
-        $structure = $this->db->getTableStructure($table);
-        
-        // Отображаем шаблон
-        $this->render('table/view_item', [
-            'tableName' => $table,
-            'item' => $item,
-            'structure' => $structure,
-            'title' => "Запись #{$id} из таблицы: {$table}",
-            'currentPage' => $_GET['page'] ?? 1,
-            'get' => $_GET
-        ]);
-    }
 
     /**
      * Показать форму создания записи
@@ -357,7 +317,7 @@ class TableController extends BaseController {
             
             // Перенаправляем на просмотр созданной записи
                             $page = $_GET['page'] ?? 1;
-                $this->redirect("/table/{$table}/id/{$newId}?created=1&page={$page}");
+                $this->redirect("/table/{$table}/edit/{$newId}?created=1&page={$page}");
             
         } catch (Exception $e) {
             // В случае ошибки показываем форму снова
@@ -491,7 +451,7 @@ class TableController extends BaseController {
             if ($success) {
                 // Перенаправляем на просмотр обновленной записи
                                 $page = $_GET['page'] ?? 1;
-                $this->redirect("/table/{$table}/id/{$id}?updated=1&page={$page}");
+                $this->redirect("/table/{$table}/edit/{$id}?updated=1&page={$page}");
             } else {
                 throw new Exception("Не удалось обновить запись");
             }
@@ -774,10 +734,10 @@ class TableController extends BaseController {
             $newId = $this->db->insert($table, $data);
             $this->setFlash("success", "Запись скопирована. Новый ID: {$newId}");
             $page = $_GET['page'] ?? 1;
-            $this->redirect("/table/{$table}/id/{$newId}?page={$page}");
+            $this->redirect("/table/{$table}/edit/{$newId}?page={$page}");
         } catch (Exception $e) {
             $this->setFlash("error", "Ошибка при копировании: " . $e->getMessage());
-            $this->redirect("/table/{$table}/id/{$id}");
+            $this->redirect("/table/{$table}/edit/{$id}");
         }
     }
 

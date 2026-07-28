@@ -58,8 +58,6 @@ class App {
         // Просмотр таблицы
         $this->addRoute('/table/{table}', 'TableController', 'view');
         
-        // Просмотр записи
-        $this->addRoute('/table/{table}/id/{id}', 'TableController', 'viewItem');
         
         // CRUD операции для данных
         $this->addRoute('/table/{table}/create', 'TableController', 'createForm');

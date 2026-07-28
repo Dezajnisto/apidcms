@@ -87,6 +87,41 @@
                         </tbody>
                     </table>
 
+                    <!-- Import mode -->
+                    <div class="mt-6 p-4 bg-gray-50 rounded-lg border">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Import Mode</h3>
+                        <div class="flex flex-wrap gap-4 mb-3">
+                            <label class="inline-flex items-center space-x-2 text-sm cursor-pointer">
+                                <input type="radio" name="mode" value="add_all" checked onchange="toggleKeyColumn()" class="w-4 h-4 text-blue-600">
+                                <span>Add all rows</span>
+                            </label>
+                            <label class="inline-flex items-center space-x-2 text-sm cursor-pointer">
+                                <input type="radio" name="mode" value="skip_duplicates" onchange="toggleKeyColumn()" class="w-4 h-4 text-blue-600">
+                                <span>Skip duplicates</span>
+                            </label>
+                            <label class="inline-flex items-center space-x-2 text-sm cursor-pointer">
+                                <input type="radio" name="mode" value="update_existing" onchange="toggleKeyColumn()" class="w-4 h-4 text-blue-600">
+                                <span>Update existing</span>
+                            </label>
+                        </div>
+                        <div id="key-column-row" style="display:none;">
+                            <label class="text-sm text-gray-600 mr-2">Key column:</label>
+                            <select name="key_column" id="key-column-select" class="px-3 py-1.5 border border-gray-300 rounded-md text-sm">
+                                <option value="">-- Select --</option>
+                            </select>
+                            <span class="text-xs text-gray-400 ml-2">Used to check for existing records</span>
+                        </div>
+                        <div id="mode-hint-add" class="text-xs text-gray-500 mt-2">
+                            <i class="fas fa-info-circle"></i> Every row is inserted as a new record.
+                        </div>
+                        <div id="mode-hint-skip" class="text-xs text-gray-500 mt-2" style="display:none;">
+                            <i class="fas fa-info-circle"></i> Rows where the key column matches an existing record are skipped.
+                        </div>
+                        <div id="mode-hint-update" class="text-xs text-gray-500 mt-2" style="display:none;">
+                            <i class="fas fa-info-circle"></i> Matching records are updated with CSV values. Non-matching rows are inserted as new.
+                        </div>
+                    </div>
+
                     <div class="mt-6 flex items-center justify-between">
                         <div class="text-sm text-gray-500">
                             {{ preview|length }} preview rows shown
@@ -142,6 +177,55 @@
             });
             document.getElementById('mapping-json').value = JSON.stringify(mapping);
         });
+
+        // Populate key column dropdown from mapped columns
+        function updateKeyColumnOptions() {
+            var selects = document.querySelectorAll('.mapping-select');
+            var keySelect = document.getElementById('key-column-select');
+            var current = keySelect.value;
+            keySelect.innerHTML = '<option value="">-- Select --</option>';
+            selects.forEach(function(sel) {
+                if (sel.value !== '__skip__') {
+                    var opt = document.createElement('option');
+                    opt.value = sel.value;
+                    opt.textContent = sel.value;
+                    if (sel.value === current) opt.selected = true;
+                    keySelect.appendChild(opt);
+                }
+            });
+            // Auto-select first non-skip column if nothing selected
+            if (!current || !Array.from(keySelect.options).some(function(o) { return o.value === current; })) {
+                var first = keySelect.options[1];
+                if (first) first.selected = true;
+            }
+        }
+
+        // Toggle key column visibility based on mode
+        function toggleKeyColumn() {
+            var mode = document.querySelector('input[name="mode"]:checked').value;
+            var row = document.getElementById('key-column-row');
+            var hintAdd = document.getElementById('mode-hint-add');
+            var hintSkip = document.getElementById('mode-hint-skip');
+            var hintUpdate = document.getElementById('mode-hint-update');
+
+            row.style.display = (mode === 'skip_duplicates' || mode === 'update_existing') ? '' : 'none';
+            hintAdd.style.display = mode === 'add_all' ? '' : 'none';
+            hintSkip.style.display = mode === 'skip_duplicates' ? '' : 'none';
+            hintUpdate.style.display = mode === 'update_existing' ? '' : 'none';
+
+            if (mode !== 'add_all') updateKeyColumnOptions();
+        }
+
+        // Update key column options when mapping changes
+        document.querySelectorAll('.mapping-select').forEach(function(sel) {
+            sel.addEventListener('change', function() {
+                var mode = document.querySelector('input[name="mode"]:checked').value;
+                if (mode !== 'add_all') updateKeyColumnOptions();
+            });
+        });
+
+        // Init
+        updateKeyColumnOptions();
         </script>
 
     {% else %}

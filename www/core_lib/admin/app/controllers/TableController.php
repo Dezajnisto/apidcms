@@ -918,12 +918,25 @@ class TableController extends BaseController {
 
             $imported = 0;
             $skipped = 0;
+            $updated = 0;
+            $mode = $_POST['mode'] ?? 'add_all';
+            $keyColumn = $_POST['key_column'] ?? '';
+
+            // Validate key column for skip/update modes
+            if (($mode === 'skip_duplicates' || $mode === 'update_existing') && !empty($keyColumn)) {
+                $validKeyCols = array_filter($mapping, function($m) { return ($m['table_column'] ?? '__skip__') !== '__skip__'; });
+                $validKeyNames = array_map(function($m) { return $m['table_column']; }, $validKeyCols);
+                if (!in_array($keyColumn, $validKeyNames)) {
+                    $keyColumn = '';
+                }
+            }
 
             try {
                 $this->db->query('BEGIN TRANSACTION');
 
                 while (($row = fgetcsv($handle)) !== false) {
                     $data = [];
+                    $keyValue = null;
 
                     foreach ($mapping as $map) {
                         $targetCol = $map['table_column'] ?? null;
@@ -946,9 +959,36 @@ class TableController extends BaseController {
                         }
 
                         $data[$targetCol] = $value;
+
+                        // Capture key column value
+                        if ($targetCol === $keyColumn) {
+                            $keyValue = $value;
+                        }
                     }
 
                     if (empty($data)) { $skipped++; continue; }
+
+                    // Mode: skip_duplicates
+                    if ($mode === 'skip_duplicates' && !empty($keyColumn) && $keyValue !== null) {
+                        $existing = $this->db->query(
+                            "SELECT id FROM " . $this->db->quoteIdentifier($table) . " WHERE " . $this->db->quoteIdentifier($keyColumn) . " = ? LIMIT 1",
+                            [$keyValue]
+                        )->fetch();
+                        if ($existing) { $skipped++; continue; }
+                    }
+
+                    // Mode: update_existing
+                    if ($mode === 'update_existing' && !empty($keyColumn) && $keyValue !== null) {
+                        $existing = $this->db->query(
+                            "SELECT id FROM " . $this->db->quoteIdentifier($table) . " WHERE " . $this->db->quoteIdentifier($keyColumn) . " = ? LIMIT 1",
+                            [$keyValue]
+                        )->fetch();
+                        if ($existing) {
+                            $this->db->update($table, $existing['id'], $data);
+                            $updated++;
+                            continue;
+                        }
+                    }
 
                     try {
                         $this->db->insert($table, $data);
@@ -963,7 +1003,10 @@ class TableController extends BaseController {
                 // Cleanup temp file
                 @unlink($tmpFile);
 
-                $this->redirect("/table/{$table}?imported={$imported}&skipped={$skipped}");
+                $msg = "/table/{$table}?imported={$imported}";
+                if ($skipped > 0) $msg .= "&skipped={$skipped}";
+                if ($updated > 0) $msg .= "&updated={$updated}";
+                $this->redirect($msg);
                 return;
             } catch (\Exception $e) {
                 $this->db->query('ROLLBACK');

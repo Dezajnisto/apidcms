@@ -253,7 +253,11 @@
         <div class="mb-4 md:mb-6 p-3 md:p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm">
             <div class="flex items-center space-x-3">
                 <i class="fas fa-check-circle"></i>
-                <span>Импортировано: <strong>{{ _GET.imported }}</strong> записей{% if _GET.skipped is defined and _GET.skipped != '0' %}, пропущено: {{ _GET.skipped }}{% endif %}</span>
+                <span>
+                    {% if _GET.updated is defined and _GET.updated != '0' %}Обновлено: <strong>{{ _GET.updated }}</strong>, {% endif %}
+                    Импортировано: <strong>{{ _GET.imported }}</strong> записей
+                    {% if _GET.skipped is defined and _GET.skipped != '0' %}, пропущено: {{ _GET.skipped }}{% endif %}
+                </span>
             </div>
         </div>
     {% endif %}

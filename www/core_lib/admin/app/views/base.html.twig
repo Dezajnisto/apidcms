@@ -8,7 +8,10 @@
     <link rel="icon" href="{{ site_favicon }}" type="image/x-icon">
     <link rel="shortcut icon" href="{{ site_favicon }}" type="image/x-icon">
     {% endif %}
-    <title>{% block title %}Панель управления{% endblock %}</title>
+        <style>
+
+    </style>
+<title>{% block title %}Панель управления{% endblock %}</title>
     
     <!-- Tailwind CSS via CDN (для разработки) -->
     <link rel="stylesheet" href="/static/css/admin.css?v=1">
@@ -140,7 +143,107 @@
             overflow-wrap: break-word;
         }
     </style>
-</head>
+    <style>
+.help-toggle-btn {
+    background: none; border: 1px solid #6366f1; color: #6366f1;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    font-size: 13px; display: inline-flex; align-items: center;
+    gap: 6px; white-space: nowrap;
+}
+.help-toggle-btn:hover { background: #6366f1; color: #fff; }
+.help-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.3); z-index: 10000;
+}
+.help-overlay.hidden { display: none; }
+.help-panel {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: min(580px, 40vw);
+    background: #fff; box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+    z-index: 10001; display: flex; flex-direction: column;
+    transform: translateX(0); transition: transform 0.25s ease;
+}
+.help-panel.hidden { transform: translateX(100%); }
+.help-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 22px; border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb; flex-shrink: 0;
+}
+.help-panel-title {
+    font-size: 15px; font-weight: 600; color: #111827;
+    margin: 0; display: flex; align-items: center; gap: 8px;
+}
+.help-panel-title i { color: #6366f1; }
+.help-header-links { display: flex; align-items: center; gap: 8px; }
+.help-toc-link {
+    font-size: 13px; color: #6366f1; cursor: pointer;
+    text-decoration: none; padding: 4px 8px; border-radius: 4px;
+}
+.help-toc-link:hover { background: #e0e7ff; }
+.help-toc-link.active { background: #e0e7ff; font-weight: 600; }
+.help-close {
+    background: none; border: none; color: #6b7280;
+    cursor: pointer; padding: 4px 8px; font-size: 16px; border-radius: 4px;
+}
+.help-close:hover { background: #e5e7eb; color: #111827; }
+.help-panel-body {
+    flex: 1; overflow-y: auto; padding: 20px 22px;
+    font-size: 14px; line-height: 1.7; color: #374151;
+}
+.help-panel-body h2 { font-size: 20px; margin: 0 0 14px; padding-bottom: 8px; color: #111827; border-bottom: 1px solid #e5e7eb; }
+.help-panel-body h3 { font-size: 16px; margin: 20px 0 10px; color: #1f2937; }
+.help-panel-body h4 { font-size: 15px; margin: 16px 0 8px; color: #374151; }
+.help-panel-body h5 { font-size: 14px; margin: 14px 0 6px; color: #4b5563; }
+.help-panel-body p { margin: 0 0 12px; }
+.help-panel-body ul, .help-panel-body ol { margin: 0 0 14px; padding-left: 22px; }
+.help-panel-body li { margin-bottom: 4px; }
+.help-panel-body code {
+    background: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-size: 13px; color: #ef4444;
+}
+.help-panel-body pre {
+    background: #1f2937; color: #e5e7eb; padding: 14px; border-radius: 8px;
+    overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 0 0 14px;
+}
+.help-panel-body pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+.help-panel-body a { color: #6366f1; text-decoration: underline; }
+.help-panel-body a:hover { color: #4f46e5; }
+.help-panel-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 16px 0; }
+.help-panel-body blockquote {
+    border-left: 3px solid #6366f1; padding: 6px 14px; margin: 0 0 12px;
+    color: #6b7280; background: #f9fafb; border-radius: 0 4px 4px 0;
+}
+.help-panel-body strong { color: #111827; }
+.help-panel-body table {
+    width: 100%; border-collapse: collapse; margin: 0 0 14px; font-size: 13px;
+}
+.help-panel-body th, .help-panel-body td {
+    border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left;
+}
+.help-panel-body th { background: #f9fafb; font-weight: 600; color: #374151; }
+.help-panel-body tr:nth-child(even) { background: #fafafa; }
+
+/* TOC view */
+.help-toc-section { margin-bottom: 20px; }
+.help-toc-section-title {
+    font-size: 13px; font-weight: 700; color: #6b7280;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+}
+.help-toc-item {
+    display: block; padding: 5px 8px; border-radius: 4px; cursor: pointer;
+    color: #374151; font-size: 14px; text-decoration: none;
+}
+.help-toc-item:hover { background: #f3f4f6; color: #6366f1; }
+
+.help-panel-footer {
+    padding: 10px 22px; border-top: 1px solid #e5e7eb;
+    background: #f9fafb; flex-shrink: 0; text-align: center;
+}
+.help-footer-link { color: #6366f1; font-size: 13px; text-decoration: none; }
+.help-footer-link:hover { color: #4f46e5; text-decoration: underline; }
+.help-loading, .help-empty, .help-error { text-align: center; padding: 40px 20px; color: #6b7280; }
+.help-error { color: #ef4444; }
+</style>
+    </head>
 <body class="bg-gray-100 min-h-screen">
     <!-- Backdrop for mobile sidebar -->
     <div id="sidebar-backdrop"></div>

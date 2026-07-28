@@ -1,0 +1,234 @@
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <a href="{{ admin_url('table/' ~ tableName|url_encode) }}"
+           class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition text-sm">
+            <i class="fas fa-arrow-left"></i>
+            <span>Back to table</span>
+        </a>
+    </div>
+
+    {% if error == 'upload_failed' %}
+        <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            <i class="fas fa-exclamation-circle"></i> Failed to upload file. Make sure it's a valid CSV.
+        </div>
+    {% elseif error == 'read_failed' %}
+        <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            <i class="fas fa-exclamation-circle"></i> Failed to read CSV file.
+        </div>
+    {% elseif error == 'empty_file' %}
+        <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            <i class="fas fa-exclamation-circle"></i> CSV file is empty.
+        </div>
+    {% elseif error %}
+        <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+    {% endif %}
+
+    {% if preview is not null and mapping is not null %}
+        {# === PREVIEW + MAPPING === #}
+        <div class="bg-white rounded-lg shadow-sm border mb-6">
+            <div class="px-6 py-4 border-b bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Column Mapping</h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    {% if firstRowIsHeader %}
+                        First row detected as headers. {{ csvHeaders|length }} columns found, {{ mapping|filter(m => m.table_column is not null)|length }} auto-matched.
+                    {% else %}
+                        {{ csvHeaders|length }} columns found. No header row detected.
+                    {% endif %}
+                </p>
+            </div>
+            <div class="p-6">
+                <form method="POST" action="{{ admin_url('table/' ~ tableName|url_encode ~ '/process-csv') }}">
+                    <input type="hidden" name="confirm" value="1">
+                    <input type="hidden" name="mapping" id="mapping-json" value="">
+                    <input type="hidden" name="skip_first" value="{{ firstRowIsHeader ? '1' : '0' }}">
+
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">CSV Column</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Preview</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Maps to</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for m in mapping %}
+                            <tr>
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900">
+                                    {{ m.csv_name }}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-500 max-w-[200px] truncate" title="{{ preview[0][m.csv_index] ?? '' }}">
+                                    {{ preview[0][m.csv_index] ?? '' }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <select class="mapping-select w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            data-csv-index="{{ m.csv_index }}">
+                                        <option value="__skip__">-- Skip --</option>
+                                        {% for tc in tableColumns %}
+                                            {% if tc != pkCol and tc != 'created_at' %}
+                                                <option value="{{ tc }}" {% if m.table_column == tc %}selected{% endif %}>{{ tc }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                    {% if m.table_column is not null %}
+                                        <span class="text-xs text-green-600 mt-1 block"><i class="fas fa-check"></i> Auto-matched</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <div class="mt-6 flex items-center justify-between">
+                        <div class="text-sm text-gray-500">
+                            {{ preview|length }} preview rows shown
+                        </div>
+                        <button type="submit"
+                                class="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium">
+                            <i class="fas fa-upload"></i>
+                            <span>Import Data</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if preview|length > 0 %}
+        <div class="bg-white rounded-lg shadow-sm border">
+            <div class="px-6 py-4 border-b bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Preview (first {{ preview|length }} rows)</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            {% for h in csvHeaders %}
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ h }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for row in preview %}
+                        <tr class="hover:bg-gray-50">
+                            {% for cell in row %}
+                                <td class="px-4 py-2 text-sm text-gray-700 max-w-[200px] truncate" title="{{ cell }}">{{ cell }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <script>
+        // Serialize mapping on form submit
+        document.querySelector('form').addEventListener('submit', function() {
+            var selects = document.querySelectorAll('.mapping-select');
+            var mapping = [];
+            selects.forEach(function(sel) {
+                mapping.push({
+                    csv_index: sel.getAttribute('data-csv-index'),
+                    table_column: sel.value
+                });
+            });
+            document.getElementById('mapping-json').value = JSON.stringify(mapping);
+        });
+        </script>
+
+    {% else %}
+        {# === UPLOAD FORM === #}
+        <div class="bg-white rounded-lg shadow-sm border">
+            <div class="px-6 py-4 border-b bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Import CSV to "{{ tableName }}"</h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    Upload a CSV file. Column names will be auto-matched where possible.
+                </p>
+            </div>
+            <div class="p-6">
+                <form method="POST" action="{{ admin_url('table/' ~ tableName|url_encode ~ '/process-csv') }}" enctype="multipart/form-data">
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">CSV File</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition">
+                            <div class="space-y-1 text-center">
+                                <i class="fas fa-file-csv text-gray-400 text-4xl mb-3"></i>
+                                <div class="text-sm text-gray-600">
+                                    <label for="csv_file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
+                                        <span>Select a file</span>
+                                        <input id="csv_file" name="csv_file" type="file" accept=".csv,text/csv" class="sr-only" required>
+                                    </label>
+                                    <span class="pl-1">or drag and drop</span>
+                                </div>
+                                <p class="text-xs text-gray-500">CSV up to 10MB</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-700">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Tips:</strong>
+                        <ul class="list-disc list-inside mt-2 space-y-1">
+                            <li>First row should contain column names matching table columns</li>
+                            <li>Columns that don't match will be skipped by default</li>
+                            <li>Empty values in nullable columns become NULL</li>
+                            <li>ID and created_at columns are auto-generated</li>
+                        </ul>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-500">{{ structure|length }} columns in table</span>
+                        <button type="submit"
+                                class="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                            <i class="fas fa-upload"></i>
+                            <span>Upload & Preview</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-6 bg-white rounded-lg shadow-sm border">
+            <div class="px-6 py-4 border-b bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">Table Structure</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Column</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Required</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for col in structure %}
+                        <tr>
+                            <td class="px-4 py-2 text-sm font-medium text-gray-900">
+                                <code>{{ col.name }}</code>
+                                {% if col.pk == 1 %}<span class="text-xs text-blue-500 ml-1">PK</span>{% endif %}
+                            </td>
+                            <td class="px-4 py-2 text-sm text-gray-500">{{ col.type }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-500">
+                                {% if col.notnull == 1 and col.pk == 0 %}
+                                    <span class="text-red-500">Required</span>
+                                {% else %}
+                                    <span class="text-gray-400">Optional</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

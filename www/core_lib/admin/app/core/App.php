@@ -66,6 +66,10 @@ class App {
         $this->addRoute('/table/{table}/update/{id}', 'TableController', 'update');
         $this->addRoute('/table/{table}/delete/{id}', 'TableController', 'delete');
         $this->addRoute('/table/{table}/duplicate/{id}', 'TableController', 'duplicate');
+        // CSV import/export
+        $this->addRoute('/table/{table}/export-csv', 'TableController', 'exportCsv');
+        $this->addRoute('/table/{table}/import-csv', 'TableController', 'importCsvForm');
+        $this->addRoute('/table/{table}/process-csv', 'TableController', 'processCsv');
         // Inline cell editing (AJAX)
         $this->addRoute('/table/{table}/cell/{id}', 'TableController', 'cellUpdate');
         

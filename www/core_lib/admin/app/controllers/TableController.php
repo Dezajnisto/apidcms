@@ -797,4 +797,269 @@ class TableController extends BaseController {
     }
 
 
+    /**
+     * Export table data as CSV file
+     *
+     * @param string $table Table name
+     */
+    public function exportCsv($table) {
+        $tables = $this->db->getTables();
+        if (!in_array($table, $tables)) {
+            die("Table '{$table}' not found");
+        }
+
+        $search = $_GET['search'] ?? '';
+        $sort = $_GET['sort'] ?? 'id';
+        $order = $_GET['order'] ?? 'ASC';
+
+        $structure = $this->db->getTableStructure($table);
+        $validColumns = array_map(function($col) { return $col['name']; }, $structure);
+        if (!in_array($sort, $validColumns)) $sort = 'id';
+        $order = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
+
+        // Fetch all data (respecting current search/sort)
+        $data = $this->db->search($table, $search, $sort, $order, null, null);
+
+        // Send CSV
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $table . '_' . date('Y-m-d') . '.csv"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        // BOM for Excel UTF-8 compatibility
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        // Headers
+        $headers = array_map(function($col) { return $col['name']; }, $structure);
+        fputcsv($output, $headers);
+
+        // Data rows
+        foreach ($data as $row) {
+            $csvRow = [];
+            foreach ($structure as $col) {
+                $val = $row[$col['name']] ?? '';
+                $csvRow[] = is_array($val) ? json_encode($val, JSON_UNESCAPED_UNICODE) : (string)$val;
+            }
+            fputcsv($output, $csvRow);
+        }
+
+        fclose($output);
+        exit;
+    }
+
+    /**
+     * Show CSV import form (upload + preview)
+     *
+     * @param string $table Table name
+     */
+    public function importCsvForm($table) {
+        $tables = $this->db->getTables();
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', ['message' => "Table '{$table}' not found"]);
+            return;
+        }
+
+        $structure = $this->db->getTableStructure($table);
+        $this->render('table/import_csv', [
+            'tableName' => $table,
+            'structure' => $structure,
+            'title' => "CSV Import: {$table}",
+            'preview' => null,
+            'mapping' => null,
+            'error' => $_GET['error'] ?? null,
+            'success' => null
+        ]);
+    }
+
+    /**
+     * Process CSV upload: parse + preview, or execute import
+     *
+     * @param string $table Table name
+     */
+    public function processCsv($table) {
+        $tables = $this->db->getTables();
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', ['message' => "Table '{$table}' not found"]);
+            return;
+        }
+
+        $structure = $this->db->getTableStructure($table);
+        $tableColumns = array_map(function($col) { return $col['name']; }, $structure);
+
+        // Find primary key column
+        $pkCol = 'id';
+        foreach ($structure as $col) {
+            if ($col['pk'] == 1) { $pkCol = $col['name']; break; }
+        }
+
+        // Temp file for this import session
+        $tmpFile = sys_get_temp_dir() . '/apidcms_csv_' . md5($table . session_id()) . '.csv';
+
+        // === CONFIRMED IMPORT ===
+        if (isset($_POST['confirm']) && $_POST['confirm'] === '1' && file_exists($tmpFile)) {
+            $mapping = json_decode($_POST['mapping'] ?? '[]', true);
+            $skipFirst = ($_POST['skip_first'] ?? '0') === '1';
+
+            if (empty($mapping)) {
+                $this->redirect("/table/{$table}/import-csv?error=invalid_mapping");
+                return;
+            }
+
+            $handle = fopen($tmpFile, 'r');
+            if (!$handle) {
+                $this->redirect("/table/{$table}/import-csv?error=read_failed");
+                return;
+            }
+
+            if ($skipFirst) {
+                fgetcsv($handle); // skip header row
+            }
+
+            $imported = 0;
+            $skipped = 0;
+
+            try {
+                $this->db->query('BEGIN TRANSACTION');
+
+                while (($row = fgetcsv($handle)) !== false) {
+                    $data = [];
+
+                    foreach ($mapping as $map) {
+                        $targetCol = $map['table_column'] ?? null;
+                        if (!$targetCol || $targetCol === '__skip__') continue;
+                        // Skip auto-increment PK and created_at
+                        if ($targetCol === $pkCol) continue;
+                        if ($targetCol === 'created_at') continue;
+
+                        $csvIdx = (int)$map['csv_index'];
+                        $value = isset($row[$csvIdx]) ? trim($row[$csvIdx]) : '';
+
+                        // Empty string -> null for nullable columns
+                        if ($value === '') {
+                            foreach ($structure as $c) {
+                                if ($c['name'] === $targetCol && $c['notnull'] == 0) {
+                                    $value = null;
+                                    break;
+                                }
+                            }
+                        }
+
+                        $data[$targetCol] = $value;
+                    }
+
+                    if (empty($data)) { $skipped++; continue; }
+
+                    try {
+                        $this->db->insert($table, $data);
+                        $imported++;
+                    } catch (\Exception $e) {
+                        $skipped++;
+                    }
+                }
+
+                $this->db->query('COMMIT');
+
+                // Cleanup temp file
+                @unlink($tmpFile);
+
+                $this->redirect("/table/{$table}?imported={$imported}&skipped={$skipped}");
+                return;
+            } catch (\Exception $e) {
+                $this->db->query('ROLLBACK');
+                fclose($handle);
+                @unlink($tmpFile);
+                $this->redirect("/table/{$table}/import-csv?error=" . urlencode('Import failed: ' . $e->getMessage()));
+                return;
+            }
+        }
+
+        // === UPLOAD + PREVIEW ===
+        if (empty($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
+            $this->redirect("/table/{$table}/import-csv?error=upload_failed");
+            return;
+        }
+
+        if (!move_uploaded_file($_FILES['csv_file']['tmp_name'], $tmpFile)) {
+            $this->redirect("/table/{$table}/import-csv?error=upload_failed");
+            return;
+        }
+
+        $handle = fopen($tmpFile, 'r');
+        if (!$handle) {
+            @unlink($tmpFile);
+            $this->redirect("/table/{$table}/import-csv?error=read_failed");
+            return;
+        }
+
+        // Read first row
+        $firstRow = fgetcsv($handle);
+        if (!$firstRow) {
+            fclose($handle);
+            @unlink($tmpFile);
+            $this->redirect("/table/{$table}/import-csv?error=empty_file");
+            return;
+        }
+
+        // Read up to 5 preview rows
+        $previewRows = [];
+        $rowCount = 0;
+        while (($row = fgetcsv($handle)) !== false && $rowCount < 5) {
+            $previewRows[] = $row;
+            $rowCount++;
+        }
+        fclose($handle);
+
+        // Auto-detect if first row is a header
+        $matchCount = 0;
+        foreach ($firstRow as $val) {
+            if (in_array(strtolower(trim((string)$val)), array_map('strtolower', $tableColumns))) {
+                $matchCount++;
+            }
+        }
+        $firstRowIsHeader = $matchCount >= min(2, max(1, count($firstRow)));
+
+        // Build CSV header labels
+        if ($firstRowIsHeader) {
+            $csvHeaders = array_map(function($v) { return trim((string)$v); }, $firstRow);
+        } else {
+            $csvHeaders = [];
+            foreach (range(1, count($firstRow)) as $i) {
+                $csvHeaders[] = "Column {$i}";
+            }
+        }
+
+        // Auto-map
+        $mapping = [];
+        foreach ($csvHeaders as $i => $csvCol) {
+            $cleanName = strtolower(trim((string)$csvCol));
+            $matched = null;
+            foreach ($tableColumns as $tCol) {
+                if ($cleanName === strtolower($tCol) && $tCol !== $pkCol) {
+                    $matched = $tCol;
+                    break;
+                }
+            }
+            $mapping[] = [
+                'csv_index' => $i,
+                'csv_name' => (string)$csvCol,
+                'table_column' => $matched
+            ];
+        }
+
+        $this->render('table/import_csv', [
+            'tableName' => $table,
+            'structure' => $structure,
+            'title' => "CSV Import: {$table}",
+            'preview' => $previewRows,
+            'mapping' => $mapping,
+            'csvHeaders' => $csvHeaders,
+            'firstRowIsHeader' => $firstRowIsHeader,
+            'tableColumns' => $tableColumns,
+            'pkCol' => $pkCol,
+            'error' => null,
+            'success' => null
+        ]);
+    }
+
 }

@@ -223,7 +223,11 @@ var AIAssistant = {
             '.ai-msg-bubble .ai-use-btn:hover { background: #059669; }',
             '.ai-msg-bubble .ai-use-btn.ai-use-code { background: #6366f1; margin-left: 8px; }',
             '.ai-msg-bubble .ai-use-btn.ai-use-code:hover { background: #4f46e5; }',
-            '.ai-error { color: #ef4444; background: #fef2f2; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 12px; }'
+            '.ai-error { color: #ef4444; background: #fef2f2; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 12px; }',
+            '.ai-code-block { position: relative; }',
+            '.ai-copy-code { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: #d1d5db; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; z-index: 1; transition: all 0.15s; }',
+            '.ai-copy-code:hover { background: rgba(255,255,255,0.22); color: #fff; }',
+            '.ai-copy-code.copied { background: #10b981; border-color: #10b981; color: #fff; }'
         ].join('\n');
         document.head.appendChild(style);
     },
@@ -498,6 +502,53 @@ var AIAssistant = {
     },
 
     /**
+     * Добавить кнопки копирования ко всем блокам кода
+     */
+    processCodeBlocks: function(container) {
+        var pres = container.querySelectorAll('pre');
+        for (var i = 0; i < pres.length; i++) {
+            var pre = pres[i];
+            if (pre.parentNode.classList.contains('ai-code-block')) continue;
+            var wrapper = document.createElement('div');
+            wrapper.className = 'ai-code-block';
+            var btn = document.createElement('button');
+            btn.className = 'ai-copy-code';
+            btn.textContent = 'Copy';
+            btn.onclick = function(e) {
+                var code = this.parentNode.querySelector('code');
+                var text = code ? code.textContent : '';
+                navigator.clipboard.writeText(text).then(function() {
+                    e.target.textContent = 'Copied!';
+                    e.target.classList.add('copied');
+                    setTimeout(function() {
+                        e.target.textContent = 'Copy';
+                        e.target.classList.remove('copied');
+                    }, 2000);
+                }).catch(function() {
+                    // Fallback for older browsers
+                    var ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    e.target.textContent = 'Copied!';
+                    e.target.classList.add('copied');
+                    setTimeout(function() {
+                        e.target.textContent = 'Copy';
+                        e.target.classList.remove('copied');
+                    }, 2000);
+                });
+            };
+            pre.parentNode.insertBefore(wrapper, pre);
+            wrapper.appendChild(btn);
+            wrapper.appendChild(pre);
+        }
+    },
+
+    /**
      * Добавить сообщение в чат
      * Для role='user' — экранирует HTML, чтобы код не рендерился
      * Для role='assistant' — вставляет как есть (уже отформатировано)
@@ -513,6 +564,8 @@ var AIAssistant = {
             bubble.textContent = content;
         } else {
             bubble.innerHTML = content;
+            // Add copy buttons to code blocks
+            this.processCodeBlocks(bubble);
         }
         
         div.appendChild(bubble);

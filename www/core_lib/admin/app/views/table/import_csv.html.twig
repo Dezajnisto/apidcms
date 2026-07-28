@@ -5,6 +5,25 @@
 {% block page_title %}{{ title }}{% endblock %}
 
 {% block content %}
+<script>
+// Show selected filename (available on both upload and preview pages)
+function updateFileLabel(input) {
+    var label = document.getElementById('csv-file-label');
+    var info = document.getElementById('csv-file-info');
+    if (input && input.files && input.files.length > 0) {
+        var file = input.files[0];
+        if (label) {
+            label.textContent = file.name;
+            label.className = 'text-green-600 font-medium';
+        }
+        if (info) {
+            var sizeKB = (file.size / 1024).toFixed(0);
+            info.textContent = file.name + ' (' + sizeKB + ' КБ)';
+            info.className = 'text-xs text-green-600';
+        }
+    }
+}
+</script>
 <div class="max-w-4xl mx-auto">
     <div class="mb-6">
         <a href="{{ admin_url('table/' ~ tableName|url_encode) }}"
@@ -165,20 +184,6 @@
         {% endif %}
 
         <script>
-        // Show selected filename
-        function updateFileLabel(input) {
-            var label = document.getElementById('csv-file-label');
-            var info = document.getElementById('csv-file-info');
-            if (input.files && input.files.length > 0) {
-                var file = input.files[0];
-                label.textContent = file.name;
-                label.className = 'text-green-600 font-medium';
-                var sizeKB = (file.size / 1024).toFixed(0);
-                info.textContent = file.name + ' (' + sizeKB + ' КБ)';
-                info.className = 'text-xs text-green-600';
-            }
-        }
-
         // Serialize mapping on form submit
         document.querySelector('form').addEventListener('submit', function() {
             var selects = document.querySelectorAll('.mapping-select');

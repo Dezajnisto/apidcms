@@ -987,25 +987,55 @@ class TableController extends BaseController {
                         )->fetch();
                         if ($existing) {
                             try {
-                                $this->db->update($table, $existing['id'], $data);
+                                // Use raw PDO for update (Database::update calls query() which dies on error)
+                                $setParts = [];
+                                $updateValues = [];
+                                foreach ($data as $col => $val) {
+                                    $setParts[] = '"' . $col . '" = ?';
+                                    $updateValues[] = $val;
+                                }
+                                $updateValues[] = $existing['id'];
+                                $sql = 'UPDATE "' . $table . '" SET ' . implode(', ', $setParts) . ' WHERE id = ?';
+                                $stmt = $this->db->getConnection()->prepare($sql);
+                                $stmt->execute($updateValues);
                                 $updated++;
-                            } catch (\Exception $e) {
+                            } catch (\PDOException $e) {
                                 $skipped++;
                             }
                             continue;
                         }
                     }
 
-                    // Use savepoint to isolate each row insert (handles UNIQUE violations gracefully)
-                    $spName = 'sp_' . $rowNum;
-                    try {
-                        $this->db->query('SAVEPOINT ' . $spName);
-                        $this->db->insert($table, $data);
-                        $this->db->query('RELEASE ' . $spName);
-                        $imported++;
-                    } catch (\Exception $e) {
-                        try { $this->db->query('ROLLBACK TO ' . $spName); } catch (\Exception $e2) {}
-                        $skipped++;
+                    // Use raw PDO for inserts (Database::query() dies on error, can't catch)
+                    // Auto-generate unique slug on conflict
+                    $maxSlugRetries = 10;
+                    $slugRetry = 0;
+                    $inserted = false;
+
+                    while (!$inserted && $slugRetry <= $maxSlugRetries) {
+                        try {
+                            $columns = array_keys($data);
+                            $placeholders = implode(', ', array_fill(0, count($columns), '?'));
+                            $quotedCols = implode(', ', array_map(function($c) { return '"' . $c . '"'; }, $columns));
+                            $sql = 'INSERT INTO "' . $table . '" (' . $quotedCols . ') VALUES (' . $placeholders . ')';
+
+                            $stmt = $this->db->getConnection()->prepare($sql);
+                            $stmt->execute(array_values($data));
+                            $imported++;
+                            $inserted = true;
+                        } catch (\PDOException $e) {
+                            $errMsg = $e->getMessage();
+
+                            // Auto-fix slug conflict: append -1, -2, etc.
+                            if (stripos($errMsg, 'UNIQUE constraint failed') !== false && isset($data['slug']) && $slugRetry < $maxSlugRetries) {
+                                $baseSlug = preg_replace('/-\d+$/', '', $data['slug']);
+                                $slugRetry++;
+                                $data['slug'] = $baseSlug . '-' . $slugRetry;
+                            } else {
+                                $skipped++;
+                                break;
+                            }
+                        }
                     }
                 }
 

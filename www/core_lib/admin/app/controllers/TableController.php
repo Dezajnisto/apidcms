@@ -920,7 +920,7 @@ class TableController extends BaseController {
             $skipped = 0;
             $updated = 0;
             $mode = $_POST['mode'] ?? 'add_all';
-            $keyColumn = $_POST['key_column'] ?? '';
+            $keyColumn = $_POST['key_column'] ?? $pkCol;
 
             // Validate key column for skip/update modes
             if (($mode === 'skip_duplicates' || $mode === 'update_existing') && !empty($keyColumn)) {
@@ -943,8 +943,7 @@ class TableController extends BaseController {
                     foreach ($mapping as $map) {
                         $targetCol = $map['table_column'] ?? null;
                         if (!$targetCol || $targetCol === '__skip__') continue;
-                        // Skip auto-increment PK and created_at
-                        if ($targetCol === $pkCol) continue;
+                        // Skip created_at (always auto-generated)
                         if ($targetCol === 'created_at') continue;
 
                         $csvIdx = (int)$map['csv_index'];
@@ -1119,7 +1118,7 @@ class TableController extends BaseController {
             $cleanName = strtolower(trim((string)$csvCol));
             $matched = null;
             foreach ($tableColumns as $tCol) {
-                if ($cleanName === strtolower($tCol) && $tCol !== $pkCol) {
+                if ($cleanName === strtolower($tCol) && $tCol !== 'created_at') {
                     $matched = $tCol;
                     break;
                 }

@@ -92,8 +92,8 @@ function updateFileLabel(input) {
                                             data-csv-index="{{ m.csv_index }}">
                                         <option value="__skip__">-- Пропустить --</option>
                                         {% for tc in tableColumns %}
-                                            {% if tc != pkCol and tc != 'created_at' %}
-                                                <option value="{{ tc }}" {% if m.table_column == tc %}selected{% endif %}>{{ tc }}</option>
+                                            {% if tc != 'created_at' %}
+                                                <option value="{{ tc }}" {% if m.table_column == tc %}selected{% endif %}>{{ tc }}{% if tc == pkCol %} (PK){% endif %}</option>
                                             {% endif %}
                                         {% endfor %}
                                     </select>
@@ -212,10 +212,12 @@ function updateFileLabel(input) {
                     keySelect.appendChild(opt);
                 }
             });
-            // Auto-select first non-skip column if nothing selected
+            // Auto-select PK column (id) if nothing selected
             if (!current || !Array.from(keySelect.options).some(function(o) { return o.value === current; })) {
-                var first = keySelect.options[1];
-                if (first) first.selected = true;
+                {% if pkCol %}
+                var pkOpt = Array.from(keySelect.options).find(function(o) { return o.value === '{{ pkCol }}'; });
+                if (pkOpt) pkOpt.selected = true;
+                {% endif %}
             }
         }
 

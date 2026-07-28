@@ -255,7 +255,7 @@
             <div class="p-4 border-b border-gray-700 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                     <i class="fas fa-cogs text-blue-400 text-xl"></i>
-                    <span class="nav-text font-bold text-lg">CMS Admin</span>
+                    <span class="nav-text font-bold text-lg">{{ lang('topbar.cms_admin') }}</span>
                 </div>
                 <button id="sidebarClose" class="md:hidden text-gray-400 hover:text-white p-1">
                     <i class="fas fa-times"></i>
@@ -268,35 +268,35 @@
                 <a href="{{ admin_url('') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'home' ? 'bg-gray-700' : '' }}">
                     <i class="fas fa-home w-5 text-center"></i>
-                    <span class="nav-text">Главная</span>
+                    <span class="nav-text">{{ lang('sidebar.home') }}</span>
                 </a>
 
                 <!-- Таблицы -->
                 <a href="{{ admin_url('tables') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'tables' ? 'bg-gray-700' : '' }}">
                     <i class="fas fa-database w-5 text-center"></i>
-                    <span class="nav-text">Таблицы</span>
+                    <span class="nav-text">{{ lang('sidebar.tables') }}</span>
                 </a>
 
                 <!-- Шаблоны -->
                 <a href="{{ admin_url('templates') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'templates' ? 'bg-gray-700' : '' }}">
                     <i class="fas fa-file-code w-5 text-center"></i>
-                    <span class="nav-text">Шаблоны</span>
+                    <span class="nav-text">{{ lang('sidebar.templates') }}</span>
                 </a>
 
                 <!-- Дизайн -->
                 <a href="{{ admin_url('design/css') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'design' ? 'bg-gray-700' : '' }}">
                     <i class="fas fa-paint-brush w-5 text-center"></i>
-                    <span class="nav-text">CSS-стили</span>
+                    <span class="nav-text">{{ lang('sidebar.design') }}</span>
                 </a>
 
                 <!-- Файловый менеджер -->
                 <a href="{{ admin_url('filemanager') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'filemanager' ? 'bg-gray-700' : '' }}">
                     <i class="fas fa-folder-open w-5 text-center"></i>
-                    <span class="nav-text">Файлы</span>
+                    <span class="nav-text">{{ lang('sidebar.files') }}</span>
                 </a>
 
                 <!-- Разделитель -->
@@ -306,14 +306,14 @@
                 <a href="{{ admin_url('forms') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'forms' ? 'bg-gray-700' : '' }}">
                     <i class="fas fa-file-lines w-5 text-center"></i>
-                    <span class="nav-text">Формы</span>
+                    <span class="nav-text">{{ lang('sidebar.forms') }}</span>
                 </a>
 
                 <!-- Уведомления -->
                 <a href="{{ admin_url('notifications') }}" 
                 class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'notifications' ? 'bg-gray-700' : '' }}">
                     <i class="fas fa-bell w-5 text-center"></i>
-                    <span class="nav-text">Уведомления</span>
+                    <span class="nav-text">{{ lang('sidebar.notifications') }}</span>
                     {% if total_unread > 0 %}
                     <span class="ml-auto inline-block py-0.5 px-2 text-xs leading-4 font-medium bg-red-500 text-white rounded-full">
                         {{ total_unread }}
@@ -328,36 +328,36 @@
                 <a href="{{ admin_url('plugins') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'plugins' ? 'bg-gray-700' : '' }}">
                     <i class="fas fa-puzzle-piece w-5 text-center"></i>
-                    <span class="nav-text">Плагины</span>
+                    <span class="nav-text">{{ lang('sidebar.plugins') }}</span>
                 </a>
 
                 <!-- Статистика -->
                 <a href="{{ admin_url('stats') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'stats' ? 'bg-gray-700' : '' }}">
                     <i class="fas fa-chart-bar w-5 text-center"></i>
-                    <span class="nav-text">Статистика</span>
+                    <span class="nav-text">{{ lang('sidebar.stats') }}</span>
                 </a>
 
                 <!-- Очистка кэша -->
                 <a href="{{ admin_url('cache') }}" 
                 class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'cache' ? 'bg-gray-700' : '' }}">
                     <i class="fas fa-broom w-5 text-center"></i>
-                    <span class="nav-text">Очистить кэш</span>
+                    <span class="nav-text">{{ lang('sidebar.cache') }}</span>
                 </a>
 
                 <!-- Настройки -->
                 <a href="{{ admin_url('settings') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == 'settings' ? 'bg-gray-700' : '' }}">
                     <i class="fas fa-cog w-5 text-center"></i>
-                    <span class="nav-text">Настройки</span>
+                    <span class="nav-text">{{ lang('sidebar.settings') }}</span>
                 </a>
 
                 <!-- Выход -->
                 <a href="{{ admin_url('logout') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-red-600 transition bg-red-700 mt-auto"
-                   onclick="return confirm('Вы уверены, что хотите выйти?')">
+                   onclick="return confirm('{{ lang('common.confirm_logout') }}')">
                     <i class="fas fa-sign-out-alt w-5 text-center"></i>
-                    <span class="nav-text">Выйти</span>
+                    <span class="nav-text">{{ lang('sidebar.logout') }}</span>
                 </a>
             </nav>
         </aside>
@@ -372,24 +372,24 @@
                             <i class="fas fa-bars text-gray-600"></i>
                         </button>
                         <h1 class="text-lg md:text-xl font-semibold text-gray-800">
-                            {% block page_title %}Панель управления{% endblock %}
+                            {% block page_title %}{{ lang('topbar.title') }}{% endblock %}
                         </h1>
                     </div>
                     <div class="flex items-center space-x-2 md:space-x-3">
                         <button class="help-toggle-btn" onclick="toggleHelp()" title="Справка по текущей странице">
                         <i class="fas fa-question-circle"></i>
-                        <span class="hidden sm:inline">Помощь</span>
+                        <span class="hidden sm:inline">{{ lang('topbar.help') }}</span>
                     </button>
                     <button onclick="FileManagerHelper.openFileManager()" 
                                 class="inline-flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs md:text-sm"
                                 title="Файловый менеджер">
                             <i class="fas fa-folder-open"></i>
-                            <span class="hidden sm:inline">Файлы</span>
+                            <span class="hidden sm:inline">{{ lang('topbar.files') }}</span>
                             <span class="sm:hidden"><i class="fas fa-folder-open"></i></span>
                         </button>
                         <a href="/" target="_blank" class="inline-flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-xs md:text-sm">
-                            <span class="hidden sm:inline">Просмотр сайта</span>
-                            <span class="sm:hidden">Сайт</span>
+                            <span class="hidden sm:inline">{{ lang('topbar.view_site') }}</span>
+                            <span class="sm:hidden">{{ lang('topbar.mobile_site') }}</span>
                         </a>
                     </div>
                 </div>

@@ -178,10 +178,31 @@
                 </div>
 
                 <hr class="border-gray-200">
+
+                {# Admin language #}
+                <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
+                    <div class="sm:w-48 sm:pt-1">
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.language') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.language_hint') }}</p>
+                    </div>
+                    <div class="flex-1 w-full">
+                        {% set _al = 'ru' %}
+                        {% for s in system_settings %}
+                            {% if s.key == 'admin_language' %}{% set _al = s.value %}{% endif %}
+                        {% endfor %}
+                        <select name="settings[admin_language]" class="w-48 px-3 py-2 border border-gray-300 rounded text-sm">
+                            <option value="ru" {{ _al == 'ru' ? 'selected' : '' }}>Русский</option>
+                            <option value="en" {{ _al == 'en' ? 'selected' : '' }}>English</option>
+                        </select>
+                        <input type="hidden" name="types[admin_language]" value="string">
+                    </div>
+                </div>
+
+                <hr class="border-gray-200">
                 <div class="flex justify-end">
                     <button type="submit" class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center justify-center space-x-2 text-sm">
                         <i class="fas fa-save"></i>
-                        <span>Сохранить все настройки</span>
+                        <span>{{ lang('settings.save_all') }}</span>
                     </button>
                 </div>
             </div>

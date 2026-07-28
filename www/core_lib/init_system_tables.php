@@ -167,6 +167,7 @@ $settings = [
     ['site_description', 'Описание сайта', 'string'],
     ['site_email', null, 'string'],
     ['posts_per_page', '10', 'string'],
+    ['admin_language', 'ru', 'string'],
     ['site_favicon', null, 'string'],
     ['maintenance_mode', '0', 'string'],
     ['external_default_token', null, 'string'],

@@ -115,7 +115,10 @@ class AIController extends BaseController {
             ], $this->aiPrompts["assistant"] ?? "");
 
             // Convert Markdown to HTML for chat UI rendering
-            $parsedown = new \Core\Parsedown();
+            if (!class_exists('\\Parsedown')) {
+                require_once __DIR__ . '/../../../core/Parsedown.php';
+            }
+            $parsedown = new \Parsedown();
             $responseHtml = $parsedown->text($response);
 
             $this->jsonResponse(["response" => $response, "response_html" => $responseHtml]);

@@ -21,7 +21,7 @@ class ExternalPageLoader
     private string $method;
     private array $headers;
     private string $cacheDir;
-    private bool $stripFrontmatter = false;
+    private $stripFrontmatter = false;
 
     /**
      * @param array $config  Page config from navigation.page_config (JSON decoded)

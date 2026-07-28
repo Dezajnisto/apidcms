@@ -10,21 +10,21 @@
         <a href="{{ admin_url('table/' ~ tableName|url_encode) }}"
            class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition text-sm">
             <i class="fas fa-arrow-left"></i>
-            <span>Back to table</span>
+            <span>Назад к таблице</span>
         </a>
     </div>
 
     {% if error == 'upload_failed' %}
         <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-            <i class="fas fa-exclamation-circle"></i> Failed to upload file. Make sure it's a valid CSV.
+            <i class="fas fa-exclamation-circle"></i> Ошибка загрузки. Убедитесь, что файл в формате CSV.
         </div>
     {% elseif error == 'read_failed' %}
         <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-            <i class="fas fa-exclamation-circle"></i> Failed to read CSV file.
+            <i class="fas fa-exclamation-circle"></i> Не удалось прочитать CSV-файл.
         </div>
     {% elseif error == 'empty_file' %}
         <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-            <i class="fas fa-exclamation-circle"></i> CSV file is empty.
+            <i class="fas fa-exclamation-circle"></i> CSV-файл пуст.
         </div>
     {% elseif error %}
         <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
@@ -36,12 +36,12 @@
         {# === PREVIEW + MAPPING === #}
         <div class="bg-white rounded-lg shadow-sm border mb-6">
             <div class="px-6 py-4 border-b bg-gray-50">
-                <h2 class="text-lg font-semibold text-gray-900">Column Mapping</h2>
+                <h2 class="text-lg font-semibold text-gray-900">Сопоставление колонок</h2>
                 <p class="text-sm text-gray-500 mt-1">
                     {% if firstRowIsHeader %}
-                        First row detected as headers. {{ csvHeaders|length }} columns found, {{ mapping|filter(m => m.table_column is not null)|length }} auto-matched.
+                        Первая строка определена как заголовок. {{ csvHeaders|length }} колонок найдено, {{ mapping|filter(m => m.table_column is not null)|length }} сопоставлено автоматически.
                     {% else %}
-                        {{ csvHeaders|length }} columns found. No header row detected.
+                        {{ csvHeaders|length }} колонок найдено. Заголовок не обнаружен.
                     {% endif %}
                 </p>
             </div>
@@ -54,9 +54,9 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">CSV Column</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Preview</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Maps to</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Колонка CSV</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Пример</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">В колонку</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -71,7 +71,7 @@
                                 <td class="px-4 py-3">
                                     <select class="mapping-select w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             data-csv-index="{{ m.csv_index }}">
-                                        <option value="__skip__">-- Skip --</option>
+                                        <option value="__skip__">-- Пропустить --</option>
                                         {% for tc in tableColumns %}
                                             {% if tc != pkCol and tc != 'created_at' %}
                                                 <option value="{{ tc }}" {% if m.table_column == tc %}selected{% endif %}>{{ tc }}</option>
@@ -79,7 +79,7 @@
                                         {% endfor %}
                                     </select>
                                     {% if m.table_column is not null %}
-                                        <span class="text-xs text-green-600 mt-1 block"><i class="fas fa-check"></i> Auto-matched</span>
+                                        <span class="text-xs text-green-600 mt-1 block"><i class="fas fa-check"></i> Совпало</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -89,47 +89,47 @@
 
                     <!-- Import mode -->
                     <div class="mt-6 p-4 bg-gray-50 rounded-lg border">
-                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Import Mode</h3>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Режим импорта</h3>
                         <div class="flex flex-wrap gap-4 mb-3">
                             <label class="inline-flex items-center space-x-2 text-sm cursor-pointer">
                                 <input type="radio" name="mode" value="add_all" checked onchange="toggleKeyColumn()" class="w-4 h-4 text-blue-600">
-                                <span>Add all rows</span>
+                                <span>Добавить все строки</span>
                             </label>
                             <label class="inline-flex items-center space-x-2 text-sm cursor-pointer">
                                 <input type="radio" name="mode" value="skip_duplicates" onchange="toggleKeyColumn()" class="w-4 h-4 text-blue-600">
-                                <span>Skip duplicates</span>
+                                <span>Пропустить дубликаты</span>
                             </label>
                             <label class="inline-flex items-center space-x-2 text-sm cursor-pointer">
                                 <input type="radio" name="mode" value="update_existing" onchange="toggleKeyColumn()" class="w-4 h-4 text-blue-600">
-                                <span>Update existing</span>
+                                <span>Обновить существующие</span>
                             </label>
                         </div>
                         <div id="key-column-row" style="display:none;">
-                            <label class="text-sm text-gray-600 mr-2">Key column:</label>
+                            <label class="text-sm text-gray-600 mr-2">Ключевая колонка:</label>
                             <select name="key_column" id="key-column-select" class="px-3 py-1.5 border border-gray-300 rounded-md text-sm">
-                                <option value="">-- Select --</option>
+                                <option value="">-- Выберите --</option>
                             </select>
-                            <span class="text-xs text-gray-400 ml-2">Used to check for existing records</span>
+                            <span class="text-xs text-gray-400 ml-2">Используется для поиска существующих записей</span>
                         </div>
                         <div id="mode-hint-add" class="text-xs text-gray-500 mt-2">
-                            <i class="fas fa-info-circle"></i> Every row is inserted as a new record.
+                            <i class="fas fa-info-circle"></i> Каждая строка добавляется как новая запись.
                         </div>
                         <div id="mode-hint-skip" class="text-xs text-gray-500 mt-2" style="display:none;">
-                            <i class="fas fa-info-circle"></i> Rows where the key column matches an existing record are skipped.
+                            <i class="fas fa-info-circle"></i> Строки, где ключевая колонка совпадает с существующей записью, пропускаются.
                         </div>
                         <div id="mode-hint-update" class="text-xs text-gray-500 mt-2" style="display:none;">
-                            <i class="fas fa-info-circle"></i> Matching records are updated with CSV values. Non-matching rows are inserted as new.
+                            <i class="fas fa-info-circle"></i> Совпавшие записи обновляются значениями из CSV. Несовпавшие — добавляются как новые.
                         </div>
                     </div>
 
                     <div class="mt-6 flex items-center justify-between">
                         <div class="text-sm text-gray-500">
-                            {{ preview|length }} preview rows shown
+                            {{ preview|length }} строк для предпросмотра
                         </div>
                         <button type="submit"
                                 class="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium">
                             <i class="fas fa-upload"></i>
-                            <span>Import Data</span>
+                            <span>Импортировать</span>
                         </button>
                     </div>
                 </form>
@@ -139,7 +139,7 @@
         {% if preview|length > 0 %}
         <div class="bg-white rounded-lg shadow-sm border">
             <div class="px-6 py-4 border-b bg-gray-50">
-                <h2 class="text-lg font-semibold text-gray-900">Preview (first {{ preview|length }} rows)</h2>
+                <h2 class="text-lg font-semibold text-gray-900">Предпросмотр (первые {{ preview|length }} строк)</h2>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -165,6 +165,20 @@
         {% endif %}
 
         <script>
+        // Show selected filename
+        function updateFileLabel(input) {
+            var label = document.getElementById('csv-file-label');
+            var info = document.getElementById('csv-file-info');
+            if (input.files && input.files.length > 0) {
+                var file = input.files[0];
+                label.textContent = file.name;
+                label.className = 'text-green-600 font-medium';
+                var sizeKB = (file.size / 1024).toFixed(0);
+                info.textContent = file.name + ' (' + sizeKB + ' КБ)';
+                info.className = 'text-xs text-green-600';
+            }
+        }
+
         // Serialize mapping on form submit
         document.querySelector('form').addEventListener('submit', function() {
             var selects = document.querySelectorAll('.mapping-select');
@@ -183,7 +197,7 @@
             var selects = document.querySelectorAll('.mapping-select');
             var keySelect = document.getElementById('key-column-select');
             var current = keySelect.value;
-            keySelect.innerHTML = '<option value="">-- Select --</option>';
+            keySelect.innerHTML = '<option value="">-- Выберите --</option>';
             selects.forEach(function(sel) {
                 if (sel.value !== '__skip__') {
                     var opt = document.createElement('option');
@@ -232,9 +246,9 @@
         {# === UPLOAD FORM === #}
         <div class="bg-white rounded-lg shadow-sm border">
             <div class="px-6 py-4 border-b bg-gray-50">
-                <h2 class="text-lg font-semibold text-gray-900">Import CSV to "{{ tableName }}"</h2>
+                <h2 class="text-lg font-semibold text-gray-900">Импорт CSV в «{{ tableName }}»</h2>
                 <p class="text-sm text-gray-500 mt-1">
-                    Upload a CSV file. Column names will be auto-matched where possible.
+                    Загрузите CSV-файл. Названия колонок будут сопоставлены автоматически.
                 </p>
             </div>
             <div class="p-6">
@@ -246,33 +260,33 @@
                                 <i class="fas fa-file-csv text-gray-400 text-4xl mb-3"></i>
                                 <div class="text-sm text-gray-600">
                                     <label for="csv_file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
-                                        <span>Select a file</span>
-                                        <input id="csv_file" name="csv_file" type="file" accept=".csv,text/csv" class="sr-only" required>
+                                        <span id="csv-file-label">Выберите файл</span>
+                                        <input id="csv_file" name="csv_file" type="file" accept=".csv,text/csv" class="sr-only" required onchange="updateFileLabel(this)">
                                     </label>
-                                    <span class="pl-1">or drag and drop</span>
+                                    <span class="pl-1">или перетащите сюда</span>
                                 </div>
-                                <p class="text-xs text-gray-500">CSV up to 10MB</p>
+                                <p class="text-xs text-gray-500" id="csv-file-info">CSV до 10 МБ</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-700">
                         <i class="fas fa-info-circle"></i>
-                        <strong>Tips:</strong>
+                        <strong>Советы:</strong>
                         <ul class="list-disc list-inside mt-2 space-y-1">
-                            <li>First row should contain column names matching table columns</li>
-                            <li>Columns that don't match will be skipped by default</li>
-                            <li>Empty values in nullable columns become NULL</li>
-                            <li>ID and created_at columns are auto-generated</li>
+                            <li>Первая строка должна содержать названия колонок, совпадающие с таблицей</li>
+                            <li>Несовпадающие колонки можно пропустить или сопоставить вручную</li>
+                            <li>Пустые значения в необязательных колонках станут NULL</li>
+                            <li>Колонки id и created_at заполняются автоматически</li>
                         </ul>
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-500">{{ structure|length }} columns in table</span>
+                        <span class="text-sm text-gray-500">Колонок в таблице: {{ structure|length }}</span>
                         <button type="submit"
                                 class="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
                             <i class="fas fa-upload"></i>
-                            <span>Upload & Preview</span>
+                            <span>Загрузить и проверить</span>
                         </button>
                     </div>
                 </form>
@@ -281,15 +295,15 @@
 
         <div class="mt-6 bg-white rounded-lg shadow-sm border">
             <div class="px-6 py-4 border-b bg-gray-50">
-                <h2 class="text-lg font-semibold text-gray-900">Table Structure</h2>
+                <h2 class="text-lg font-semibold text-gray-900">Структура таблицы</h2>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Column</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Required</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Колонка</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Тип</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Обязательное</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
@@ -302,9 +316,9 @@
                             <td class="px-4 py-2 text-sm text-gray-500">{{ col.type }}</td>
                             <td class="px-4 py-2 text-sm text-gray-500">
                                 {% if col.notnull == 1 and col.pk == 0 %}
-                                    <span class="text-red-500">Required</span>
+                                    <span class="text-red-500">Да</span>
                                 {% else %}
-                                    <span class="text-gray-400">Optional</span>
+                                    <span class="text-gray-400">Нет</span>
                                 {% endif %}
                             </td>
                         </tr>

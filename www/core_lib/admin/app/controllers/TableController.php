@@ -934,7 +934,9 @@ class TableController extends BaseController {
             try {
                 $this->db->query('BEGIN TRANSACTION');
 
+                $rowNum = 0;
                 while (($row = fgetcsv($handle)) !== false) {
+                    $rowNum++;
                     $data = [];
                     $keyValue = null;
 
@@ -984,16 +986,25 @@ class TableController extends BaseController {
                             [$keyValue]
                         )->fetch();
                         if ($existing) {
-                            $this->db->update($table, $existing['id'], $data);
-                            $updated++;
+                            try {
+                                $this->db->update($table, $existing['id'], $data);
+                                $updated++;
+                            } catch (\Exception $e) {
+                                $skipped++;
+                            }
                             continue;
                         }
                     }
 
+                    // Use savepoint to isolate each row insert (handles UNIQUE violations gracefully)
+                    $spName = 'sp_' . $rowNum;
                     try {
+                        $this->db->query('SAVEPOINT ' . $spName);
                         $this->db->insert($table, $data);
+                        $this->db->query('RELEASE ' . $spName);
                         $imported++;
                     } catch (\Exception $e) {
+                        try { $this->db->query('ROLLBACK TO ' . $spName); } catch (\Exception $e2) {}
                         $skipped++;
                     }
                 }

@@ -379,6 +379,12 @@ var AIAssistant = {
     formatResponse: function(text, data) {
         var html = '';
 
+        // Universal assistant mode: use pre-rendered HTML from backend
+        // (Parsedown converts Markdown to HTML on the server side)
+        if (!this.currentContext.mode && data.response_html) {
+            return data.response_html;
+        }
+
         // Проверяем, есть ли template в ответе (для режима template)
         if (this.currentContext.mode === 'template' && data.template) {
             html += '<div class="ai-toolbar">';

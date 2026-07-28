@@ -114,7 +114,11 @@ class AIController extends BaseController {
                 "docs" => $docsContext
             ], $this->aiPrompts["assistant"] ?? "");
 
-            $this->jsonResponse(["response" => $response]);
+            // Convert Markdown to HTML for chat UI rendering
+            $parsedown = new \Core\Parsedown();
+            $responseHtml = $parsedown->text($response);
+
+            $this->jsonResponse(["response" => $response, "response_html" => $responseHtml]);
         } catch (Exception $e) {
             $this->jsonResponse(["error" => $e->getMessage()], 500);
         }

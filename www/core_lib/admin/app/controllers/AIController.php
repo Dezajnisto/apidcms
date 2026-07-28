@@ -99,6 +99,15 @@ class AIController extends BaseController {
             $docsContext = "";
             try {
                 $docsFetcher = new \Core\DocsFetcher();
+                // Use current admin language for docs
+                $adminLang = 'ru';
+                try {
+                    $row = $this->db->query("SELECT setting_value FROM system_settings WHERE setting_key = 'admin_language'")->fetch(\PDO::FETCH_ASSOC);
+                    if ($row && !empty($row['setting_value'])) {
+                        $adminLang = $row['setting_value'];
+                    }
+                } catch (\Throwable $e) {}
+                $docsFetcher->setLang($adminLang);
                 $docsKb = $docsFetcher->getKnowledgeBase();
                 if (!empty($docsKb)) {
                     $docsContext = $docsKb;

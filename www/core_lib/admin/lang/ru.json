@@ -94,5 +94,12 @@
   "csv.do_import": "Импортировать",
   "error.not_found": "Страница не найдена",
   "error.not_found_desc": "Запрошенная страница не существует",
-  "error.back_home": "Вернуться на главную"
+  "error.back_home": "Вернуться на главную",
+  "common.contents": "Содержание",
+  "common.help": "Справка",
+  "common.all_docs": "Вся документация",
+  "error.load_failed": "Не удалось загрузить",
+  "error.manifest_failed": "Не удалось загрузить манифест",
+  "error.load_error": "Ошибка загрузки:",
+  "error.network_error": "Ошибка сети"
 }

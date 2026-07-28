@@ -94,5 +94,12 @@
   "csv.do_import": "Import",
   "error.not_found": "Page Not Found",
   "error.not_found_desc": "The requested page does not exist",
-  "error.back_home": "Back to Home"
+  "error.back_home": "Back to Home",
+  "common.contents": "Contents",
+  "common.help": "Help",
+  "common.all_docs": "All Documentation",
+  "error.load_failed": "Failed to load",
+  "error.manifest_failed": "Failed to load manifest",
+  "error.load_error": "Load error:",
+  "error.network_error": "Network error"
 }

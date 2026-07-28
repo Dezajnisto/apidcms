@@ -6,6 +6,8 @@
  * caches them locally, and provides a formatted knowledge base
  * for the AI assistant.
  *
+ * Supports multi-language via {lang} placeholder in URLs.
+ *
  * @package Core
  */
 
@@ -18,6 +20,7 @@ class DocsFetcher
     private $manifestUrl;
     private $manifestTtl = 3600;
     private $docTtl = 21600;
+    private $lang = 'ru';
 
     /**
      * @param string|null $cacheDir Path to cache directory
@@ -34,6 +37,27 @@ class DocsFetcher
         if (!is_dir($this->cacheDir)) {
             @mkdir($this->cacheDir, 0755, true);
         }
+    }
+
+    /**
+     * Set current language for {lang} placeholder resolution.
+     *
+     * @param string $lang e.g. 'ru', 'en'
+     */
+    public function setLang($lang)
+    {
+        $this->lang = $lang;
+    }
+
+    /**
+     * Resolve {lang} placeholder in a URL.
+     *
+     * @param string $url
+     * @return string
+     */
+    private function resolveUrl($url)
+    {
+        return str_replace('{lang}', $this->lang, $url);
     }
 
     /**
@@ -70,11 +94,12 @@ class DocsFetcher
     /**
      * Fetch a single doc from GitHub (with local cache)
      *
-     * @param string $url Full raw GitHub URL
+     * @param string $url Full raw GitHub URL (may contain {lang})
      * @return string|null
      */
     public function getDocContent($url)
     {
+        $url = $this->resolveUrl($url);
         $cacheKey = md5($url);
         $cacheFile = $this->cacheDir . '/' . $cacheKey . '.md';
 

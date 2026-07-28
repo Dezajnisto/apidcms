@@ -6,10 +6,10 @@
     <div class="help-panel-header">
         <div class="help-header-links">
             <a class="help-toc-link active" id="help-toc-link" onclick="showToc()">
-                <i class="fas fa-list"></i> Содержание
+                <i class="fas fa-list"></i> {{ lang('common.contents')|default('Содержание') }}
             </a>
             <span style="color:#d1d5db;margin:0 2px">|</span>
-            <span id="help-title" style="font-size:14px;color:#6b7280;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Справка</span>
+            <span id="help-title" style="font-size:14px;color:#6b7280;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ lang('common.help')|default('Справка') }}</span>
         </div>
         <button class="help-close" onclick="toggleHelp()" title="Закрыть (Esc)">
             <i class="fas fa-times"></i>
@@ -18,17 +18,27 @@
     <div class="help-panel-body" id="help-content">
         <div class="help-loading">
             <i class="fas fa-spinner fa-spin"></i>
-            <span>Загрузка...</span>
+            <span>{{ lang('common.loading') }}</span>
         </div>
     </div>
     <div class="help-panel-footer">
         <a href="https://apidcms.dezajno.ru/docs" target="_blank" class="help-footer-link">
-            <i class="fas fa-external-link-alt"></i> Вся документация
+            <i class="fas fa-external-link-alt"></i> {{ lang('common.all_docs')|default('Все документы') }}
         </a>
     </div>
 </div>
 
 <script>
+/** Current admin language for doc URL resolution */
+var ADMIN_LANG = '{{ admin_lang|default('ru') }}';
+
+/**
+ * Resolve {lang} placeholder in a URL to current language.
+ */
+function resolveLangUrl(url) {
+    return url.replace(/{lang}/g, ADMIN_LANG);
+}
+
 (function() {
     var MANIFEST_URL = 'https://raw.githubusercontent.com/Dezajnisto/apidcms-docs/master/manifest.json';
     var RAW_BASE = 'https://raw.githubusercontent.com/Dezajnisto/apidcms-docs/master/';
@@ -237,7 +247,7 @@
         document.getElementById('help-title').textContent = 'Содержание';
         var content = document.getElementById('help-content');
         loadManifest(function(err, manifest) {
-            if (err) { content.innerHTML = '<div class="help-error">Не удалось загрузить</div>'; return; }
+            if (err) { content.innerHTML = '<div class="help-error">{{ lang('error.load_failed')|default('Не удалось загрузить') }}</div>'; return; }
             var docs = (manifest && manifest.docs) ? manifest.docs : [];
             var sections = (manifest && manifest.sections) ? manifest.sections : {};
             // Group by section
@@ -263,7 +273,7 @@
                 items.sort(function(a,b){return (a.order||999)-(b.order||999);});
                 for (var d = 0; d < items.length; d++) {
                     var doc = items[d];
-                    html += '<a class="help-toc-item" onclick="loadHelpDoc(\'' + doc.content_url.replace(/'/g, "\\'") + '\', \'' + doc.title.replace(/'/g, "\\'") + '\')">' + doc.title + '</a>';
+                    html += '<a class="help-toc-item" onclick="loadHelpDoc(\'' + resolveLangUrl(doc.content_url).replace(/'/g, "\\'") + '\', \'' + doc.title.replace(/'/g, "\\'") + '\')">' + doc.title + '</a>';
                 }
                 html += '</div>';
             }
@@ -272,10 +282,11 @@
     }
 
     window.loadHelpDoc = function(url, title) {
+        url = resolveLangUrl(url);
         document.getElementById('help-toc-link').classList.remove('active');
-        document.getElementById('help-title').textContent = title || 'Справка';
+        document.getElementById('help-title').textContent = title || '{{ lang('common.help')|default('Справка') }}';
         var content = document.getElementById('help-content');
-        content.innerHTML = '<div class="help-loading"><i class="fas fa-spinner fa-spin"></i><span>Загрузка...</span></div>';
+        content.innerHTML = '<div class="help-loading"><i class="fas fa-spinner fa-spin"></i><span>{{ lang('common.loading') }}</span></div>';
 
         var xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
@@ -284,10 +295,10 @@
                 var html = renderMarkdown(xhr.responseText);
                 content.innerHTML = '<div class="help-doc">' + html + '</div>';
             } else {
-                content.innerHTML = '<div class="help-error">Ошибка загрузки: HTTP ' + xhr.status + '</div>';
+                content.innerHTML = '<div class="help-error">{{ lang('error.load_error')|default('Ошибка загрузки:') }} HTTP ' + xhr.status + '</div>';
             }
         };
-        xhr.onerror = function() { content.innerHTML = '<div class="help-error">Ошибка сети</div>'; };
+        xhr.onerror = function() { content.innerHTML = '<div class="help-error">{{ lang('error.network_error')|default('Ошибка сети') }}</div>'; };
         xhr.send();
     };
 
@@ -298,10 +309,10 @@
         var title = document.getElementById('help-title');
         panel.classList.remove('hidden');
         overlay.classList.remove('hidden');
-        content.innerHTML = '<div class="help-loading"><i class="fas fa-spinner fa-spin"></i><span>Загрузка...</span></div>';
+        content.innerHTML = '<div class="help-loading"><i class="fas fa-spinner fa-spin"></i><span>{{ lang('common.loading') }}</span></div>';
 
         loadManifest(function(err, manifest) {
-            if (err) { content.innerHTML = '<div class="help-error">Не удалось загрузить манифест</div>'; return; }
+            if (err) { content.innerHTML = '<div class="help-error">{{ lang('error.load_failed')|default('Не удалось загрузить') }} манифест</div>'; return; }
             var route = getCurrentRoute();
             var docFile = findDoc(manifest, route);
             if (!docFile) {
@@ -310,11 +321,12 @@
                 return;
             }
             currentDocFile = docFile;
+            docFile = resolveLangUrl(docFile);
             loadDoc(docFile, function(err2, md) {
-                if (err2) { content.innerHTML = '<div class="help-error">Ошибка загрузки: ' + err2.message + '</div>'; return; }
+                if (err2) { content.innerHTML = '<div class="help-error">{{ lang('error.load_error')|default('Ошибка загрузки:') }} ' + err2.message + '</div>'; return; }
                 var html = renderMarkdown(md);
                 var h1 = html.match(/<h2>(.+?)<\/h2>/);
-                title.textContent = h1 ? h1[1] : 'Справка';
+                title.textContent = h1 ? h1[1] : '{{ lang('common.help')|default('Справка') }}';
                 document.getElementById('help-toc-link').classList.remove('active');
                 content.innerHTML = '<div class="help-doc">' + html + '</div>';
             });

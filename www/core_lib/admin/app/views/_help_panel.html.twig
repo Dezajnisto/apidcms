@@ -1,96 +1,97 @@
 {# Context help panel - slides in from right #}
 <style>
 .help-toggle-btn {
-    background: none;
-    border: 1px solid #6366f1;
-    color: #6366f1;
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-    white-space: nowrap;
+    background: none; border: 1px solid #6366f1; color: #6366f1;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    font-size: 13px; display: inline-flex; align-items: center;
+    gap: 6px; white-space: nowrap;
 }
 .help-toggle-btn:hover { background: #6366f1; color: #fff; }
 .help-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.3);
-    z-index: 10000;
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.3); z-index: 10000;
 }
 .help-overlay.hidden { display: none; }
 .help-panel {
-    position: fixed;
-    top: 0; right: 0; bottom: 0;
-    width: min(420px, 85vw);
-    background: #fff;
-    box-shadow: -4px 0 20px rgba(0,0,0,0.15);
-    z-index: 10001;
-    display: flex;
-    flex-direction: column;
-    transform: translateX(0);
-    transition: transform 0.25s ease;
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: min(580px, 40vw);
+    background: #fff; box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+    z-index: 10001; display: flex; flex-direction: column;
+    transform: translateX(0); transition: transform 0.25s ease;
 }
 .help-panel.hidden { transform: translateX(100%); }
 .help-panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 18px;
-    border-bottom: 1px solid #e5e7eb;
-    background: #f9fafb;
-    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 22px; border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb; flex-shrink: 0;
 }
 .help-panel-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #111827;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    font-size: 15px; font-weight: 600; color: #111827;
+    margin: 0; display: flex; align-items: center; gap: 8px;
 }
 .help-panel-title i { color: #6366f1; }
+.help-header-links { display: flex; align-items: center; gap: 8px; }
+.help-toc-link {
+    font-size: 13px; color: #6366f1; cursor: pointer;
+    text-decoration: none; padding: 4px 8px; border-radius: 4px;
+}
+.help-toc-link:hover { background: #e0e7ff; }
+.help-toc-link.active { background: #e0e7ff; font-weight: 600; }
 .help-close {
     background: none; border: none; color: #6b7280;
     cursor: pointer; padding: 4px 8px; font-size: 16px; border-radius: 4px;
 }
 .help-close:hover { background: #e5e7eb; color: #111827; }
 .help-panel-body {
-    flex: 1; overflow-y: auto; padding: 16px 18px;
-    font-size: 14px; line-height: 1.6; color: #374151;
+    flex: 1; overflow-y: auto; padding: 20px 22px;
+    font-size: 14px; line-height: 1.7; color: #374151;
 }
-.help-panel-body h2 { font-size: 18px; margin: 0 0 12px; color: #111827; }
-.help-panel-body h3 { font-size: 15px; margin: 16px 0 8px; color: #1f2937; }
-.help-panel-body h4 { font-size: 14px; margin: 12px 0 6px; color: #374151; }
-.help-panel-body p { margin: 0 0 10px; }
-.help-panel-body ul, .help-panel-body ol { margin: 0 0 10px; padding-left: 20px; }
+.help-panel-body h2 { font-size: 20px; margin: 0 0 14px; padding-bottom: 8px; color: #111827; border-bottom: 1px solid #e5e7eb; }
+.help-panel-body h3 { font-size: 16px; margin: 20px 0 10px; color: #1f2937; }
+.help-panel-body h4 { font-size: 15px; margin: 16px 0 8px; color: #374151; }
+.help-panel-body h5 { font-size: 14px; margin: 14px 0 6px; color: #4b5563; }
+.help-panel-body p { margin: 0 0 12px; }
+.help-panel-body ul, .help-panel-body ol { margin: 0 0 14px; padding-left: 22px; }
 .help-panel-body li { margin-bottom: 4px; }
 .help-panel-body code {
-    background: #f3f4f6; padding: 2px 6px;
-    border-radius: 3px; font-size: 13px; color: #ef4444;
+    background: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-size: 13px; color: #ef4444;
 }
 .help-panel-body pre {
-    background: #1f2937; color: #e5e7eb;
-    padding: 12px; border-radius: 6px;
-    overflow-x: auto; font-size: 13px; line-height: 1.5; margin: 0 0 12px;
+    background: #1f2937; color: #e5e7eb; padding: 14px; border-radius: 8px;
+    overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 0 0 14px;
 }
 .help-panel-body pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
 .help-panel-body a { color: #6366f1; text-decoration: underline; }
 .help-panel-body a:hover { color: #4f46e5; }
-.help-panel-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 12px 0; }
+.help-panel-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 16px 0; }
 .help-panel-body blockquote {
-    border-left: 3px solid #6366f1; padding: 4px 12px;
-    margin: 0 0 10px; color: #6b7280; background: #f9fafb;
+    border-left: 3px solid #6366f1; padding: 6px 14px; margin: 0 0 12px;
+    color: #6b7280; background: #f9fafb; border-radius: 0 4px 4px 0;
 }
-.help-panel-body table { width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 13px; }
-.help-panel-body th, .help-panel-body td { border: 1px solid #e5e7eb; padding: 6px 10px; text-align: left; }
-.help-panel-body th { background: #f9fafb; font-weight: 600; }
+.help-panel-body strong { color: #111827; }
+.help-panel-body table {
+    width: 100%; border-collapse: collapse; margin: 0 0 14px; font-size: 13px;
+}
+.help-panel-body th, .help-panel-body td {
+    border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left;
+}
+.help-panel-body th { background: #f9fafb; font-weight: 600; color: #374151; }
+.help-panel-body tr:nth-child(even) { background: #fafafa; }
+
+/* TOC view */
+.help-toc-section { margin-bottom: 20px; }
+.help-toc-section-title {
+    font-size: 13px; font-weight: 700; color: #6b7280;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+}
+.help-toc-item {
+    display: block; padding: 5px 8px; border-radius: 4px; cursor: pointer;
+    color: #374151; font-size: 14px; text-decoration: none;
+}
+.help-toc-item:hover { background: #f3f4f6; color: #6366f1; }
+
 .help-panel-footer {
-    padding: 10px 18px; border-top: 1px solid #e5e7eb;
+    padding: 10px 22px; border-top: 1px solid #e5e7eb;
     background: #f9fafb; flex-shrink: 0; text-align: center;
 }
 .help-footer-link { color: #6366f1; font-size: 13px; text-decoration: none; }
@@ -102,10 +103,13 @@
 <div id="help-overlay" class="help-overlay hidden" onclick="toggleHelp()"></div>
 <div id="help-panel" class="help-panel hidden">
     <div class="help-panel-header">
-        <h3 class="help-panel-title">
-            <i class="fas fa-question-circle"></i>
-            <span id="help-title">Справка</span>
-        </h3>
+        <div class="help-header-links">
+            <a class="help-toc-link active" id="help-toc-link" onclick="showToc()">
+                <i class="fas fa-list"></i> Содержание
+            </a>
+            <span style="color:#d1d5db;margin:0 2px">|</span>
+            <span id="help-title" style="font-size:14px;color:#6b7280;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Справка</span>
+        </div>
         <button class="help-close" onclick="toggleHelp()" title="Закрыть (Esc)">
             <i class="fas fa-times"></i>
         </button>
@@ -127,9 +131,10 @@
 (function() {
     var MANIFEST_URL = 'https://raw.githubusercontent.com/Dezajnisto/apidcms-docs/master/manifest.json';
     var RAW_BASE = 'https://raw.githubusercontent.com/Dezajnisto/apidcms-docs/master/';
-    var CACHE_KEY = 'apidcm…fest';
+    var CACHE_KEY = '***';
     var CACHE_TTL = 24 * 60 * 60 * 1000;
     var manifestCache = null;
+    var currentDocFile = null;
 
     function getCurrentRoute() {
         var path = window.location.pathname;
@@ -159,28 +164,136 @@
     }
 
     function renderMarkdown(md) {
-        if (!md) return '<p class="help-empty">Нет содержимого</p>';
+        if (!md) return '';
+        // Strip YAML frontmatter
         md = md.replace(/^---[\s\S]*?---\n*/, '');
-        var html = md
-            .replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
-                return '<pre><code>' + code.replace(/</g, '&lt;').replace(/>/g, '&gt;').trim() + '</code></pre>';
-            })
-            .replace(/`([^`]+)`/g, '<code>$1</code>')
-            .replace(/^#### (.+)$/gm, '<h5>$1</h5>')
-            .replace(/^### (.+)$/gm, '<h4>$1</h4>')
-            .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-            .replace(/^# (.+)$/gm, '<h2>$1</h2>')
-            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.+?)\*/g, '<em>$1</em>')
-            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
-            .replace(/^---$/gm, '<hr>')
-            .replace(/^- (.+)$/gm, '<li>$1</li>')
-            .replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>')
-            .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-            .replace(/\n\n/g, '</p><p>')
-            .replace(/\n/g, '<br>');
-        html = html.replace(/<p>\s*<\/p>/g, '');
-        return html;
+
+        // Tables: | col1 | col2 |\n|-----|-----|\n| val | val |
+        var lines = md.split('\n');
+        var result = [];
+        var inTable = false;
+        var tableRows = [];
+        var inCodeBlock = false;
+        var codeLines = [];
+        var codeLang = '';
+
+        function flushTable() {
+            if (!tableRows.length) return;
+            var html = '<table>';
+            for (var r = 0; r < tableRows.length; r++) {
+                var cells = tableRows[r].replace(/^\||\|$/g, '').split('|');
+                var tag = (r === 1 && /^[\s\-:]+$/.test(cells.join(''))) ? null : (r === 0 ? 'th' : 'td');
+                if (!tag) continue; // skip separator row
+                html += '<tr>';
+                for (var c = 0; c < cells.length; c++) {
+                    html += '<' + tag + '>' + cells[c].trim() + '</' + tag + '>';
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            result.push(html);
+            tableRows = [];
+        }
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+
+            // Code blocks
+            if (line.match(/^```/)) {
+                if (inCodeBlock) {
+                    flushTable();
+                    var code = codeLines.join('\n').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    result.push('<pre><code>' + code + '</code></pre>');
+                    codeLines = [];
+                    inCodeBlock = false;
+                } else {
+                    flushTable();
+                    inCodeBlock = true;
+                    codeLang = line.replace(/^```/, '').trim();
+                }
+                continue;
+            }
+            if (inCodeBlock) { codeLines.push(line); continue; }
+
+            // Table rows
+            if (line.match(/^\|.*\|$/) && !line.match(/^\|[\s\-:]+\|$/)) {
+                if (!inTable) { flushTable(); inTable = true; }
+                tableRows.push(line);
+                continue;
+            }
+            if (line.match(/^\|[\s\-:]+\|$/)) {
+                tableRows.push(line); // separator row
+                continue;
+            }
+            if (inTable && !line.match(/^\|.*\|$/)) {
+                flushTable(); inTable = false;
+            }
+            flushTable();
+
+            // Process inline formatting
+            var l = line
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+            // Headers
+            if (l.match(/^#### (.+)$/)) { result.push('<h5>' + l.replace(/^#### /, '') + '</h5>'); continue; }
+            if (l.match(/^### (.+)$/)) { result.push('<h4>' + l.replace(/^### /, '') + '</h4>'); continue; }
+            if (l.match(/^## (.+)$/)) { result.push('<h3>' + l.replace(/^## /, '') + '</h3>'); continue; }
+            if (l.match(/^# (.+)$/)) { result.push('<h2>' + l.replace(/^# /, '') + '</h2>'); continue; }
+
+            // HR
+            if (l.match(/^---$/)) { result.push('<hr>'); continue; }
+
+            // Blockquote
+            if (l.match(/^> /)) { result.push('<blockquote>' + l.replace(/^> /, '') + '</blockquote>'); continue; }
+
+            // List items
+            if (l.match(/^[\-\*] /)) { result.push('<li>' + l.replace(/^[\-\*] /, '') + '</li>'); continue; }
+            if (l.match(/^\d+\. /)) { result.push('<li>' + l.replace(/^\d+\. /, '') + '</li>'); continue; }
+
+            // Empty line
+            if (l.trim() === '') { result.push(''); continue; }
+
+            // Regular paragraph
+            result.push(l);
+        }
+        flushTable();
+
+        // Post-process: wrap consecutive non-tag lines in <p>, wrap <li> sequences in <ul>
+        var final = [];
+        var para = [];
+        var listItems = [];
+
+        function flushPara() {
+            if (para.length) {
+                // Check if it's a mix of block elements
+                var html = para.join('<br>');
+                final.push('<p>' + html + '</p>');
+                para = [];
+            }
+        }
+        function flushList() {
+            if (listItems.length) {
+                final.push('<ul>' + listItems.join('') + '</ul>');
+                listItems = [];
+            }
+        }
+
+        for (var j = 0; j < result.length; j++) {
+            var r = result[j];
+            if (r === '') { flushPara(); flushList(); continue; }
+            if (r.startsWith('<h') || r.startsWith('<table') || r.startsWith('<pre') || r.startsWith('<hr') || r.startsWith('<blockquote')) {
+                flushPara(); flushList(); final.push(r); continue;
+            }
+            if (r.startsWith('<li>')) { flushPara(); listItems.push(r); continue; }
+            if (listItems.length) flushList();
+            para.push(r);
+        }
+        flushPara(); flushList();
+
+        return final.join('\n');
     }
 
     function loadManifest(cb) {
@@ -218,6 +331,65 @@
         xhr.send();
     }
 
+    function showToc() {
+        document.getElementById('help-toc-link').classList.add('active');
+        document.getElementById('help-title').textContent = 'Содержание';
+        var content = document.getElementById('help-content');
+        loadManifest(function(err, manifest) {
+            if (err) { content.innerHTML = '<div class="help-error">Не удалось загрузить</div>'; return; }
+            var docs = (manifest && manifest.docs) ? manifest.docs : [];
+            var sections = (manifest && manifest.sections) ? manifest.sections : {};
+            // Group by section
+            var grouped = {};
+            for (var i = 0; i < docs.length; i++) {
+                var sec = docs[i].section || 'other';
+                if (!grouped[sec]) grouped[sec] = [];
+                grouped[sec].push(docs[i]);
+            }
+            // Order sections
+            var secOrder = [];
+            for (var sk in sections) secOrder.push({key: sk, order: sections[sk].order || 999});
+            secOrder.sort(function(a,b){return a.order-b.order;});
+
+            var html = '';
+            for (var s = 0; s < secOrder.length; s++) {
+                var sk = secOrder[s].key;
+                var items = grouped[sk];
+                if (!items || !items.length) continue;
+                var secTitle = (sections[sk] && sections[sk].title) ? sections[sk].title : sk;
+                html += '<div class="help-toc-section">';
+                html += '<div class="help-toc-section-title">' + secTitle + '</div>';
+                items.sort(function(a,b){return (a.order||999)-(b.order||999);});
+                for (var d = 0; d < items.length; d++) {
+                    var doc = items[d];
+                    html += '<a class="help-toc-item" onclick="loadHelpDoc(\'' + doc.content_url.replace(/'/g, "\\'") + '\', \'' + doc.title.replace(/'/g, "\\'") + '\')">' + doc.title + '</a>';
+                }
+                html += '</div>';
+            }
+            content.innerHTML = html;
+        });
+    }
+
+    window.loadHelpDoc = function(url, title) {
+        document.getElementById('help-toc-link').classList.remove('active');
+        document.getElementById('help-title').textContent = title || 'Справка';
+        var content = document.getElementById('help-content');
+        content.innerHTML = '<div class="help-loading"><i class="fas fa-spinner fa-spin"></i><span>Загрузка...</span></div>';
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var html = renderMarkdown(xhr.responseText);
+                content.innerHTML = '<div class="help-doc">' + html + '</div>';
+            } else {
+                content.innerHTML = '<div class="help-error">Ошибка загрузки: HTTP ' + xhr.status + '</div>';
+            }
+        };
+        xhr.onerror = function() { content.innerHTML = '<div class="help-error">Ошибка сети</div>'; };
+        xhr.send();
+    };
+
     function showHelp() {
         var panel = document.getElementById('help-panel');
         var overlay = document.getElementById('help-overlay');
@@ -226,16 +398,23 @@
         panel.classList.remove('hidden');
         overlay.classList.remove('hidden');
         content.innerHTML = '<div class="help-loading"><i class="fas fa-spinner fa-spin"></i><span>Загрузка...</span></div>';
+
         loadManifest(function(err, manifest) {
             if (err) { content.innerHTML = '<div class="help-error">Не удалось загрузить манифест</div>'; return; }
             var route = getCurrentRoute();
             var docFile = findDoc(manifest, route);
-            if (!docFile) { content.innerHTML = '<div class="help-empty">Для этой страницы пока нет справки.<br><br><a href="https://apidcms.dezajno.ru/docs" target="_blank">Открыть документацию</a></div>'; return; }
+            if (!docFile) {
+                // Show TOC if no specific doc found
+                showToc();
+                return;
+            }
+            currentDocFile = docFile;
             loadDoc(docFile, function(err2, md) {
                 if (err2) { content.innerHTML = '<div class="help-error">Ошибка загрузки: ' + err2.message + '</div>'; return; }
                 var html = renderMarkdown(md);
                 var h1 = html.match(/<h2>(.+?)<\/h2>/);
                 title.textContent = h1 ? h1[1] : 'Справка';
+                document.getElementById('help-toc-link').classList.remove('active');
                 content.innerHTML = '<div class="help-doc">' + html + '</div>';
             });
         });

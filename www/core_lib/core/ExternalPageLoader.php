@@ -21,6 +21,7 @@ class ExternalPageLoader
     private string $method;
     private array $headers;
     private string $cacheDir;
+    private bool $stripFrontmatter = false;
 
     /**
      * @param array $config  Page config from navigation.page_config (JSON decoded)
@@ -35,6 +36,7 @@ class ExternalPageLoader
         $this->cacheTtl = (int)($config['cache_ttl'] ?? 0);
         $this->method = strtoupper($config['method'] ?? 'GET');
         $this->headers = $config['headers'] ?? [];
+        $this->stripFrontmatter = !empty($config['strip_frontmatter']);
 
         if ($cacheDir !== null) {
             $this->cacheDir = rtrim($cacheDir, '/');
@@ -300,8 +302,46 @@ class ExternalPageLoader
             }
         }
 
+        if ($this->stripFrontmatter && $response !== null) {
+            $response = $this->stripYamlFrontmatter($response);
+        }
         return $response;
     }
+
+    /**
+     * Strip YAML front-matter (--- ... ---) from markdown content.
+    /**
+     * Strip YAML front-matter (--- ... ---) from markdown content.
+     *
+     * Removes the opening --- line, all YAML lines, and the closing --- line.
+     * Returns content unchanged if no valid front-matter found.
+     */
+    /**
+     * Strip YAML front-matter (--- ... ---) from markdown content.
+     *
+     * Removes the opening --- line, all YAML lines, and the closing --- line.
+     * Returns content unchanged if no valid front-matter found.
+     */
+    private function stripYamlFrontmatter(string $text): string
+    {
+        // Must start with ---
+        $trimmed = ltrim($text);
+        if (strncmp($trimmed, '---', 3) !== 0) {
+            return $text;
+        }
+        // Find first newline after opening ---
+        $firstNl = strpos($trimmed, "\n");
+        if ($firstNl === false) return $text;
+        // Find closing --- on its own line (after the opening line)
+        if (preg_match('/\n---\s*(\n|$)/', $trimmed, $m, PREG_OFFSET_CAPTURE, $firstNl + 1)) {
+            $endPos = $m[0][1];
+            $afterFm = $endPos + strlen($m[0][0]);
+            return substr($trimmed, $afterFm);
+        }
+        return $text;
+    }
+
+
 
     /**
      * Clear this loader's cache.

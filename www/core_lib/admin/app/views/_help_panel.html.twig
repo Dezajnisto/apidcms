@@ -1,4 +1,104 @@
 {# Context help panel - slides in from right #}
+<style>
+.help-toggle-btn {
+    background: none;
+    border: 1px solid #6366f1;
+    color: #6366f1;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.help-toggle-btn:hover { background: #6366f1; color: #fff; }
+.help-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 10000;
+}
+.help-overlay.hidden { display: none; }
+.help-panel {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: min(420px, 85vw);
+    background: #fff;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+    z-index: 10001;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(0);
+    transition: transform 0.25s ease;
+}
+.help-panel.hidden { transform: translateX(100%); }
+.help-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+    flex-shrink: 0;
+}
+.help-panel-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.help-panel-title i { color: #6366f1; }
+.help-close {
+    background: none; border: none; color: #6b7280;
+    cursor: pointer; padding: 4px 8px; font-size: 16px; border-radius: 4px;
+}
+.help-close:hover { background: #e5e7eb; color: #111827; }
+.help-panel-body {
+    flex: 1; overflow-y: auto; padding: 16px 18px;
+    font-size: 14px; line-height: 1.6; color: #374151;
+}
+.help-panel-body h2 { font-size: 18px; margin: 0 0 12px; color: #111827; }
+.help-panel-body h3 { font-size: 15px; margin: 16px 0 8px; color: #1f2937; }
+.help-panel-body h4 { font-size: 14px; margin: 12px 0 6px; color: #374151; }
+.help-panel-body p { margin: 0 0 10px; }
+.help-panel-body ul, .help-panel-body ol { margin: 0 0 10px; padding-left: 20px; }
+.help-panel-body li { margin-bottom: 4px; }
+.help-panel-body code {
+    background: #f3f4f6; padding: 2px 6px;
+    border-radius: 3px; font-size: 13px; color: #ef4444;
+}
+.help-panel-body pre {
+    background: #1f2937; color: #e5e7eb;
+    padding: 12px; border-radius: 6px;
+    overflow-x: auto; font-size: 13px; line-height: 1.5; margin: 0 0 12px;
+}
+.help-panel-body pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+.help-panel-body a { color: #6366f1; text-decoration: underline; }
+.help-panel-body a:hover { color: #4f46e5; }
+.help-panel-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 12px 0; }
+.help-panel-body blockquote {
+    border-left: 3px solid #6366f1; padding: 4px 12px;
+    margin: 0 0 10px; color: #6b7280; background: #f9fafb;
+}
+.help-panel-body table { width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 13px; }
+.help-panel-body th, .help-panel-body td { border: 1px solid #e5e7eb; padding: 6px 10px; text-align: left; }
+.help-panel-body th { background: #f9fafb; font-weight: 600; }
+.help-panel-footer {
+    padding: 10px 18px; border-top: 1px solid #e5e7eb;
+    background: #f9fafb; flex-shrink: 0; text-align: center;
+}
+.help-footer-link { color: #6366f1; font-size: 13px; text-decoration: none; }
+.help-footer-link:hover { color: #4f46e5; text-decoration: underline; }
+.help-loading, .help-empty, .help-error { text-align: center; padding: 40px 20px; color: #6b7280; }
+.help-error { color: #ef4444; }
+</style>
+
 <div id="help-overlay" class="help-overlay hidden" onclick="toggleHelp()"></div>
 <div id="help-panel" class="help-panel hidden">
     <div class="help-panel-header">
@@ -27,9 +127,8 @@
 (function() {
     var MANIFEST_URL = 'https://raw.githubusercontent.com/Dezajnisto/apidcms-docs/master/manifest.json';
     var RAW_BASE = 'https://raw.githubusercontent.com/Dezajnisto/apidcms-docs/master/';
-    var CACHE_KEY = 'apidcms_help_manifest';
+    var CACHE_KEY = 'apidcm…fest';
     var CACHE_TTL = 24 * 60 * 60 * 1000;
-
     var manifestCache = null;
 
     function getCurrentRoute() {
@@ -40,8 +139,7 @@
     }
 
     function matchRoute(pattern, path) {
-        var pp = pattern.split('/');
-        var pt = path.split('/');
+        var pp = pattern.split('/'), pt = path.split('/');
         if (pp.length !== pt.length) return false;
         for (var i = 0; i < pp.length; i++) {
             if (pp[i].charAt(0) === '{' && pp[i].slice(-1) === '}') continue;
@@ -61,7 +159,7 @@
     }
 
     function renderMarkdown(md) {
-        if (!md) return '<p class="help-empty">No content</p>';
+        if (!md) return '<p class="help-empty">Нет содержимого</p>';
         md = md.replace(/^---[\s\S]*?---\n*/, '');
         var html = md
             .replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
@@ -79,10 +177,6 @@
             .replace(/^- (.+)$/gm, '<li>$1</li>')
             .replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>')
             .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-            .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
-            .replace(/((?:<blockquote>.*<\/blockquote>\n?)+)/g, function(m) {
-                return m.replace(/<\/blockquote>\n?<blockquote>/g, '<br>');
-            })
             .replace(/\n\n/g, '</p><p>')
             .replace(/\n/g, '<br>');
         html = html.replace(/<p>\s*<\/p>/g, '');
@@ -90,17 +184,12 @@
     }
 
     function loadManifest(cb) {
-        if (manifestCache && manifestCache.ts && (Date.now() - manifestCache.ts) < CACHE_TTL) {
-            return cb(null, manifestCache.data);
-        }
+        if (manifestCache && manifestCache.ts && (Date.now() - manifestCache.ts) < CACHE_TTL) return cb(null, manifestCache.data);
         try {
             var stored = localStorage.getItem(CACHE_KEY);
             if (stored) {
                 var cached = JSON.parse(stored);
-                if (cached.data && cached.ts && (Date.now() - cached.ts) < CACHE_TTL) {
-                    manifestCache = cached;
-                    return cb(null, cached.data);
-                }
+                if (cached.data && cached.ts && (Date.now() - cached.ts) < CACHE_TTL) { manifestCache = cached; return cb(null, cached.data); }
             }
         } catch(e) {}
         var xhr = new XMLHttpRequest();
@@ -112,13 +201,11 @@
                 try { localStorage.setItem(CACHE_KEY, JSON.stringify(manifestCache)); } catch(e) {}
                 cb(null, data);
             } else {
-                if (manifestCache && manifestCache.data) cb(null, manifestCache.data);
-                else cb(new Error('HTTP ' + xhr.status));
+                if (manifestCache && manifestCache.data) cb(null, manifestCache.data); else cb(new Error('HTTP ' + xhr.status));
             }
         };
         xhr.onerror = function() {
-            if (manifestCache && manifestCache.data) cb(null, manifestCache.data);
-            else cb(new Error('Network error'));
+            if (manifestCache && manifestCache.data) cb(null, manifestCache.data); else cb(new Error('Network error'));
         };
         xhr.send();
     }
@@ -126,10 +213,7 @@
     function loadDoc(filePath, cb) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', RAW_BASE + filePath, true);
-        xhr.onload = function() {
-            if (xhr.status === 200) cb(null, xhr.responseText);
-            else cb(new Error('HTTP ' + xhr.status));
-        };
+        xhr.onload = function() { if (xhr.status === 200) cb(null, xhr.responseText); else cb(new Error('HTTP ' + xhr.status)); };
         xhr.onerror = function() { cb(new Error('Network error')); };
         xhr.send();
     }
@@ -141,27 +225,17 @@
         var title = document.getElementById('help-title');
         panel.classList.remove('hidden');
         overlay.classList.remove('hidden');
-        content.innerHTML = '<div class="help-loading"><i class="fas fa-spinner fa-spin"></i><span>Loading...</span></div>';
-
+        content.innerHTML = '<div class="help-loading"><i class="fas fa-spinner fa-spin"></i><span>Загрузка...</span></div>';
         loadManifest(function(err, manifest) {
-            if (err) {
-                content.innerHTML = '<div class="help-error">Cannot load manifest</div>';
-                return;
-            }
+            if (err) { content.innerHTML = '<div class="help-error">Не удалось загрузить манифест</div>'; return; }
             var route = getCurrentRoute();
             var docFile = findDoc(manifest, route);
-            if (!docFile) {
-                content.innerHTML = '<div class="help-empty">No help available for this page.<br><br><a href="https://apidcms.dezajno.ru/docs" target="_blank">Open documentation</a></div>';
-                return;
-            }
+            if (!docFile) { content.innerHTML = '<div class="help-empty">Для этой страницы пока нет справки.<br><br><a href="https://apidcms.dezajno.ru/docs" target="_blank">Открыть документацию</a></div>'; return; }
             loadDoc(docFile, function(err2, md) {
-                if (err2) {
-                    content.innerHTML = '<div class="help-error">Failed to load: ' + err2.message + '</div>';
-                    return;
-                }
+                if (err2) { content.innerHTML = '<div class="help-error">Ошибка загрузки: ' + err2.message + '</div>'; return; }
                 var html = renderMarkdown(md);
                 var h1 = html.match(/<h2>(.+?)<\/h2>/);
-                title.textContent = h1 ? h1[1] : 'Help';
+                title.textContent = h1 ? h1[1] : 'Справка';
                 content.innerHTML = '<div class="help-doc">' + html + '</div>';
             });
         });
@@ -169,28 +243,16 @@
 
     window.toggleHelp = function() {
         var panel = document.getElementById('help-panel');
-        if (panel.classList.contains('hidden')) {
-            showHelp();
-        } else {
-            panel.classList.add('hidden');
-            document.getElementById('help-overlay').classList.add('hidden');
-        }
+        if (panel.classList.contains('hidden')) { showHelp(); }
+        else { panel.classList.add('hidden'); document.getElementById('help-overlay').classList.add('hidden'); }
     };
 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            var panel = document.getElementById('help-panel');
-            if (panel && !panel.classList.contains('hidden')) {
-                panel.classList.add('hidden');
+            var p = document.getElementById('help-panel');
+            if (p && !p.classList.contains('hidden')) {
+                p.classList.add('hidden');
                 document.getElementById('help-overlay').classList.add('hidden');
-            }
-        }
-        if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
-            var tag = document.activeElement.tagName;
-            if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
-                e.preventDefault();
-                var p2 = document.getElementById('help-panel');
-                if (p2 && p2.classList.contains('hidden')) showHelp();
             }
         }
     });

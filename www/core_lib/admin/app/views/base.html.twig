@@ -273,7 +273,11 @@
                         </h1>
                     </div>
                     <div class="flex items-center space-x-2 md:space-x-3">
-                        <button onclick="FileManagerHelper.openFileManager()" 
+                        <button class="help-toggle-btn" onclick="toggleHelp()" title="Справка по текущей странице">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="hidden sm:inline">Помощь</span>
+                    </button>
+                    <button onclick="FileManagerHelper.openFileManager()" 
                                 class="inline-flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs md:text-sm"
                                 title="Файловый менеджер">
                             <i class="fas fa-folder-open"></i>
@@ -284,9 +288,6 @@
                             <span class="hidden sm:inline">Просмотр сайта</span>
                             <span class="sm:hidden">Сайт</span>
                         </a>
-                    <button class="help-toggle-btn" onclick="toggleHelp()" title="Справка (? — горячая клавиша)">
-                        <i class="fas fa-question"></i>
-                    </button>
                     </div>
                 </div>
             </header>

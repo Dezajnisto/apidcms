@@ -125,10 +125,18 @@ function updateFileLabel(input) {
                         </div>
                         <div id="key-column-row" style="display:none;">
                             <label class="text-sm text-gray-600 mr-2">Ключевая колонка:</label>
-                            <select name="key_column" id="key-column-select" class="px-3 py-1.5 border border-gray-300 rounded-md text-sm">
+                            <select name="key_column" id="key-column-select" class="px-3 py-1.5 border border-gray-300 rounded-md text-sm" onchange="updateKeyHint()">
                                 <option value="">-- Выберите --</option>
+                                {% for tc in tableColumns %}
+                                    {% if tc != 'created_at' %}
+                                        <option value="{{ tc }}" data-in-mapping="false" {% if tc == pkCol %}selected{% endif %}>{{ tc }}{% if tc == pkCol %} (PK){% endif %}</option>
+                                    {% endif %}
+                                {% endfor %}
                             </select>
                             <span class="text-xs text-gray-400 ml-2">Используется для поиска существующих записей</span>
+                            <span id="keycol-warning" class="text-xs text-red-500 ml-2" style="display:none;">
+                                <i class="fas fa-exclamation-triangle"></i> Эта колонка не участвует в импорте
+                            </span>
                         </div>
                         <div id="mode-hint-add" class="text-xs text-gray-500 mt-2">
                             <i class="fas fa-info-circle"></i> Каждая строка добавляется как новая запись.
@@ -243,6 +251,28 @@ function updateFileLabel(input) {
                 var mode = document.querySelector('input[name="mode"]:checked').value;
                 if (mode !== 'add_all') updateKeyColumnOptions();
             });
+        });
+
+        // Update key column hint - warn if key not in mapping
+        function updateKeyHint() {
+            var keySel = document.getElementById('key-column-select');
+            var warning = document.getElementById('keycol-warning');
+            if (!keySel || !warning) return;
+            var selectedCol = keySel.value;
+            var mappingOpts = document.querySelectorAll('.mapping-select');
+            var inMapping = false;
+            mappingOpts.forEach(function(sel) {
+                if (sel.value === selectedCol) inMapping = true;
+            });
+            warning.style.display = (selectedCol && !inMapping) ? '' : 'none';
+        }
+
+        // Update mapping selects to sync key column warning
+        document.querySelectorAll('.mapping-select').forEach(function(sel) {
+            sel.addEventListener('change', updateKeyHint);
+        });
+        document.getElementById('key-column-select').addEventListener('change', function() {
+            updateKeyHint();
         });
 
         // Init

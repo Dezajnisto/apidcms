@@ -922,6 +922,23 @@ class TableController extends BaseController {
             $mode = $_POST['mode'] ?? 'add_all';
             $keyColumn = $_POST['key_column'] ?? $pkCol;
 
+            // Validate: skip/update modes need key column in mapping
+            if ($mode === 'skip_duplicates' || $mode === 'update_existing') {
+                if (empty($keyColumn)) {
+                    fclose($handle);
+                    @unlink($tmpFile);
+                    $this->redirect("/table/{$table}/import-csv?error=" . urlencode("Select a key column for duplicate detection."));
+                    return;
+                }
+                $mappedColumns = array_filter(array_map(function($m) { return ($m['table_column'] ?? '__skip__') !== '__skip__' ? $m['table_column'] : null; }, $mapping));
+                if (!in_array($keyColumn, $mappedColumns)) {
+                    fclose($handle);
+                    @unlink($tmpFile);
+                    $this->redirect("/table/{$table}/import-csv?error=" . urlencode("Key column '{$keyColumn}' is not in the mapping. Add it to the column mapping first."));
+                    return;
+                }
+            }
+
             // Validate key column for skip/update modes
             if (($mode === 'skip_duplicates' || $mode === 'update_existing') && !empty($keyColumn)) {
                 $validKeyCols = array_filter($mapping, function($m) { return ($m['table_column'] ?? '__skip__') !== '__skip__'; });

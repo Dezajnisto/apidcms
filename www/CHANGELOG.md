@@ -1,3 +1,15 @@
+---
+
+## 2026-07-29 — v1.5.0 — Полная интернационализация админки
+
+- 1200 ключей в языковых пакетах (ru.json + en.json) — полный перевод всех 31 шаблона
+- Переведены все контроллеры: SettingsController, NotificationsController, PluginAdminController, FormsController, FileManagerController
+- JS-строки через __t() хелпер: window.__lang + __t() в JavaScript
+- Файловый менеджер: все JS-уведомления, алерты, промпты переведены
+- Исправлены баги: одинарные скобки { } в Twig (269 мест), вложенные {{ }} в default(), бэкслеши в контроллерах
+- Документация: статья «Интернационализация» (RU + EN) с инструкциями
+- Файлы: core_lib/admin/lang/ (ru.json, en.json), admin/app/core/Lang.php, admin/app/controllers/BaseController.php, admin/app/views/ (31 шаблон)
+
 
 ## 2026-07-28 — v1.3.29 — Кнопка копирования для блоков кода в AI-чате
 

@@ -399,7 +399,7 @@
 - **Translated templates**: home, docs, changelog, plugins, 404, success, blog, ai
 
 ### Fixed
-- Dead  before  in admin error handler
+- Dead `exit;` before `http_response_code(500)` in admin error handler
 - ExternalPageLoader: refactored to use Core\I18n
 
 ### Changed

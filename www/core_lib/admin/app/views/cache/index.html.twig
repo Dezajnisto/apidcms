@@ -1,24 +1,24 @@
 {# admin/app/views/cache/index.html.twig #}
 {% extends "base.html.twig" %}
 
-{% block title %}Управление кэшем{% endblock %}
+{% block title %}{ lang('cache.title') }{% endblock %}
 
-{% block page_title %}Управление кэшем{% endblock %}
+{% block page_title %}{ lang('cache.title') }{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
     <!-- Заголовок и кнопки -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-xl md:text-2xl font-bold text-gray-900">Управление кэшем</h1>
-            <p class="text-sm text-gray-500 mt-1">Очистка временных файлов и кэша шаблонов</p>
+            <h1 class="text-xl md:text-2xl font-bold text-gray-900">{ lang('cache.title') }</h1>
+            <p class="text-sm text-gray-500 mt-1">{ lang('cache.subtitle') }</p>
         </div>
         <div>
             <a href="/admin/cache/clear?type=all" 
                class="inline-flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition text-sm w-full sm:w-auto"
-               onclick="return confirm('Вы уверены, что хотите очистить весь кэш?')">
+               onclick="return confirm('Вы уверены, что хотите очистить{ lang('cache.clear_all_suffix') }?')">
                 <i class="fas fa-broom"></i>
-                <span>{{ lang('cache.clear_btn') }} весь кэш</span>
+                <span>{{ lang('cache.clear_btn') }}{ lang('cache.clear_all_suffix') }</span>
             </a>
         </div>
     </div>
@@ -38,15 +38,15 @@
             
             <div class="space-y-2 text-sm text-gray-600">
                 <div class="flex justify-between">
-                    <span>Файлов:</span>
+                    <span>{ lang('cache.files_label') }</span>
                     <span class="font-medium">{{ info.file_count }}</span>
                 </div>
                 <div class="flex justify-between">
-                    <span>Размер:</span>
+                    <span>{ lang('cache.size_label') }</span>
                     <span class="font-medium">{{ info.total_size }}</span>
                 </div>
                 <div class="flex justify-between">
-                    <span>Доступ на запись:</span>
+                    <span>{ lang('cache.writable_label') }</span>
                     <span class="font-medium {{ info.writable ? 'text-green-600' : 'text-red-600' }}">
                         {{ info.writable ? 'Да' : 'Нет' }}
                     </span>
@@ -70,11 +70,11 @@
         <div class="flex items-start space-x-3">
             <i class="fas fa-info-circle text-blue-500 mt-1"></i>
             <div class="text-blue-700">
-                <strong>Информация:</strong>
+                <strong>{ lang('cache.info_label') }</strong>
                 <ul class="mt-1 space-y-1">
-                    <li>• Кэш Twig автоматически пересоздается при следующем запросе</li>
-                    <li>• Очистка кэша может временно замедлить работу сайта</li>
-                    <li>• Рекомендуется очищать кэш после изменения шаблонов</li>
+                    <li>• { lang('cache.info_twig') }</li>
+                    <li>• { lang('cache.info_perf') }</li>
+                    <li>• { lang('cache.info_recommend') }</li>
                 </ul>
             </div>
         </div>

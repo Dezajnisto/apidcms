@@ -46,14 +46,14 @@
     {% endif %}
 
     <div class="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <h2 class="text-lg font-bold text-gray-800 mb-4">Шаблоны формы</h2>
+        <h2 class="text-lg font-bold text-gray-800 mb-4">{ lang('forms.form_templates_title') }</h2>
         {% if templates|length > 0 %}
         <table class="w-full text-sm">
             <thead>
                 <tr class="border-b text-left text-gray-500">
                     <th class="py-2 pr-4">{{ lang('forms.templates_col_file') }}</th>
                     <th class="py-2 pr-4">{{ lang('forms.templates_col_size') }}</th>
-                    <th class="py-2 pr-4">Изменён</th>
+                    <th class="py-2 pr-4">{ lang('forms.col_modified') }</th>
                     <th class="py-2"></th>
                 </tr>
             </thead>
@@ -73,19 +73,19 @@
             </tbody>
         </table>
         {% else %}
-        <p class="text-gray-400 text-center py-4">Нет шаблонов формы</p>
+        <p class="text-gray-400 text-center py-4">{ lang('forms.no_form_templates') }</p>
         {% endif %}
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border p-6">
-        <h2 class="text-lg font-bold text-gray-800 mb-4">Шаблоны полей</h2>
+        <h2 class="text-lg font-bold text-gray-800 mb-4">{ lang('forms.field_templates_title') }</h2>
         {% if field_templates|length > 0 %}
         <table class="w-full text-sm">
             <thead>
                 <tr class="border-b text-left text-gray-500">
                     <th class="py-2 pr-4">{{ lang('forms.templates_col_file') }}</th>
                     <th class="py-2 pr-4">{{ lang('forms.templates_col_size') }}</th>
-                    <th class="py-2 pr-4">Изменён</th>
+                    <th class="py-2 pr-4">{ lang('forms.col_modified') }</th>
                     <th class="py-2"></th>
                 </tr>
             </thead>
@@ -105,13 +105,13 @@
             </tbody>
         </table>
         {% else %}
-        <p class="text-gray-400 text-center py-4">Нет шаблонов полей</p>
+        <p class="text-gray-400 text-center py-4">{ lang('forms.no_field_templates') }</p>
         {% endif %}
     </div>
 
     <div class="mt-6">
         <a href="{{ admin_url('forms/edit/' ~ form_name) }}" class="text-gray-500 hover:text-gray-700 transition">
-            <i class="fas fa-arrow-left mr-1"></i>Назад к форме
+            <i class="fas fa-arrow-left mr-1"></i>{ lang('forms.back_to_form') }
         </a>
     </div>
 </div>

@@ -33,11 +33,11 @@
             <button onclick="toggleUploadForm()"
                     class="inline-flex items-center space-x-1 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm">
                 <i class="fas fa-upload"></i>
-                <span>Загрузить</span>
+                <span>{{ lang('filemanager.upload_btn') }}</span>
             </button>
             <button onclick="window.close()"
                     class="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition text-sm">
-                <i class="fas fa-times mr-1"></i>Закрыть
+                <i class="fas fa-times mr-1"></i>{{ lang('filemanager.close') }}
             </button>
         </div>
     </div>
@@ -68,7 +68,7 @@
     <div class="bg-white rounded-lg shadow-sm border p-3 mb-4">
         <div class="flex items-center justify-between flex-wrap gap-3">
             <div class="flex items-center space-x-2">
-                <span class="text-sm text-gray-500">Вид:</span>
+                <span class="text-sm text-gray-500">{{ lang('filemanager.view_label') }}</span>
                 <button onclick="setViewMode('grid')" id="btn-grid"
                         class="p-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
                         title="Сетка">
@@ -82,7 +82,7 @@
             </div>
 
             <div class="flex items-center space-x-2">
-                <span class="text-sm text-gray-500">Колонок:</span>
+                <span class="text-sm text-gray-500">{{ lang('filemanager.cols_label') }}</span>
                 <select id="colsSelect" onchange="changeCols(this.value)"
                         class="border border-gray-300 rounded-md text-sm px-2 py-1 bg-white focus:ring-2 focus:ring-blue-500">
                     <option value="2" {{ cols == 2 ? 'selected' : '' }}>2</option>
@@ -93,7 +93,7 @@
             </div>
 
             <div class="flex items-center space-x-2">
-                <span class="text-sm text-gray-500">Показывать:</span>
+                <span class="text-sm text-gray-500">{{ lang('filemanager.show_label') }}</span>
                 <select id="perPageSelect" onchange="changePerPage(this.value)"
                         class="border border-gray-300 rounded-md text-sm px-2 py-1 bg-white focus:ring-2 focus:ring-blue-500">
                     <option value="10" {{ pagination.per_page == 10 ? 'selected' : '' }}>10</option>
@@ -104,9 +104,9 @@
 
             <div class="text-sm text-gray-500">
                 {% if pagination.total > 0 %}
-                    {{ pagination.from }}–{{ pagination.to }} из {{ pagination.total }}
+                    {{ pagination.from }}–{{ pagination.to }}{{ lang('filemanager.page_of_suffix') }}{{ pagination.total }}
                 {% else %}
-                    Нет файлов
+                    {{ lang('filemanager.no_files') }}
                 {% endif %}
             </div>
         </div>
@@ -117,12 +117,12 @@
         {% if items is empty %}
             <div class="p-12 text-center">
                 <i class="fas fa-folder-open text-gray-300 text-5xl mb-4"></i>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Папка пуста</h3>
-                <p class="text-gray-500 mb-4">Загрузите файлы или выберите другую папку</p>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">{{ lang('filemanager.folder_empty') }}</h3>
+                <p class="text-gray-500 mb-4">{{ lang('filemanager.popup_empty_hint') }}</p>
                 <button onclick="toggleUploadForm()"
                         class="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
                     <i class="fas fa-upload"></i>
-                    <span>Загрузить первый файл</span>
+                    <span>{{{ lang('filemanager.upload_first') }}}</span>
                 </button>
             </div>
         {% else %}
@@ -139,15 +139,15 @@
                              data-type="{{ item.is_dir ? 'folder' : 'file' }}">
 
                             {% if item.is_dir %}
-                                <div class="text-center" onclick="navigateToFolder(event, '{{ item.name|e('js') }}')">
+                                <div class="text-center" onclick="navigateToFolder(event, '{{ item.name|e('js') }}}')">
                                     <i class="fas fa-folder text-yellow-500 text-4xl mb-2"></i>
                                     <div class="file-name text-sm font-medium text-gray-900 truncate" title="{{ item.name }}">
                                         {{ item.name }}
                                     </div>
-                                    <div class="text-xs text-gray-500 mt-1">Папка</div>
+                                    <div class="text-xs text-gray-500 mt-1">{{ lang('filemanager.folder_badge') }}</div>
                                 </div>
                             {% else %}
-                                <div class="text-center" onclick="selectFile(event, '{{ item.name|e('js') }}', '{{ item.path|e('js') }}')">
+                                <div class="text-center" onclick="selectFile(event, '{{ item.name|e('js') }}}', '{{ item.path|e('js') }}}')">
                                     {% if item.is_image %}
                                         <div class="relative mb-2">
                                             <img src="/admin/filemanager/thumb?path={{ item.path|url_encode }}&amp;w={{ thumb_size }}&amp;h={{ thumb_size }}&amp;v={{ item.modified }}"
@@ -175,10 +175,10 @@
                     <table class="w-full">
                         <thead class="bg-gray-50 border-b">
                             <tr>
-                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
-                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Размер</th>
-                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Изменён</th>
-                                <th class="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Выбор</th>
+                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">{{ lang('filemanager.col_name') }}</th>
+                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{{ lang('filemanager.col_size') }}</th>
+                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">{{ lang('filemanager.col_modified') }}</th>
+                                <th class="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">{{ lang('filemanager.col_select') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -213,9 +213,9 @@
 
                                     <td class="py-3 px-4 text-right">
                                         {% if not item.is_dir %}
-                                            <button onclick="event.stopPropagation(); selectFileTable('{{ item.name|e('js') }}', '{{ item.path|e('js') }}')"
+                                            <button onclick="event.stopPropagation(); selectFileTable('{{ item.name|e('js') }}}', '{{ item.path|e('js') }}}')"
                                                     class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm transition">
-                                                <i class="fas fa-check mr-1"></i>{{ lang('filemanager.popup_select') }}
+                                                <i class="fas fa-check mr-1"></i>{{{ lang('filemanager.popup_select') }}}
                                             </button>
                                         {% endif %}
                                     </td>
@@ -232,7 +232,7 @@
     {% if pagination.total_pages > 1 %}
     <div class="mt-4 flex items-center justify-between">
         <div class="text-sm text-gray-500">
-            Страница {{ pagination.page }} из {{ pagination.total_pages }}
+            {{ lang('filemanager.page_of') }}{{ pagination.page }}{{ lang('filemanager.page_of_suffix') }}{{ pagination.total_pages }}
         </div>
         <nav class="flex items-center space-x-1">
             {% if pagination.page > 1 %}
@@ -302,22 +302,22 @@
 
     <!-- Форма загрузки (скрыта) -->
     <div id="uploadForm" class="bg-white rounded-lg shadow-sm p-4 mb-4 hidden">
-        <h3 class="text-lg font-semibold mb-3">Загрузка файлов</h3>
+        <h3 class="text-lg font-semibold mb-3">{{ lang('filemanager.popup_upload_title') }}</h3>
 
         <div id="uploadArea" class="upload-area rounded-lg p-6 text-center mb-3">
             <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-            <p class="text-gray-600 mb-2">Перетащите файлы сюда или</p>
+            <p class="text-gray-600 mb-2">{{ lang('filemanager.popup_drop_hint') }}</p>
             <input type="file" id="fileInput" multiple class="hidden">
             <button onclick="document.getElementById('fileInput').click()"
                     class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                {{ lang('filemanager.popup_select') }} файлы
+                {{{ lang('filemanager.popup_select_files') }}}
             </button>
-            <p class="text-sm text-gray-500 mt-2">Максимальный размер: 5MB</p>
+            <p class="text-sm text-gray-500 mt-2">{{ lang('filemanager.max_size_hint') }}</p>
         </div>
 
         <div id="uploadProgress" class="hidden">
             <div class="flex justify-between text-sm text-gray-600 mb-1">
-                <span>Загрузка...</span>
+                <span>{{ lang('filemanager.uploading') }}</span>
                 <span id="progressPercent">0%</span>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-2">
@@ -329,12 +329,12 @@
 
         <div class="flex justify-end space-x-2 mt-4">
             <button onclick="hideUploadForm()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
-                {{ lang('filemanager.popup_cancel') }}
+                {{{ lang('filemanager.popup_cancel') }}}
             </button>
             <button onclick="startUpload()" id="uploadButton"
                     class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                     disabled>
-                <i class="fas fa-upload mr-1"></i> Начать загрузку
+                <i class="fas fa-upload mr-1"></i> {{ lang('filemanager.start_upload') }}
             </button>
         </div>
     </div>
@@ -343,15 +343,15 @@
     <div id="selectedFile" class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 hidden">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-blue-800">Выбранный файл:</p>
+                <p class="text-sm font-medium text-blue-800">{{ lang('filemanager.selected_file') }}</p>
                 <p id="selectedFileName" class="text-blue-600 font-mono text-sm"></p>
             </div>
             <div class="flex space-x-2">
                 <button onclick="copyFilePath()" class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm transition">
-                    <i class="fas fa-copy mr-1"></i>Копировать
+                    <i class="fas fa-copy mr-1"></i>{{ lang('filemanager.copy_btn') }}
                 </button>
                 <button onclick="useSelectedFile()" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm transition">
-                    <i class="fas fa-check mr-1"></i>{{ lang('filemanager.popup_select') }}
+                    <i class="fas fa-check mr-1"></i>{{{ lang('filemanager.popup_select') }}}
                 </button>
             </div>
         </div>

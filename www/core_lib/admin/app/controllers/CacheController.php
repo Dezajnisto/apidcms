@@ -144,7 +144,7 @@ class CacheController extends BaseController {
      */
     private function clearTwigCache($cachePath) {
         if (!is_dir($cachePath)) {
-            return true; // Папки нет - считаем что очищено
+            return true; // Folder does not exist - consider it cleared
         }
         
         $files = new \RecursiveIteratorIterator(

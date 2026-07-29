@@ -25,7 +25,7 @@
                 <input type="checkbox" name="field_required[{{ index }}]" value="1"
                        {{ field.required ? 'checked' : '' }}
                        class="rounded border-gray-300 text-blue-600">
-                <span class="ml-1 text-gray-600">обяз.</span>
+                <span class="ml-1 text-gray-600">{{ lang('forms.required_short') }}</span>
             </label>
         </div>
         <button type="button" onclick="removeField(this)"

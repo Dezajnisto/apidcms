@@ -11,7 +11,7 @@
         <style>
 
     </style>
-<title>{% block title %}Панель управления{% endblock %}</title>
+<title>{% block title %}{{ lang('topbar.default_title') }}{% endblock %}</title>
     
     <!-- Tailwind CSS via CDN (для разработки) -->
     <link rel="stylesheet" href="/static/css/admin.css?v=1">
@@ -21,19 +21,19 @@
 
     
     <style>
-        /* Плавные переходы */
+        /* Smooth transitions */
         .sidebar-transition {
             transition: all 0.3s ease;
         }
         
-        /* Скрываем текст когда сайдбар свернут на десктопе */
+        /* Hide text when sidebar collapsed on desktop */
         .sidebar-collapsed .nav-text {
             opacity: 0;
             width: 0;
             overflow: hidden;
         }
 
-        /* Off-canvas sidebar на мобильных */
+        /* Off-canvas sidebar on mobile */
         @media (max-width: 767px) {
             #sidebar {
                 position: fixed;

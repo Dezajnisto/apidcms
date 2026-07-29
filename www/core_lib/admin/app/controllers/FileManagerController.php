@@ -95,12 +95,12 @@ class FileManagerController extends BaseController {
         if ($realFullPath === false) {
             if (!is_dir($fullPath)) {
                 if (!mkdir($fullPath, 0755, true)) {
-                    throw new Exception('Не удалось создать директорию: ' . $fullPath);
+                    throw new Exception(Lang::t('filemanager.dir_create_error') . ': ' . $fullPath);
                 }
             }
             $realFullPath = realpath($fullPath);
             if ($realFullPath === false) {
-                throw new Exception('Недопустимый путь: ' . $fullPath);
+                throw new Exception(Lang::t('filemanager.invalid_path') . ': ' . $fullPath);
             }
         }
         
@@ -235,7 +235,7 @@ class FileManagerController extends BaseController {
             $fullPath = $this->getFullPath($path);
             if ($type === 'folder') { $this->deleteFolder($fullPath); }
             else { $this->deleteFile($fullPath); }
-            $this->jsonResponse(['success' => true, 'message' => ($type === 'folder' ? 'Папка' : 'Файл') . ' успешно удален']);
+            $this->jsonResponse(['success' => true, 'message' => Lang::t('filemanager.delete_success', ['type' => Lang::t($type === 'folder' ? 'filemanager.item_folder' : 'filemanager.item_file')])]);
         } catch (\Throwable $e) {
             while (ob_get_level() > $startBufferLevel) ob_end_clean();
             $this->jsonResponse(['success' => false, 'message' => $e->getMessage()]);
@@ -292,23 +292,23 @@ class FileManagerController extends BaseController {
     }
     
     private function deleteFile($filePath) {
-        if (!file_exists($filePath)) throw new Exception('Файл не существует: ' . basename($filePath));
-        if (!is_file($filePath)) throw new Exception('Указанный путь не является файлом: ' . $filePath);
-        if (!is_writable($filePath)) throw new Exception('Нет прав на удаление файла: ' . basename($filePath));
-        if (!unlink($filePath)) throw new Exception('Не удалось удалить файл: ' . basename($filePath));
+        if (!file_exists($filePath)) throw new Exception(Lang::t('filemanager.file_not_exists') . ': ' . basename($filePath));
+        if (!is_file($filePath)) throw new Exception(Lang::t('filemanager.not_a_file') . ': ' . $filePath);
+        if (!is_writable($filePath)) throw new Exception(Lang::t('filemanager.not_writable_file') . ': ' . basename($filePath));
+        if (!unlink($filePath)) throw new Exception(Lang::t('filemanager.delete_file_failed') . ': ' . basename($filePath));
     }
     
     private function deleteFolder($folderPath) {
-        if (!file_exists($folderPath)) throw new Exception('Папка не существует: ' . basename($folderPath));
-        if (!is_dir($folderPath)) throw new Exception('Указанный путь не является папкой: ' . $folderPath);
-        if (!is_writable($folderPath)) throw new Exception('Нет прав на удаление папки: ' . basename($folderPath));
+        if (!file_exists($folderPath)) throw new Exception(Lang::t('filemanager.folder_not_exists') . ': ' . basename($folderPath));
+        if (!is_dir($folderPath)) throw new Exception(Lang::t('filemanager.not_a_folder') . ': ' . $folderPath);
+        if (!is_writable($folderPath)) throw new Exception(Lang::t('filemanager.not_writable_folder') . ': ' . basename($folderPath));
         $files = array_diff(scandir($folderPath), ['.', '..']);
         foreach ($files as $file) {
             $filePath = $folderPath . '/' . $file;
             if (is_dir($filePath)) { $this->deleteFolder($filePath); }
-            else { if (!unlink($filePath)) throw new Exception('Не удалось удалить файл: ' . $file); }
+            else { if (!unlink($filePath)) throw new Exception(Lang::t('filemanager.delete_file_failed') . ': ' . $file); }
         }
-        if (!rmdir($folderPath)) throw new Exception('Не удалось удалить папку: ' . basename($folderPath));
+        if (!rmdir($folderPath)) throw new Exception(Lang::t('filemanager.delete_folder_failed') . ': ' . basename($folderPath));
     }
     
     private function isAllowedExtension($extension) {
@@ -325,20 +325,20 @@ class FileManagerController extends BaseController {
             $path = $_POST['path'] ?? '';
             $newName = $_POST['new_name'] ?? '';
             $type = $_POST['type'] ?? 'file';
-            if (empty($path) || empty($newName)) throw new Exception('Не указаны путь или новое название');
+            if (empty($path) || empty($newName)) throw new Exception(Lang::t('filemanager.rename_path_required'));
             if ($type === 'file') {
                 $oldExtension = pathinfo($path, PATHINFO_EXTENSION);
                 $newExtension = pathinfo($newName, PATHINFO_EXTENSION);
                 if (empty($newExtension) && !empty($oldExtension)) $newName = $newName . '.' . $oldExtension;
             }
-            if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $newName)) throw new Exception('Название может содержать только латинские буквы, цифры, точки, дефисы и подчеркивания');
+            if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $newName)) throw new Exception(Lang::t('filemanager.rename_invalid_chars'));
             $fullPath = $this->getFullPath($path);
             $directory = dirname($fullPath);
             $newFullPath = $directory . '/' . $newName;
-            if (!file_exists($fullPath)) throw new Exception(($type === 'folder' ? 'Папка' : 'Файл') . ' не существует');
-            if (file_exists($newFullPath)) throw new Exception('Файл или папка с таким названием уже существует');
-            if (!rename($fullPath, $newFullPath)) throw new Exception('Не удалось переименовать ' . ($type === 'folder' ? 'папку' : 'файл'));
-            $this->jsonResponse(['success' => true, 'message' => ($type === 'folder' ? 'Папка' : 'Файл') . ' успешно переименован']);
+            if (!file_exists($fullPath)) throw new Exception(Lang::t('filemanager.rename_not_exists', ['type' => Lang::t($type === 'folder' ? 'filemanager.item_folder' : 'filemanager.item_file')]));
+            if (file_exists($newFullPath)) throw new Exception(Lang::t('filemanager.rename_exists'));
+            if (!rename($fullPath, $newFullPath)) throw new Exception(Lang::t('filemanager.rename_failed', ['type' => Lang::t($type === 'folder' ? 'filemanager.item_folder' : 'filemanager.item_file')]));
+            $this->jsonResponse(['success' => true, 'message' => Lang::t('filemanager.rename_success', ['type' => Lang::t($type === 'folder' ? 'filemanager.item_folder' : 'filemanager.item_file')])]);
         } catch (\Throwable $e) {
             while (ob_get_level() > $startBufferLevel) ob_end_clean();
             $this->jsonResponse(['success' => false, 'message' => $e->getMessage()]);
@@ -356,17 +356,17 @@ class FileManagerController extends BaseController {
             $h = min(400, max(32, intval($_GET['h'] ?? 100)));
             $quality = min(85, max(50, intval($_GET['q'] ?? 70)));
 
-            if (empty($path)) throw new \Exception('Не указан путь');
+            if (empty($path)) throw new \Exception(Lang::t('filemanager.thumb_no_path'));
 
             $fullPath = $this->uploadsPath . $path;
             $realPath = realpath($fullPath);
             $realUploads = realpath($this->uploadsPath);
 
-            if ($realPath === false || !is_file($realPath)) throw new \Exception('Файл не найден');
-            if (strpos($realPath, $realUploads) !== 0) throw new \Exception('Доступ запрещён');
+            if ($realPath === false || !is_file($realPath)) throw new \Exception(Lang::t('filemanager.thumb_not_found'));
+            if (strpos($realPath, $realUploads) !== 0) throw new \Exception(Lang::t('filemanager.thumb_access_denied'));
 
             $ext = strtolower(pathinfo($realPath, PATHINFO_EXTENSION));
-            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'])) throw new \Exception('Неподдерживаемый формат');
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'])) throw new \Exception(Lang::t('filemanager.thumb_bad_format'));
 
             $fileMtime = filemtime($realPath);
             $etag = md5($realPath . $w . $h . $quality . $fileMtime);
@@ -446,7 +446,7 @@ class FileManagerController extends BaseController {
         }
         $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         if ($json === false) {
-            echo json_encode(['success' => false, 'message' => 'Ошибка кодирования JSON: ' . json_last_error_msg()]);
+            echo json_encode(['success' => false, 'message' => Lang::t('filemanager.json_encode_error') . ': ' . json_last_error_msg()]);
         } else {
             echo $json;
         }
@@ -469,7 +469,7 @@ class FileManagerController extends BaseController {
             $result = $this->getDirectoryItems($fullPath, $currentPath, $page, $perPage);
 
             $this->render('filemanager/popup', [
-                'title' => 'Выбор файла',
+                'title' => Lang::t('filemanager.popup_title'),
                 'currentPath' => $currentPath,
                 'items' => $result['items'],
                 'pagination' => $result['pagination'],
@@ -481,9 +481,9 @@ class FileManagerController extends BaseController {
             ]);
         } catch (Exception $e) {
             echo "<html><body>";
-            echo "<h1>Ошибка</h1>";
+            echo "<h1>" . Lang::t('filemanager.popup_error') . "</h1>";
             echo "<p>" . htmlspecialchars($e->getMessage()) . "</p>";
-            echo "<button onclick='window.close()'>Закрыть</button>";
+            echo "<button onclick='window.close()'>" . Lang::t('filemanager.popup_close') . "</button>";
             echo "</body></html>";
         }
     }
@@ -494,27 +494,27 @@ class FileManagerController extends BaseController {
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception(Lang::t('filemanager.method_not_allowed'));
             $currentPath = $_POST['path'] ?? '';
             $fullPath = $this->getFullPath($currentPath);
-            if (!isset($_FILES['files']) || empty($_FILES['files']['name'][0])) throw new Exception('Файлы не выбраны');
+            if (!isset($_FILES['files']) || empty($_FILES['files']['name'][0])) throw new Exception(Lang::t('filemanager.upload_no_files'));
             $uploadedFiles = $_FILES['files'];
             $results = [];
             for ($i = 0; $i < count($uploadedFiles['name']); $i++) {
                 if ($uploadedFiles['error'][$i] !== UPLOAD_ERR_OK) {
-                    $results[] = ['name' => $uploadedFiles['name'][$i], 'success' => false, 'message' => 'Ошибка загрузки файла'];
+                    $results[] = ['name' => $uploadedFiles['name'][$i], 'success' => false, 'message' => Lang::t('filemanager.upload_single_error')];
                     continue;
                 }
                 if ($uploadedFiles['size'][$i] > $this->maxFileSize) {
-                    $results[] = ['name' => $uploadedFiles['name'][$i], 'success' => false, 'message' => 'Файл слишком большой. Максимальный размер: 5MB'];
+                    $results[] = ['name' => $uploadedFiles['name'][$i], 'success' => false, 'message' => Lang::t('filemanager.upload_too_large_msg')];
                     continue;
                 }
                 $extension = strtolower(pathinfo($uploadedFiles['name'][$i], PATHINFO_EXTENSION));
                 if (!$this->isAllowedExtension($extension)) {
-                    $results[] = ['name' => $uploadedFiles['name'][$i], 'success' => false, 'message' => 'Тип файла не разрешен'];
+                    $results[] = ['name' => $uploadedFiles['name'][$i], 'success' => false, 'message' => Lang::t('filemanager.upload_type_denied')];
                     continue;
                 }
                 $filename = $this->generateSafeFilename($uploadedFiles['name'][$i]);
                 $targetPath = $fullPath . '/' . $filename;
                 if (!move_uploaded_file($uploadedFiles['tmp_name'][$i], $targetPath)) {
-                    $results[] = ['name' => $uploadedFiles['name'][$i], 'success' => false, 'message' => 'Не удалось сохранить файл'];
+                    $results[] = ['name' => $uploadedFiles['name'][$i], 'success' => false, 'message' => Lang::t('filemanager.upload_save_failed')];
                     continue;
                 }
                 chmod($targetPath, 0644);
@@ -522,7 +522,7 @@ class FileManagerController extends BaseController {
             }
             $hasSuccess = false;
             foreach ($results as $result) { if ($result['success']) { $hasSuccess = true; break; } }
-            $this->jsonResponse(['success' => $hasSuccess, 'message' => $hasSuccess ? 'Файлы загружены' : 'Не удалось загрузить файлы', 'results' => $results]);
+            $this->jsonResponse(['success' => $hasSuccess, 'message' => $hasSuccess ? Lang::t('filemanager.upload_all_success') : Lang::t('filemanager.upload_all_failed'), 'results' => $results]);
         } catch (\Throwable $e) {
             while (ob_get_level() > $startBufferLevel) ob_end_clean();
             $this->jsonResponse(['success' => false, 'message' => $e->getMessage()]);

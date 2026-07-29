@@ -11,7 +11,7 @@
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
-            <p class="text-sm text-gray-500 mt-1">Путь к файлу: {{ templatePath }}</p>
+            <p class="text-sm text-gray-500 mt-1">{ lang('templates.file_path') }</p>
         </div>
         <div class="flex items-center space-x-3">
             {% set pageType = 'list' %}
@@ -60,7 +60,7 @@
                 <!-- Поле редактирования кода -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Содержимое шаблона <span class="text-red-500">*</span>
+                        { lang('templates.content_req') }
                     </label>
                     <div id="cm-editor-container" class="w-full border border-gray-300 rounded-md shadow-sm overflow-hidden" style="min-height:500px"></div>
                     <textarea name="content" id="cm-hidden-input" class="hidden">{{ content }}</textarea>
@@ -71,15 +71,15 @@
                     <div class="flex items-start space-x-3">
                         <i class="fas fa-info-circle text-blue-500 mt-1"></i>
                         <div class="text-sm text-blue-700">
-                            <strong class="font-medium">Подсказка:</strong>
-                            <p>Используйте синтаксис Twig. Базовый шаблон: 
+                            <strong class="font-medium">{ lang('templates.hint_label') }</strong>
+                            <p>{ lang('templates.twig_hint') } 
                                 <code class="bg-blue-100 px-1 rounded">{% verbatim %}{% extends "base.html.twig" %}{% endverbatim %}</code>
                             </p>
                             <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                                <div><code class="bg-blue-100 px-1 rounded">{% verbatim %}{{ variable }}{% endverbatim %}</code> - вывод переменной</div>
-                                <div><code class="bg-blue-100 px-1 rounded">{% verbatim %}{% for item in items %}{% endverbatim %}</code> - цикл</div>
-                                <div><code class="bg-blue-100 px-1 rounded">{% verbatim %}{% if condition %}{% endverbatim %}</code> - условие</div>
-                                <div><code class="bg-blue-100 px-1 rounded">{% verbatim %}{% block content %}{% endverbatim %}</code> - блок</div>
+                                <div><code class="bg-blue-100 px-1 rounded">{% verbatim %}{{ variable }}{% endverbatim %}</code>{ lang('templates.var_output') }</div>
+                                <div><code class="bg-blue-100 px-1 rounded">{% verbatim %}{% for item in items %}{% endverbatim %}</code>{ lang('templates.cycle') }</div>
+                                <div><code class="bg-blue-100 px-1 rounded">{% verbatim %}{% if condition %}{% endverbatim %}</code>{ lang('templates.condition') }</div>
+                                <div><code class="bg-blue-100 px-1 rounded">{% verbatim %}{% block content %}{% endverbatim %}</code>{ lang('templates.block') }</div>
                             </div>
                         </div>
                     </div>
@@ -105,7 +105,7 @@
                     <button type="submit" 
                             class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center space-x-2">
                         <i class="fas fa-save"></i>
-                        <span>Сохранить изменения</span>
+                        <span>{ lang('templates.save_changes') }</span>
                     </button>
                 </div>
             </form>

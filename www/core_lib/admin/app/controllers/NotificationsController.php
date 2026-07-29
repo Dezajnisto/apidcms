@@ -102,7 +102,7 @@ class NotificationsController extends BaseController {
 
         if (!$submission) {
             $this->render('error/404', [
-                'message' => $this->lang->t('notifications.submission_not_found', ['id' => \$id])
+                'message' => $this->lang->t('notifications.submission_not_found', ['id' => $id])
             ]);
             return;
         }
@@ -110,7 +110,7 @@ class NotificationsController extends BaseController {
         $this->markAsRead($table, $id);
 
         $this->render('notifications/view_submission', [
-            'title' => $this->lang->t('notifications.submission_title', ['id' => \$id]),
+            'title' => $this->lang->t('notifications.submission_title', ['id' => $id]),
             'table_name' => $table,
             'form_name' => $formName,
             'form_info' => $formInfo,
@@ -139,7 +139,7 @@ class NotificationsController extends BaseController {
             $this->redirect("/notifications/form/{$formName}?deleted=1");
         } else {
             $this->render('error/404', [
-                'message' => $this->lang->t('notifications.delete_failed', ['id' => \$id])
+                'message' => $this->lang->t('notifications.delete_failed', ['id' => $id])
             ]);
         }
     }

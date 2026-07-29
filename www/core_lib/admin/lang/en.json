@@ -746,122 +746,35 @@
   "table.struct.table_info": "Table info",
   "table.struct.sql_title": "SQL Schema",
   "table.struct.table_list": "Table list",
-  "filemanager.file_not_exists": [
-    "File does not exist",
-    "File does not exist"
-  ],
-  "filemanager.not_writable_file": [
-    "No permission to delete file",
-    "No permission to delete file"
-  ],
-  "filemanager.delete_file_failed": [
-    "Failed to delete file",
-    "Failed to delete file"
-  ],
-  "filemanager.folder_not_exists": [
-    "Folder does not exist",
-    "Folder does not exist"
-  ],
-  "filemanager.not_writable_folder": [
-    "No permission to delete folder",
-    "No permission to delete folder"
-  ],
-  "filemanager.delete_folder_failed": [
-    "Failed to delete folder",
-    "Failed to delete folder"
-  ],
-  "filemanager.rename_path_required": [
-    "Path or new name not specified",
-    "Path or new name not specified"
-  ],
-  "filemanager.rename_invalid_chars": [
-    "Name can only contain Latin letters, digits, dots, hyphens and underscores",
-    "Name can only contain Latin letters, digits, dots, hyphens and underscores"
-  ],
-  "filemanager.rename_not_exists": [
-    "{type} does not exist",
-    "{type} does not exist"
-  ],
-  "filemanager.rename_exists": [
-    "File or folder with this name already exists",
-    "File or folder with this name already exists"
-  ],
-  "filemanager.rename_failed": [
-    "Failed to rename {type}",
-    "Failed to rename {type}"
-  ],
-  "filemanager.rename_success": [
-    "{type} successfully renamed",
-    "{type} successfully renamed"
-  ],
-  "filemanager.delete_success": [
-    "{type} successfully deleted",
-    "{type} successfully deleted"
-  ],
-  "filemanager.item_folder": [
-    "Folder",
-    "Folder"
-  ],
-  "filemanager.item_file": [
-    "File",
-    "File"
-  ],
-  "filemanager.thumb_no_path": [
-    "No path specified",
-    "No path specified"
-  ],
-  "filemanager.thumb_not_found": [
-    "File not found",
-    "File not found"
-  ],
-  "filemanager.thumb_access_denied": [
-    "Access denied",
-    "Access denied"
-  ],
-  "filemanager.thumb_bad_format": [
-    "Unsupported format",
-    "Unsupported format"
-  ],
-  "filemanager.popup_error": [
-    "Error",
-    "Error"
-  ],
-  "filemanager.popup_close": [
-    "Close",
-    "Close"
-  ],
-  "filemanager.upload_no_files": [
-    "No files selected",
-    "No files selected"
-  ],
-  "filemanager.upload_single_error": [
-    "File upload error",
-    "File upload error"
-  ],
-  "filemanager.upload_too_large_msg": [
-    "File too large. Maximum size: 5MB",
-    "File too large. Maximum size: 5MB"
-  ],
-  "filemanager.upload_type_denied": [
-    "File type not allowed",
-    "File type not allowed"
-  ],
-  "filemanager.upload_save_failed": [
-    "Failed to save file",
-    "Failed to save file"
-  ],
-  "filemanager.upload_all_success": [
-    "Files uploaded",
-    "Files uploaded"
-  ],
-  "filemanager.upload_all_failed": [
-    "Failed to upload files",
-    "Failed to upload files"
-  ],
-  "filemanager.json_encode_error": [
-    "JSON encoding error",
-    "JSON encoding error"
-  ],
+  "filemanager.file_not_exists": "File does not exist",
+  "filemanager.not_writable_file": "No permission to delete file",
+  "filemanager.delete_file_failed": "Failed to delete file",
+  "filemanager.folder_not_exists": "Folder does not exist",
+  "filemanager.not_writable_folder": "No permission to delete folder",
+  "filemanager.delete_folder_failed": "Failed to delete folder",
+  "filemanager.rename_path_required": "Path or new name not specified",
+  "filemanager.rename_invalid_chars": "Name can only contain Latin letters, digits, dots, hyphens and underscores",
+  "filemanager.rename_not_exists": "{type} does not exist",
+  "filemanager.rename_exists": "File or folder with this name already exists",
+  "filemanager.rename_failed": "Failed to rename {type}",
+  "filemanager.rename_success": "{type} successfully renamed",
+  "filemanager.delete_success": "{type} successfully deleted",
+  "filemanager.item_folder": "Folder",
+  "filemanager.item_file": "File",
+  "filemanager.thumb_no_path": "No path specified",
+  "filemanager.thumb_not_found": "File not found",
+  "filemanager.thumb_access_denied": "Access denied",
+  "filemanager.thumb_bad_format": "Unsupported format",
+  "filemanager.popup_error": "Error",
+  "filemanager.popup_close": "Close",
+  "filemanager.upload_no_files": "No files selected",
+  "filemanager.upload_single_error": "File upload error",
+  "filemanager.upload_too_large_msg": "File too large. Maximum size: 5MB",
+  "filemanager.upload_type_denied": "File type not allowed",
+  "filemanager.upload_save_failed": "Failed to save file",
+  "filemanager.upload_all_success": "Files uploaded",
+  "filemanager.upload_all_failed": "Failed to upload files",
+  "filemanager.json_encode_error": "JSON encoding error",
   "settings.all_fields_hint": "All fields saved with one button",
   "settings.site_title": "Site title",
   "settings.site_description": "Site description",

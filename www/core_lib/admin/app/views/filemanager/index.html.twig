@@ -17,7 +17,7 @@
             <button onclick="showUploadModal()" 
                     class="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
                 <i class="fas fa-upload"></i>
-                <span>Загрузить файл</span>
+                <span>{{ lang('filemanager.upload_btn') }}</span>
             </button>
             <button onclick="createFolder()" 
                     class="inline-flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
@@ -57,7 +57,7 @@
                 <span class="text-sm text-gray-500 mr-1">Вид:</span>
                 <button onclick="setViewMode('grid')" id="btn-grid" 
                         class="p-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
-                        title="Сетка">
+                        title="{{ lang('filemanager.view_grid') }}">
                     <i class="fas fa-th-large"></i>
                 </button>
                 <button onclick="setViewMode('table')" id="btn-table"
@@ -160,7 +160,7 @@
                                 <div class="flex space-x-1">
                                     <button onclick="event.stopPropagation(); renameItem('{{ item.path }}', '{{ item.is_dir ? 'folder' : 'file' }}', '{{ item.name }}')" 
                                             class="p-1 bg-white rounded shadow-sm hover:bg-blue-50 transition"
-                                            title="Переименовать">
+                                            title="{{ lang('filemanager.action_rename') }}">
                                         <i class="fas fa-edit text-xs text-blue-600"></i>
                                     </button>
                                     {% if not item.is_dir %}
@@ -232,7 +232,7 @@
                                         <div class="flex items-center justify-end space-x-1">
                                             <button onclick="event.stopPropagation(); renameItem('{{ item.path }}', '{{ item.is_dir ? 'folder' : 'file' }}', '{{ item.name }}')" 
                                                     class="p-1.5 rounded hover:bg-blue-50 transition"
-                                                    title="Переименовать">
+                                                    title="{{ lang('filemanager.action_rename') }}">
                                                 <i class="fas fa-edit text-sm text-blue-600"></i>
                                             </button>
                                             {% if not item.is_dir %}

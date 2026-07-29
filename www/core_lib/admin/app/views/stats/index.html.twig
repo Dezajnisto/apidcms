@@ -46,7 +46,7 @@
     <div class="bg-white rounded-lg shadow-sm border p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Посещения по дням</h2>
         {% if daily is empty %}
-        <p class="text-gray-400 text-center py-8">Нет данных за выбранный период</p>
+        <p class="text-gray-400 text-center py-8">{{ lang('stats.empty') }}</p>
         {% else %}
         <div class="flex items-end space-x-0.5 h-40">
             {% for d in daily %}

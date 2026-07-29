@@ -9,13 +9,13 @@
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
-            <p class="text-sm text-gray-500 mt-1">Плагин: {{ plugin_name }} &mdash; {{ file_path }}</p>
+            <p class="text-sm text-gray-500 mt-1">{{ lang('plugins.edit_tpl.plugin') }} {{ plugin_name }} &mdash; {{ file_path }}</p>
         </div>
         <div class="flex items-center space-x-3">
             <a href="{{ admin_url('plugins/' ~ plugin_name ~ '?tab=templates') }}" 
                class="inline-flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
                 <i class="fas fa-arrow-left"></i>
-                <span>Назад к шаблонам</span>
+                <span>{{ lang('plugins.edit_tpl.back') }}</span>
             </a>
         </div>
     </div>
@@ -36,7 +36,7 @@
             <form method="post" class="space-y-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Содержимое шаблона
+                        {{ lang('plugins.edit_tpl.content') }}
                     </label>
                     <div id="cm-editor-container" class="w-full border border-gray-300 rounded-md shadow-sm overflow-hidden" style="min-height:500px"></div>
                     <textarea name="content" id="cm-hidden-input" class="hidden">{{ content }}</textarea>
@@ -44,8 +44,8 @@
 
                 <!-- Статистика -->
                 <div class="flex items-center justify-between text-sm text-gray-500">
-                    <span id="lineCount">Строк: {{ content|split('\n')|length }}</span>
-                    <span id="charCount">Символов: {{ content|length }}</span>
+                    <span id="lineCount">{{ lang('plugins.edit_tpl.lines') }} {{ content|split('\n')|length }}</span>
+                    <span id="charCount">{{ lang('plugins.edit_tpl.chars') }} {{ content|length }}</span>
                 </div>
 
                 <!-- Подсказка -->
@@ -53,8 +53,7 @@
                     <div class="flex items-start space-x-3">
                         <i class="fas fa-info-circle text-blue-500 mt-1"></i>
                         <div class="text-sm text-blue-700">
-                            <strong>Twig-шаблон плагина.</strong>
-                            Доступны все стандартные функции и фильтры Twig, а также функции плагина.
+                            <strong>{{ lang('plugins.edit_tpl.hint') }}</strong>
                         </div>
                     </div>
                 </div>
@@ -63,12 +62,12 @@
                 <div class="flex items-center justify-end space-x-4 pt-6 border-t">
                     <a href="{{ admin_url('plugins/' ~ plugin_name ~ '?tab=templates') }}" 
                        class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
-                        Отмена
+                        {{ lang('plugins.edit_tpl.cancel') }}
                     </a>
                     <button type="submit" 
                             class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center space-x-2">
                         <i class="fas fa-save"></i>
-                        <span>Сохранить</span>
+                        <span>{{ lang('plugins.edit_tpl.save') }}</span>
                     </button>
                 </div>
             </form>

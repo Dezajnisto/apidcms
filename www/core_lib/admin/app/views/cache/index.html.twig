@@ -18,7 +18,7 @@
                class="inline-flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition text-sm w-full sm:w-auto"
                onclick="return confirm('Вы уверены, что хотите очистить весь кэш?')">
                 <i class="fas fa-broom"></i>
-                <span>Очистить весь кэш</span>
+                <span>{{ lang('cache.clear_btn') }} весь кэш</span>
             </a>
         </div>
     </div>
@@ -56,9 +56,9 @@
             <div class="mt-4 pt-4 border-t">
                 <a href="/admin/cache/clear?type={{ name }}" 
                    class="inline-flex items-center justify-center space-x-2 px-3 py-1 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition text-sm w-full"
-                   onclick="return confirm('Очистить кэш?')">
+                   onclick="return confirm('{{ lang('cache.clear_btn') }} кэш?')">
                     <i class="fas fa-broom"></i>
-                    <span>Очистить</span>
+                    <span>{{ lang('cache.clear_btn') }}</span>
                 </a>
             </div>
         </div>

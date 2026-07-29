@@ -215,7 +215,7 @@
                                         {% if not item.is_dir %}
                                             <button onclick="event.stopPropagation(); selectFileTable('{{ item.name|e('js') }}', '{{ item.path|e('js') }}')"
                                                     class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm transition">
-                                                <i class="fas fa-check mr-1"></i>Выбрать
+                                                <i class="fas fa-check mr-1"></i>{{ lang('filemanager.popup_select') }}
                                             </button>
                                         {% endif %}
                                     </td>
@@ -310,7 +310,7 @@
             <input type="file" id="fileInput" multiple class="hidden">
             <button onclick="document.getElementById('fileInput').click()"
                     class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                Выбрать файлы
+                {{ lang('filemanager.popup_select') }} файлы
             </button>
             <p class="text-sm text-gray-500 mt-2">Максимальный размер: 5MB</p>
         </div>
@@ -329,7 +329,7 @@
 
         <div class="flex justify-end space-x-2 mt-4">
             <button onclick="hideUploadForm()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
-                Отмена
+                {{ lang('filemanager.popup_cancel') }}
             </button>
             <button onclick="startUpload()" id="uploadButton"
                     class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -351,7 +351,7 @@
                     <i class="fas fa-copy mr-1"></i>Копировать
                 </button>
                 <button onclick="useSelectedFile()" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm transition">
-                    <i class="fas fa-check mr-1"></i>Выбрать
+                    <i class="fas fa-check mr-1"></i>{{ lang('filemanager.popup_select') }}
                 </button>
             </div>
         </div>

@@ -100,8 +100,8 @@
                         </a>
                         <a href="{{ admin_url('notifications/delete/' ~ form_name ~ '/id/' ~ submission.id) }}" 
                            class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
-                           onclick="return confirm('Удалить эту заявку?')">
-                            Удалить
+                           onclick="return confirm('{{ lang('notifications.view_action_delete') }} эту заявку?')">
+                            {{ lang('notifications.view_action_delete') }}
                         </a>
                     </div>
                 </div>

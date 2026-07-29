@@ -30,14 +30,14 @@ class SettingsController extends BaseController {
             }
 
             $this->render("settings/index", [
-                "title" => "Настройки сайта",
+                "title" => $this->lang->t('settings.page_title'),
                 "system_settings" => $systemSettings,
                 "all_tables" => $selectableTables,
                 "blacklisted_tables" => $blacklistedTables
             ]);
         } catch (Exception $e) {
             $this->render("error/404", [
-                "message" => "Ошибка при загрузке настроек: " . $e->getMessage()
+                "message" => $this->lang->t('settings.load_error') . ' ' . $e->getMessage()
             ]);
         }
     }
@@ -52,7 +52,7 @@ class SettingsController extends BaseController {
             $type = $_POST["setting_type"] ?? "string";
 
             if (empty($key)) {
-                throw new Exception("\u041d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d \u043a\u043b\u044e\u0447 \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438");
+                throw new Exception($this->lang->t('settings.key_not_specified'));
             }
 
             $settings = new Settings($this->db);
@@ -80,7 +80,7 @@ class SettingsController extends BaseController {
             }
 
             if (empty($settingsData)) {
-                throw new Exception("\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u0434\u043b\u044f \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f");
+                throw new Exception($this->lang->t('settings.no_data_to_save'));
             }
 
             $settings = new Settings($this->db);
@@ -104,7 +104,7 @@ class SettingsController extends BaseController {
             $key = $_POST["key"] ?? "";
 
             if (empty($key)) {
-                throw new Exception("Не указан ключ настройки");
+                throw new Exception($this->lang->t('settings.key_not_specified'));
             }
 
             $this->db->query(

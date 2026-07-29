@@ -72,7 +72,7 @@ class NotificationsController extends BaseController {
         $formInfo['form_name'] = $formName;
 
         $this->render('notifications/view_form', [
-            'title' => "Заявки: " . ($formInfo['title'] ?? $formName),
+            'title' => $this->lang->t('notifications.submissions_title', ['name' => ($formInfo['title'] ?? $formName)]),
             'table_name' => $table,
             'form_name' => $formName,
             'form_info' => $formInfo,
@@ -102,7 +102,7 @@ class NotificationsController extends BaseController {
 
         if (!$submission) {
             $this->render('error/404', [
-                'message' => "Заявка #{$id} не найдена"
+                'message' => $this->lang->t('notifications.submission_not_found', ['id' => \$id])
             ]);
             return;
         }
@@ -110,7 +110,7 @@ class NotificationsController extends BaseController {
         $this->markAsRead($table, $id);
 
         $this->render('notifications/view_submission', [
-            'title' => "Заявка #{$id}",
+            'title' => $this->lang->t('notifications.submission_title', ['id' => \$id]),
             'table_name' => $table,
             'form_name' => $formName,
             'form_info' => $formInfo,
@@ -139,7 +139,7 @@ class NotificationsController extends BaseController {
             $this->redirect("/notifications/form/{$formName}?deleted=1");
         } else {
             $this->render('error/404', [
-                'message' => "Не удалось удалить заявку #{$id}"
+                'message' => $this->lang->t('notifications.delete_failed', ['id' => \$id])
             ]);
         }
     }

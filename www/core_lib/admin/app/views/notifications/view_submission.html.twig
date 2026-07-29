@@ -12,12 +12,12 @@
         <div class="flex space-x-3">
             <a href="{{ admin_url('notifications/form/' ~ form_name) }}" 
                class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                { lang('notifications.back_to_list_arrow') }
+                {{ lang('notifications.back_to_list_arrow') }}
             </a>
             <a href="{{ admin_url('notifications/delete/' ~ form_name ~ '/id/' ~ submission.id) }}" 
                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
-               onclick="return confirm('{ lang('notifications.delete_btn') } эту заявку?')">
-                { lang('notifications.delete_btn') }
+               onclick="return confirm('{{ lang('notifications.delete_btn') }} эту заявку?')">
+                {{ lang('notifications.delete_btn') }}
             </a>
         </div>
     </div>
@@ -27,7 +27,7 @@
         <div class="lg:col-span-2">
             <div class="bg-white rounded-lg shadow-sm border">
                 <div class="px-6 py-4 border-b">
-                    <h2 class="text-lg font-semibold text-gray-900">{ lang('notifications.submission_data') }</h2>
+                    <h2 class="text-lg font-semibold text-gray-900">{{ lang('notifications.submission_data') }}</h2>
                 </div>
                 <div class="p-6">
                     <dl class="grid grid-cols-1 gap-6">
@@ -69,26 +69,26 @@
 
         <!-- Мета-информация -->
         <div class="space-y-6">
-            <!-- { lang('notifications.status_label') } -->
+            <!-- {{ lang('notifications.status_label') }} -->
             <div class="bg-white rounded-lg shadow-sm border">
                 <div class="px-6 py-4 border-b">
-                    <h2 class="text-lg font-semibold text-gray-900">{ lang('notifications.status_label') }</h2>
+                    <h2 class="text-lg font-semibold text-gray-900">{{ lang('notifications.status_label') }}</h2>
                 </div>
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-medium text-gray-600">{{ lang('notifications.sub_status') }}</span>
                         {% if submission.read_status == 'read' %}
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            { lang('notifications.status_read') }
+                            {{ lang('notifications.status_read') }}
                         </span>
                         {% else %}
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            { lang('notifications.status_new') }
+                            {{ lang('notifications.status_new') }}
                         </span>
                         {% endif %}
                     </div>
                     <div class="mt-4">
-                        <span class="text-sm font-medium text-gray-600">{ lang('notifications.created_label') }</span>
+                        <span class="text-sm font-medium text-gray-600">{{ lang('notifications.created_label') }}</span>
                             <p class="text-sm text-gray-900">
                                 {% if submission.created_at is not empty and submission.created_at != 'CURRENT_TIMESTAMP' and submission.created_at matches '/^\\d{4}-\\d{2}-\\d{2}/' %}
                                     {{ submission.created_at|date('d.m.Y H:i:s') }}
@@ -104,26 +104,26 @@
                 </div>
             </div>
 
-            <!-- { lang('notifications.actions_label') } -->
+            <!-- {{ lang('notifications.actions_label') }} -->
             <div class="bg-white rounded-lg shadow-sm border">
                 <div class="px-6 py-4 border-b">
-                    <h2 class="text-lg font-semibold text-gray-900">{ lang('notifications.actions_label') }</h2>
+                    <h2 class="text-lg font-semibold text-gray-900">{{ lang('notifications.actions_label') }}</h2>
                 </div>
                 <div class="p-6 space-y-3">
                     <a href="{{ admin_url('notifications/form/' ~ form_name) }}" 
                        class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                        { lang('notifications.all_form_submissions') }
+                        {{ lang('notifications.all_form_submissions') }}
                     </a>
                     {% if submission.email %}
                     <a href="mailto:{{ submission.email }}" 
                        class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                        { lang('notifications.reply_email') }
+                        {{ lang('notifications.reply_email') }}
                     </a>
                     {% endif %}
                     {% if submission.phone %}
                     <a href="tel:{{ submission.phone }}" 
                        class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
-                        { lang('notifications.call_phone') }
+                        {{ lang('notifications.call_phone') }}
                     </a>
                     {% endif %}
                 </div>
@@ -132,11 +132,11 @@
             <!-- Информация о форме -->
             <div class="bg-white rounded-lg shadow-sm border">
                 <div class="px-6 py-4 border-b">
-                    <h2 class="text-lg font-semibold text-gray-900">{ lang('notifications.about_form') }</h2>
+                    <h2 class="text-lg font-semibold text-gray-900">{{ lang('notifications.about_form') }}</h2>
                 </div>
                 <div class="p-6">
                     <div class="mb-3">
-                        <span class="text-sm font-medium text-gray-600">{ lang('notifications.name_label') }</span>
+                        <span class="text-sm font-medium text-gray-600">{{ lang('notifications.name_label') }}</span>
                         <p class="text-sm text-gray-900">{{ form_info.title }}</p>
                     </div>
                     <div class="mb-3">
@@ -144,7 +144,7 @@
                         <p class="text-sm text-gray-900">{{ form_info.url }}</p>
                     </div>
                     <div>
-                        <span class="text-sm font-medium text-gray-600">{ lang('notifications.table_label') }</span>
+                        <span class="text-sm font-medium text-gray-600">{{ lang('notifications.table_label') }}</span>
                         <p class="text-sm text-gray-900">{{ table_name }}</p>
                     </div>
                 </div>

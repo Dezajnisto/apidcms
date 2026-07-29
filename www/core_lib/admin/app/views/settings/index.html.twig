@@ -9,7 +9,7 @@
 <div class="max-w-6xl mx-auto">
     <div class="mb-6">
         <h1 class="text-xl md:text-2xl font-bold text-gray-900">{{ title }}</h1>
-        <p class="text-sm text-gray-500 mt-1">{ lang('settings.subtitle') }</p>
+        <p class="text-sm text-gray-500 mt-1">{{ lang('settings.subtitle') }}</p>
     </div>
 
     {% if _GET.saved is defined %}
@@ -28,7 +28,7 @@
             <nav class="flex flex-nowrap -mb-px" role="tablist">
                 <button onclick="switchTab('osnovnye')" id="tab-btn-osnovnye"
                         class="tab-btn px-3 md:px-5 py-2.5 md:py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 whitespace-nowrap">
-                    🏠 { lang('settings.tab_general') }
+                    🏠 {{ lang('settings.tab_general') }}
                 </button>
                 <button onclick="switchTab('ai')" id="tab-btn-ai"
                         class="tab-btn px-3 md:px-5 py-2.5 md:py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap">
@@ -36,15 +36,15 @@
                 </button>
                 <button onclick="switchTab('ai-frontend')" id="tab-btn-ai-frontend"
                         class="tab-btn px-3 md:px-5 py-2.5 md:py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap">
-                    🤖 { lang('settings.tab_ai_frontend') }
+                    🤖 {{ lang('settings.tab_ai_frontend') }}
                 </button>
                 <button onclick="switchTab('stats')" id="tab-btn-stats"
                         class="tab-btn px-3 md:px-5 py-2.5 md:py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap">
-                    { lang('settings.stats_tab_short') }
+                    {{ lang('settings.stats_tab_short') }}
                 </button>
                 <button onclick="switchTab('system')" id="tab-btn-system"
                         class="tab-btn px-3 md:px-5 py-2.5 md:py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap">
-                    ⚙️ { lang('settings.tab_system') }
+                    ⚙️ {{ lang('settings.tab_system') }}
                 </button>
             </nav>
         </div>
@@ -52,15 +52,15 @@
         {# ===== ТАБ 1: ОСНОВНЫЕ ===== #}
         <div id="tab-osnovnye" class="tab-content active">
             <div class="px-4 md:px-6 py-3 md:py-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <h2 class="text-base md:text-lg font-semibold text-gray-900">{ lang('settings.tab_general') }{ lang('settings.general_title_suffix') }</h2>
-                <span class="text-xs text-gray-400">{ lang('settings.all_fields_hint') }</span>
+                <h2 class="text-base md:text-lg font-semibold text-gray-900">{{ lang('settings.tab_general') }}{{ lang('settings.general_title_suffix') }}</h2>
+                <span class="text-xs text-gray-400">{{ lang('settings.all_fields_hint') }}</span>
             </div>
             <form method="POST" action="{{ admin_url('settings/save-multiple') }}" id="mainSettingsForm">
             <div class="p-4 md:p-6 space-y-4 md:space-y-6">
-                {# { lang('settings.site_title') } #}
+                {# {{ lang('settings.site_title') }} #}
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.site_title') }</label>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.site_title') }}</label>
                         <p class="text-xs text-gray-400">{{ lang('settings.title_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
@@ -78,15 +78,15 @@
                 {# Описание #}
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.site_description') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.seo_meta_hint') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.site_description') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.seo_meta_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         {% set sv = '' %}
                         {% for s in system_settings %}
                             {% if s.key == 'site_description' %}{% set sv = s.value %}{% endif %}
                         {% endfor %}
-                        <textarea name="settings[site_description]" rows="2" placeholder="{ lang('settings.site_description') }"
+                        <textarea name="settings[site_description]" rows="2" placeholder="{{ lang('settings.site_description') }}"
                                   class="w-full px-3 py-2 border border-gray-300 rounded text-sm">{{ sv }}</textarea>
                         <input type="hidden" name="types[site_description]" value="textarea">
                     </div>
@@ -96,8 +96,8 @@
                 {# Email #}
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.site_email') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.email_hint') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.site_email') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.email_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         {% set sv = '' %}
@@ -111,11 +111,11 @@
                 </div>
                 <hr class="border-gray-200">
 
-                {# { lang('settings.posts_per_page') } #}
+                {# {{ lang('settings.posts_per_page') }} #}
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.posts_per_page') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.posts_per_page_hint') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.posts_per_page') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.posts_per_page_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         {% set sv = '' %}
@@ -133,7 +133,7 @@
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
                         <label class="text-sm font-medium text-gray-700">Favicon</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.favicon_hint') }</p>
+                        <p class="text-xs text-gray-400">{{ lang('settings.favicon_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         {% set sv = '' %}
@@ -154,11 +154,11 @@
                 </div>
                 <hr class="border-gray-200">
 
-                {# { lang('settings.maintenance_mode') } #}
+                {# {{ lang('settings.maintenance_mode') }} #}
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.maintenance_mode') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.maintenance_hint') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.maintenance_mode') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.maintenance_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         {% set sv = '0' %}
@@ -171,7 +171,7 @@
                                    class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                             <input type="hidden" name="types[maintenance_mode]" value="string">
                             <span class="text-sm {{ sv == '1' ? 'text-red-600 font-medium' : 'text-gray-600' }}">
-                                {{ sv == '1' ? 'Включён — посетители видят заглушку' : 'Выключен — сайт доступен всем' }}
+                                {{ sv == '1' ? lang('settings.maintenance_on') : lang('settings.maintenance_off') }}
                             </span>
                         </label>
                     </div>
@@ -213,15 +213,15 @@
         <div id="tab-ai" class="tab-content" style="display:none">
             <div class="px-4 md:px-6 py-3 md:py-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <h2 class="text-base md:text-lg font-semibold text-gray-900">🤖 AI (DeepSeek)</h2>
-                <span class="text-xs text-gray-400">{ lang('settings.ai_system_label') }</span>
+                <span class="text-xs text-gray-400">{{ lang('settings.ai_system_label') }}</span>
             </div>
             <div class="p-4 md:p-6">
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="border-b text-left text-gray-500">
-                                <th class="pb-3 pr-4 w-48">{ lang('settings.key_label') }</th>
-                                <th class="pb-3">{ lang('settings.value_label') }</th>
+                                <th class="pb-3 pr-4 w-48">{{ lang('settings.key_label') }}</th>
+                                <th class="pb-3">{{ lang('settings.value_label') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -253,7 +253,7 @@
                 </div>
 
                 <details class="mt-4">
-                    <summary class="text-blue-600 cursor-pointer text-sm hover:text-blue-800"><i class="fas fa-plus"></i> { lang('settings.add_ai_setting') }</summary>
+                    <summary class="text-blue-600 cursor-pointer text-sm hover:text-blue-800"><i class="fas fa-plus"></i> {{ lang('settings.add_ai_setting') }}</summary>
                     <form method="POST" action="{{ admin_url('settings/save') }}" class="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         <input type="text" name="setting_key" placeholder="ai_..." required class="px-2 py-1 border border-gray-300 rounded text-sm">
                         <select name="setting_type" class="px-2 py-1 border border-gray-300 rounded text-sm">
@@ -261,8 +261,8 @@
                             <option value="boolean">boolean</option>
                             <option value="integer">integer</option>
                         </select>
-                        <input type="text" name="setting_value" placeholder="{ lang('settings.value_label') }" class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm">
-                        <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs">{ lang('settings.add_btn') }</button>
+                        <input type="text" name="setting_value" placeholder="{{ lang('settings.value_label') }}" class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm">
+                        <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs">{{ lang('settings.add_btn') }}</button>
                     </form>
                 </details>
             </div>
@@ -271,8 +271,8 @@
         {# ===== ТАБ 3: AI ФРОНТЕНД ===== #}
         <div id="tab-ai-frontend" class="tab-content" style="display:none">
             <div class="px-4 md:px-6 py-3 md:py-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <h2 class="text-base md:text-lg font-semibold text-gray-900">🤖 { lang('settings.tab_ai_frontend') }{ lang('settings.ai_frontend_suffix') }</h2>
-                <span class="text-xs text-gray-400">{ lang('settings.ai_frontend_hint') }</span>
+                <h2 class="text-base md:text-lg font-semibold text-gray-900">🤖 {{ lang('settings.tab_ai_frontend') }}{{ lang('settings.ai_frontend_suffix') }}</h2>
+                <span class="text-xs text-gray-400">{{ lang('settings.ai_frontend_hint') }}</span>
             </div>
             <form method="POST" action="{{ admin_url('settings/save-multiple') }}" id="aiFrontendForm">
             <div class="p-4 md:p-6 space-y-4 md:space-y-6">
@@ -294,11 +294,11 @@
                 {% endfor %}
                 {% set _publicArray = _publicTables|split(',') %}
 
-                {# { lang('settings.ai_source') } #}
+                {# {{ lang('settings.ai_source') }} #}
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.ai_source') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.key_label') }{ lang('settings.key_model_hint_suffix') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.ai_source') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.key_label') }}{{ lang('settings.key_model_hint_suffix') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         <label class="flex items-center space-x-2 cursor-pointer">
@@ -308,10 +308,10 @@
                                    onchange="toggleAiFrontendFields()"
                                    class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                             <input type="hidden" name="types[ai_frontend_use_system]" value="string">
-                            <span class="text-sm text-gray-600">{ lang('settings.ai_use_system') }</span>
+                            <span class="text-sm text-gray-600">{{ lang('settings.ai_use_system') }}</span>
                         </label>
                         <p id="ai_fe_system_note" class="mt-1 text-xs text-gray-400">
-                            {{ _useSystem != '0' ? '✅ Используется системный ключ и модель' : '⚙️ Отдельный ключ и модель' }}
+                            {{ _useSystem != '0' ? lang('settings.ai_using_system_key') : lang('settings.ai_using_separate_key') }}
                         </p>
                     </div>
                 </div>
@@ -320,8 +320,8 @@
                 {# Отдельный API ключ #}
                 <div id="ai_fe_key_row" class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4" style="{{ _useSystem != '0' ? 'display:none' : '' }}">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.ai_frontend_key') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.ai_frontend_key_hint') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.ai_frontend_key') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.ai_frontend_key_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         <input type="text" name="settings[ai_frontend_api_key]" value="{{ _feKey }}"
@@ -333,8 +333,8 @@
                 {# Отдельная модель #}
                 <div id="ai_fe_model_row" class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4" style="{{ _useSystem != '0' ? 'display:none' : '' }}">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.ai_frontend_model') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.ai_frontend_model_hint') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.ai_frontend_model') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.ai_frontend_model_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         <input type="text" name="settings[ai_frontend_model]" value="{{ _feModel }}"
@@ -344,11 +344,11 @@
                 </div>
                 <hr class="border-gray-200">
 
-                {# { lang('settings.ai_system_prompt') } #}
+                {# {{ lang('settings.ai_system_prompt') }} #}
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.ai_system_prompt') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.ai_prompt_hint') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.ai_system_prompt') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.ai_prompt_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         <textarea name="settings[ai_frontend_prompt]" rows="5"
@@ -359,27 +359,27 @@
                 </div>
                 <hr class="border-gray-200">
 
-                {# { lang('settings.ai_personality') } #}
+                {# {{ lang('settings.ai_personality') }} #}
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.ai_personality') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.ai_personality_hint') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.ai_personality') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.ai_personality_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         <textarea name="settings[ai_frontend_personality]" rows="5"
                                   class="w-full px-3 py-2 border border-gray-300 rounded text-sm font-mono"
                                   placeholder="Ты — Ирина, менеджер сайта.&#10;Правила...">{{ _fePers }}</textarea>
                         <input type="hidden" name="types[ai_frontend_personality]" value="string">
-                        <p class="mt-1 text-xs text-gray-400">{ lang('settings.context_db_hint') }</p>
+                        <p class="mt-1 text-xs text-gray-400">{{ lang('settings.context_db_hint') }}</p>
                     </div>
                 </div>
                 <hr class="border-gray-200">
 
-                {# { lang('settings.ai_row_limit') }-контекста #}
+                {# {{ lang('settings.ai_row_limit') }}-контекста #}
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.ai_row_limit') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.ai_row_limit_hint') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.ai_row_limit') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.ai_row_limit_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         <input type="number" name="settings[ai_sample_limit]" value="{{ _sampleLimit }}"
@@ -392,8 +392,8 @@
                 {# Публичные таблицы для AI #}
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.ai_tables') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.ai_tables_hint') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.ai_tables') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.ai_tables_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         <div class="space-y-1 max-h-48 overflow-y-auto border border-gray-200 rounded p-2">
@@ -403,13 +403,13 @@
                                        {{ t.name in _publicArray ? 'checked' : '' }}
                                        class="ai-table-checkbox w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                 <span class="font-mono text-xs">{{ t.name }}</span>
-                                <span class="text-xs text-gray-400">({{ t.row_count }}{ lang('settings.rows_suffix') })</span>
+                                <span class="text-xs text-gray-400">({{ t.row_count }}{{ lang('settings.rows_suffix') }})</span>
                             </label>
                             {% endfor %}
                         </div>
                         <input type="hidden" name="settings[ai_public_tables]" id="ai_public_tables_input" value="{{ _publicTables }}">
                         <input type="hidden" name="types[ai_public_tables]" value="string">
-                        <p class="mt-1 text-xs text-gray-400">{ lang('settings.ai_security_hint') }</p>
+                        <p class="mt-1 text-xs text-gray-400">{{ lang('settings.ai_security_hint') }}</p>
                     </div>
                 </div>
 
@@ -417,7 +417,7 @@
                 <div class="flex justify-end">
                     <button type="submit" class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center justify-center space-x-2 text-sm">
                         <i class="fas fa-save"></i>
-                        <span>{ lang('settings.save_frontend') }</span>
+                        <span>{{ lang('settings.save_frontend') }}</span>
                     </button>
                 </div>
             </div>
@@ -427,8 +427,8 @@
         {# ===== ТАБ 4: СТАТИСТИКА ===== #}
         <div id="tab-stats" class="tab-content" style="display:none">
             <div class="px-4 md:px-6 py-3 md:py-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <h2 class="text-base md:text-lg font-semibold text-gray-900">{ lang('settings.stats_title') }</h2>
-                <span class="text-xs text-gray-400">{ lang('settings.stats_subtitle') }</span>
+                <h2 class="text-base md:text-lg font-semibold text-gray-900">{{ lang('settings.stats_title') }}</h2>
+                <span class="text-xs text-gray-400">{{ lang('settings.stats_subtitle') }}</span>
             </div>
             <form method="POST" action="{{ admin_url('settings/save-multiple') }}">
             <div class="p-4 md:p-6 space-y-4 md:space-y-6">
@@ -441,8 +441,8 @@
 
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.stats_enabled') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.stats_enabled_hint') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.stats_enabled') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.stats_enabled_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         <label class="flex items-center space-x-2 cursor-pointer">
@@ -452,12 +452,12 @@
                                    class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                             <input type="hidden" name="types[stats_enabled]" value="string">
                             <span class="text-sm {{ _statsEnabled == '1' ? 'text-green-600 font-medium' : 'text-gray-600' }}">
-                                {{ _statsEnabled == '1' ? '✅ Статистика собирается' : '⏸ Статистика выключена' }}
+                                {{ _statsEnabled == '1' ? lang('settings.stats_enabled_label') : lang('settings.stats_disabled_label') }}
                             </span>
                         </label>
                         {% if _statsEnabled == '1' %}
                         <p class="mt-1 text-xs text-gray-400">
-                            <a href="{{ admin_url('stats') }}" class="text-blue-600 hover:text-blue-800">{ lang('settings.open_stats_dashboard') }</a>
+                            <a href="{{ admin_url('stats') }}" class="text-blue-600 hover:text-blue-800">{{ lang('settings.open_stats_dashboard') }}</a>
                         </p>
                         {% endif %}
                     </div>
@@ -466,17 +466,17 @@
 
                 <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4">
                     <div class="sm:w-48 sm:pt-1">
-                        <label class="text-sm font-medium text-gray-700">{ lang('settings.stats_retention') }</label>
-                        <p class="text-xs text-gray-400">{ lang('settings.stats_retention_hint') }</p>
+                        <label class="text-sm font-medium text-gray-700">{{ lang('settings.stats_retention') }}</label>
+                        <p class="text-xs text-gray-400">{{ lang('settings.stats_retention_hint') }}</p>
                     </div>
                     <div class="flex-1 w-full">
                         <select name="settings[stats_retention_days]" class="w-48 px-3 py-2 border border-gray-300 rounded text-sm">
                             {% set _ret = _statsRetention|default('90') %}
-                            <option value="30" {{ _ret == '30' ? 'selected' : '' }}>30 { lang('settings.days') }</option>
-                            <option value="60" {{ _ret == '60' ? 'selected' : '' }}>60 { lang('settings.days') }</option>
-                            <option value="90" {{ _ret == '90' ? 'selected' : '' }}>90 { lang('settings.days') }</option>
-                            <option value="180" {{ _ret == '180' ? 'selected' : '' }}>180 { lang('settings.days') }</option>
-                            <option value="365" {{ _ret == '365' ? 'selected' : '' }}>365 { lang('settings.days') }</option>
+                            <option value="30" {{ _ret == '30' ? 'selected' : '' }}>30 {{ lang('settings.days') }}</option>
+                            <option value="60" {{ _ret == '60' ? 'selected' : '' }}>60 {{ lang('settings.days') }}</option>
+                            <option value="90" {{ _ret == '90' ? 'selected' : '' }}>90 {{ lang('settings.days') }}</option>
+                            <option value="180" {{ _ret == '180' ? 'selected' : '' }}>180 {{ lang('settings.days') }}</option>
+                            <option value="365" {{ _ret == '365' ? 'selected' : '' }}>365 {{ lang('settings.days') }}</option>
                         </select>
                         <input type="hidden" name="types[stats_retention_days]" value="string">
                     </div>
@@ -486,7 +486,7 @@
                 <div class="flex justify-end">
                     <button type="submit" class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center justify-center space-x-2 text-sm">
                         <i class="fas fa-save"></i>
-                        <span>{ lang('settings.save_stats') }</span>
+                        <span>{{ lang('settings.save_stats') }}</span>
                     </button>
                 </div>
             </div>
@@ -496,18 +496,18 @@
         {# ===== ТАБ 5: СИСТЕМНЫЕ ===== #}
         <div id="tab-system" class="tab-content" style="display:none">
             <div class="px-4 md:px-6 py-3 md:py-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <h2 class="text-base md:text-lg font-semibold text-gray-900">{ lang('settings.tab_system') }{ lang('settings.system_title_suffix') }</h2>
-                <span class="text-xs text-gray-400">{ lang('settings.system_hint') }</span>
+                <h2 class="text-base md:text-lg font-semibold text-gray-900">{{ lang('settings.tab_system') }}{{ lang('settings.system_title_suffix') }}</h2>
+                <span class="text-xs text-gray-400">{{ lang('settings.system_hint') }}</span>
             </div>
             <div class="p-4 md:p-6">
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="border-b text-left text-gray-500">
-                                <th class="pb-3 pr-4">{ lang('settings.key_label') }</th>
-                                <th class="pb-3 pr-4">{ lang('settings.col_type') }</th>
-                                <th class="pb-3 pr-4">{ lang('settings.value_label') }</th>
-                                <th class="pb-3 w-24 md:w-32">{ lang('settings.col_action') }</th>
+                                <th class="pb-3 pr-4">{{ lang('settings.key_label') }}</th>
+                                <th class="pb-3 pr-4">{{ lang('settings.col_type') }}</th>
+                                <th class="pb-3 pr-4">{{ lang('settings.value_label') }}</th>
+                                <th class="pb-3 w-24 md:w-32">{{ lang('settings.col_action') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -528,7 +528,7 @@
                                     </form>
                                 </td>
                                 <td class="py-3 text-xs text-gray-400">
-                                    <form method="POST" action="{{ admin_url('settings/delete') }}" onsubmit="return confirm('Удалить {{ setting.key }}?');">
+                                    <form method="POST" action="{{ admin_url('settings/delete') }}" onsubmit="return confirm('{{ lang('settings.confirm_delete_setting')|replace({'{key}': setting.key})|e('js') }}');">
                                         <input type="hidden" name="key" value="{{ setting.key }}">
                                         <input type="hidden" name="table" value="system_settings">
                                         <button type="submit" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
@@ -544,15 +544,15 @@
                 <details class="mt-4">
                     <summary class="text-blue-600 cursor-pointer text-sm hover:text-blue-800"><i class="fas fa-plus"></i> {{ lang('settings.add_system_setting_text') }}</summary>
                     <form method="POST" action="{{ admin_url('settings/save') }}" class="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <input type="text" name="setting_key" placeholder="{ lang('settings.key_label') }" required class="px-2 py-1 border border-gray-300 rounded text-sm">
+                        <input type="text" name="setting_key" placeholder="{{ lang('settings.key_label') }}" required class="px-2 py-1 border border-gray-300 rounded text-sm">
                         <select name="setting_type" class="px-2 py-1 border border-gray-300 rounded text-sm">
                             <option value="string">string</option>
                             <option value="boolean">boolean</option>
                             <option value="integer">integer</option>
                             <option value="json">json</option>
                         </select>
-                        <input type="text" name="setting_value" placeholder="{ lang('settings.value_label') }" class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm">
-                        <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs">{ lang('settings.add_btn') }</button>
+                        <input type="text" name="setting_value" placeholder="{{ lang('settings.value_label') }}" class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm">
+                        <button type="submit" class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs">{{ lang('settings.add_btn') }}</button>
                     </form>
                 </details>
             </div>
@@ -596,14 +596,14 @@ window.addEventListener('hashchange', function() {
     if (hash) switchTab(hash);
 });
 
-// === { lang('settings.tab_ai_frontend') }: переключение полей ===
+// === {{ lang('settings.tab_ai_frontend') }}: переключение полей ===
 function toggleAiFrontendFields() {
     var checked = document.getElementById('ai_fe_use_system').checked;
     document.getElementById('ai_fe_key_row').style.display = checked ? 'none' : '';
     document.getElementById('ai_fe_model_row').style.display = checked ? 'none' : '';
     var note = document.getElementById('ai_fe_system_note');
     if (note) {
-        note.innerHTML = checked ? '✅ Будет использован системный ключ и модель' : '⚙️ Будет использован отдельный ключ и модель';
+        note.innerHTML = checked ? __t('settings.ai_will_use_system') : __t('settings.ai_will_use_separate')';
     }
 }
 

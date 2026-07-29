@@ -1,6 +1,6 @@
 {% extends base_template %}
 
-{% block page_title %}{ lang('plugins.title') }{% endblock %}
+{% block page_title %}{{ lang('plugins.title') }}{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-6 md:py-8">
@@ -27,37 +27,37 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">{{ lang('plugins.col_plugin') }}</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-500 hidden sm:table-cell">{ lang('plugins.col_version') }</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-500 hidden md:table-cell">{ lang('plugins.col_description') }</th>
-                        <th class="px-4 py-3 text-center text-sm font-medium text-gray-500">{ lang('plugins.col_status') }</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-500 hidden sm:table-cell">{{ lang('plugins.col_version') }}</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-500 hidden md:table-cell">{{ lang('plugins.col_description') }}</th>
+                        <th class="px-4 py-3 text-center text-sm font-medium text-gray-500">{{ lang('plugins.col_status') }}</th>
                         <th class="px-4 py-3 text-right text-sm font-medium text-gray-500">{{ lang('plugins.col_actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for plugin in plugins %}
                     <tr class="border-t hover:bg-gray-50">
-                        <td class="px-4 py-3 font-medium" data-label="Плагин">
+                        <td class="px-4 py-3 font-medium" data-label="{{ lang('plugins.col_plugin') }}">
                             <a href="{{ admin_url('plugins/' ~ plugin.name) }}" class="text-blue-600 hover:text-blue-800 hover:underline text-sm">
                                 {{ plugin.name }}
                             </a>
                         </td>
-                        <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell" data-label="{ lang('plugins.col_version') }">v{{ plugin.version }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-600 hidden md:table-cell" data-label="{ lang('plugins.col_description') }">{{ plugin.description }}</td>
-                        <td class="px-4 py-3 text-center" data-label="{ lang('plugins.col_status') }">
+                        <td class="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell" data-label="{{ lang('plugins.col_version') }}">v{{ plugin.version }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600 hidden md:table-cell" data-label="{{ lang('plugins.col_description') }}">{{ plugin.description }}</td>
+                        <td class="px-4 py-3 text-center" data-label="{{ lang('plugins.col_status') }}">
                             {% if plugin.enabled %}
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ lang('plugins.status_active') }}</span>
                             {% else %}
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{{ lang('plugins.status_inactive') }}</span>
                             {% endif %}
                         </td>
-                        <td class="px-4 py-3 text-right" data-label="Действия">
+                        <td class="px-4 py-3 text-right" data-label="{{ lang('plugins.col_actions') }}">
                             <div class="flex flex-wrap justify-end gap-2 md:gap-3">
                                 <a href="{{ admin_url('plugins/' ~ plugin.name) }}" class="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                                    <i class="fas fa-cog mr-1"></i> { lang('plugins.configure') }
+                                    <i class="fas fa-cog mr-1"></i> {{ lang('plugins.configure') }}
                                 </a>
                                 <form method="post" action="{{ admin_url('/plugins/toggle/' ~ plugin.name) }}" class="inline">
                                     <button type="submit" class="text-xs {% if plugin.enabled %}text-red-600 hover:text-red-800{% else %}text-green-600 hover:text-green-800{% endif %} font-medium">
-                                        {{ plugin.enabled ? 'Деактивировать' : 'Активировать' }}
+                                        {{ plugin.enabled ? lang('plugins.deactivate') : lang('plugins.activate') }}
                                     </button>
                                 </form>
                             </div>

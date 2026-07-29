@@ -12,7 +12,7 @@
             <a href="{{ admin_url('forms/' ~ form.name ~ '/templates') }}" 
                class="inline-flex items-center space-x-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm transition">
                 <i class="fas fa-file-code"></i>
-                <span>{ lang('forms.templates_btn') }</span>
+                <span>{{ lang('forms.templates_btn') }}</span>
             </a>
         </div>
     </div>
@@ -32,7 +32,7 @@
             <h2 class="text-lg font-bold text-gray-800 mb-4">{{ lang('forms.basic_settings') }}</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{ lang('forms.name_label') }</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ lang('forms.name_label') }}</label>
                     <input type="text" name="display_name" value="{{ form.display_name }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
@@ -45,7 +45,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{ lang('forms.template_label') }</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ lang('forms.template_label') }}</label>
                     <select name="template" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                         {% for tpl in available_templates|default(['default.html.twig', 'hero.html.twig', 'minimal.html.twig']) %}
                             <option value="{{ tpl|replace({'.html.twig': ''}) }}" {{ form.template == tpl|replace({'.html.twig': ''}) ? 'selected' : '' }}>{{ tpl|replace({'.html.twig': ''}) }}</option>
@@ -61,12 +61,12 @@
                     <label class="flex items-center">
                         <input type="checkbox" name="enable_csrf" value="1" {{ form.enable_csrf ? 'checked' : '' }}
                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                        <span class="ml-2 text-sm text-gray-700">{ lang('forms.csrf_label') }</span>
+                        <span class="ml-2 text-sm text-gray-700">{{ lang('forms.csrf_label') }}</span>
                     </label>
                     <label class="flex items-center">
                         <input type="checkbox" name="status" value="1" {{ form.status == 'active' ? 'checked' : '' }}
                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                        <span class="ml-2 text-sm text-gray-700">{ lang('forms.active_label') }</span>
+                        <span class="ml-2 text-sm text-gray-700">{{ lang('forms.active_label') }}</span>
                     </label>
                 </div>
             </div>
@@ -74,33 +74,33 @@
 
         {# {{ lang('forms.design') }} #}
         <div class="bg-white rounded-xl shadow-sm border p-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-4">{{ lang('forms.design') }} { lang('forms.design_default_css') }</h2>
+            <h2 class="text-lg font-bold text-gray-800 mb-4">{{ lang('forms.design') }} {{ lang('forms.design_default_css') }}</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{ lang('forms.submit_text_label') }</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ lang('forms.submit_text_label') }}</label>
                     <input type="text" name="design_submit_text" value="{{ form.design.submit_text|default('{{ lang('forms.default_submit_text') }}') }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{ lang('forms.css_button_label') }</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ lang('forms.css_button_label') }}</label>
                     <input type="text" name="design_submit_class" value="{{ form.design.submit_class|default('') }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{ lang('forms.css_field_label') }</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ lang('forms.css_field_label') }}</label>
                     <input type="text" name="design_field_class" value="{{ form.design.field_class|default('') }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
         </div>
 
-        {# { lang('forms.fields_title') } #}
+        {# {{ lang('forms.fields_title') }} #}
         <div class="bg-white rounded-xl shadow-sm border p-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-gray-800">{ lang('forms.fields_title') }</h2>
+                <h2 class="text-lg font-bold text-gray-800">{{ lang('forms.fields_title') }}</h2>
                 <button type="button" onclick="addField()"
                         class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm transition">
-                    <i class="fas fa-plus mr-1"></i> { lang('forms.add_field') }
+                    <i class="fas fa-plus mr-1"></i> {{ lang('forms.add_field') }}
                 </button>
             </div>
 
@@ -123,16 +123,16 @@
                            onchange="document.getElementById('admin-notify-details').classList.toggle('hidden', !this.checked);"
                            {{ form.notifications.admin_notify ? 'checked' : '' }}
                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                    <span class="ml-2 text-sm font-medium text-gray-700">{ lang('forms.notify_admin') }</span>
+                    <span class="ml-2 text-sm font-medium text-gray-700">{{ lang('forms.notify_admin') }}</span>
                 </label>
                 <div id="admin-notify-details" class="ml-6 space-y-3 {{ form.notifications.admin_notify ? '' : 'hidden' }}">
                     <div>
-                        <label class="block text-sm text-gray-600 mb-1">{{ lang('forms.admin_email') }} { lang('forms.admin_email_comma') }</label>
+                        <label class="block text-sm text-gray-600 mb-1">{{ lang('forms.admin_email') }} {{ lang('forms.admin_email_comma') }}</label>
                         <input type="text" name="admin_emails" value="{{ form.notifications.admin_emails|join(', ')|default('') }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm text-gray-600 mb-1">{ lang('forms.email_subject') }</label>
+                        <label class="block text-sm text-gray-600 mb-1">{{ lang('forms.email_subject') }}</label>
                         <input type="text" name="admin_subject" value="{{ form.notifications.admin_subject|default('{{ lang('forms.default_admin_subject') }}') }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                     </div>
@@ -143,7 +143,7 @@
                            onchange="document.getElementById('autoreply-details').classList.toggle('hidden', !this.checked);"
                            {{ form.notifications.auto_reply ? 'checked' : '' }}
                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                    <span class="ml-2 text-sm font-medium text-gray-700">{{ lang('forms.auto_reply') }}{ lang('forms.auto_reply_user') }</span>
+                    <span class="ml-2 text-sm font-medium text-gray-700">{{ lang('forms.auto_reply') }}{{ lang('forms.auto_reply_user') }}</span>
                 </label>
                 <div id="autoreply-details" class="ml-6 space-y-3 {{ form.notifications.auto_reply ? '' : 'hidden' }}">
                     <div>
@@ -152,7 +152,7 @@
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm text-gray-600 mb-1">{ lang('forms.user_email_field') }</label>
+                        <label class="block text-sm text-gray-600 mb-1">{{ lang('forms.user_email_field') }}</label>
                         <select name="auto_reply_field" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" id="auto-reply-field-select">
                             {% for fname, field in form.fields %}
                                 <option value="{{ fname }}" {{ form.notifications.auto_reply_field == fname ? 'selected' : '' }}>{{ fname }}</option>
@@ -167,7 +167,7 @@
         <div class="flex justify-end">
             <button type="submit"
                     class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition shadow-lg">
-                <i class="fas fa-save mr-2"></i>{ lang('forms.save_form') }
+                <i class="fas fa-save mr-2"></i>{{ lang('forms.save_form') }}
             </button>
         </div>
     </form>
@@ -175,7 +175,7 @@
 
 {# Шаблон поля для JS — рендерим серверно с плейсхолдерами, JS заменит __NAME__/__INDEX__ #}
 <template id="field-template">
-    {% include 'forms/_field_card.html.twig' with {fname: '__NAME__', field: {label: 'Новое поле', type: 'text'}, index: '__INDEX__'} %}
+    {% include 'forms/_field_card.html.twig' with {fname: '__NAME__', field: {label: lang('forms.field_new'), type: 'text'}, index: '__INDEX__'} %}
 </template>
 
 <script>

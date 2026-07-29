@@ -71,12 +71,12 @@
                 <span class="text-sm text-gray-500">{{ lang('filemanager.view_label') }}</span>
                 <button onclick="setViewMode('grid')" id="btn-grid"
                         class="p-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
-                        title="Сетка">
+                        title="{{ lang('filemanager.view_grid') }}">
                     <i class="fas fa-th-large"></i>
                 </button>
                 <button onclick="setViewMode('table')" id="btn-table"
                         class="p-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
-                        title="Таблица">
+                        title="{{ lang('filemanager.view_table') }}">
                     <i class="fas fa-list"></i>
                 </button>
             </div>
@@ -238,12 +238,12 @@
             {% if pagination.page > 1 %}
                 <a href="?callback={{ callback }}&path={{ currentPath|url_encode }}&page=1&per_page={{ pagination.per_page }}&cols={{ cols }}"
                    class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50 transition"
-                   title="Первая">
+                   title="{{ lang('filemanager.first_page') }}">
                     <i class="fas fa-angle-double-left"></i>
                 </a>
                 <a href="?callback={{ callback }}&path={{ currentPath|url_encode }}&page={{ pagination.page - 1 }}&per_page={{ pagination.per_page }}&cols={{ cols }}"
                    class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50 transition"
-                   title="Предыдущая">
+                   title="{{ lang('filemanager.prev_page') }}">
                     <i class="fas fa-angle-left"></i>
                 </a>
             {% else %}
@@ -280,12 +280,12 @@
             {% if pagination.page < pagination.total_pages %}
                 <a href="?callback={{ callback }}&path={{ currentPath|url_encode }}&page={{ pagination.page + 1 }}&per_page={{ pagination.per_page }}&cols={{ cols }}"
                    class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50 transition"
-                   title="Следующая">
+                   title="{{ lang('filemanager.next_page') }}">
                     <i class="fas fa-angle-right"></i>
                 </a>
                 <a href="?callback={{ callback }}&path={{ currentPath|url_encode }}&page={{ pagination.total_pages }}&per_page={{ pagination.per_page }}&cols={{ cols }}"
                    class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50 transition"
-                   title="Последняя">
+                   title="{{ lang('filemanager.last_page') }}">
                     <i class="fas fa-angle-double-right"></i>
                 </a>
             {% else %}
@@ -461,7 +461,7 @@ function buildUrl(overrides) {
 function copyFilePath() {
     if (selectedFile) {
         navigator.clipboard.writeText(selectedFile.path).then(function() {
-            alert('Путь скопирован: ' + selectedFile.path);
+            alert(__t('filemanager.path_copied') + ': ' + selectedFile.path);
         }).catch(function() {
             const tempInput = document.createElement('input');
             tempInput.value = selectedFile.path;
@@ -469,7 +469,7 @@ function copyFilePath() {
             tempInput.select();
             document.execCommand('copy');
             document.body.removeChild(tempInput);
-            alert('Путь скопирован: ' + selectedFile.path);
+            alert(__t('filemanager.path_copied') + ': ' + selectedFile.path);
         });
     }
 }
@@ -592,11 +592,11 @@ async function startUpload() {
         if (result.success) {
             setTimeout(() => window.location.reload(), 1000);
         } else {
-            alert('Ошибка загрузки: ' + result.message);
+            alert(__t('filemanager.error_upload') + ': ' + result.message);
             resetUploadForm();
         }
     } catch (error) {
-        alert('Ошибка сети: ' + error.message);
+        alert(__t('filemanager.error_network') + ': ' + error.message);
         resetUploadForm();
     }
 }

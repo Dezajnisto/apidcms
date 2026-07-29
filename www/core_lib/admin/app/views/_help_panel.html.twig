@@ -6,12 +6,12 @@
     <div class="help-panel-header">
         <div class="help-header-links">
             <a class="help-toc-link active" id="help-toc-link" onclick="showToc()">
-                <i class="fas fa-list"></i> {{ lang('common.contents')|default('Содержание') }}
+                <i class="fas fa-list"></i> {{ lang('common.contents') }}
             </a>
             <span style="color:#d1d5db;margin:0 2px">|</span>
             <span id="help-title" style="font-size:14px;color:#6b7280;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ lang('common.help')|default('Справка') }}</span>
         </div>
-        <button class="help-close" onclick="toggleHelp()" title="Закрыть (Esc)">
+        <button class="help-close" onclick="toggleHelp()" title="{{ lang('common.close_esc') }}">
             <i class="fas fa-times"></i>
         </button>
     </div>
@@ -244,7 +244,7 @@ function resolveLangUrl(url) {
 
     function showToc() {
         document.getElementById('help-toc-link').classList.add('active');
-        document.getElementById('help-title').textContent = 'Содержание';
+        document.getElementById('help-title').textContent = __t('common.contents');
         var content = document.getElementById('help-content');
         loadManifest(function(err, manifest) {
             if (err) { content.innerHTML = '<div class="help-error">{{ lang('error.load_failed')|default('Не удалось загрузить') }}</div>'; return; }

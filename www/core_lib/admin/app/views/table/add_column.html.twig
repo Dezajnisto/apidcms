@@ -114,7 +114,7 @@
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 md:pt-6 border-t">
                     <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/structure') }}" 
                        class="px-4 md:px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition text-sm text-center">
-                        { lang('common.cancel') }
+                        {{ lang('common.cancel') }}
                     </a>
                     <button type="submit" 
                             class="px-4 md:px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center justify-center space-x-2 text-sm">

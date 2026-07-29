@@ -7,7 +7,7 @@
 <div class="max-w-7xl mx-auto space-y-6">
     <!-- Переключатель периода -->
     <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-gray-900">{ lang('stats.title') }</h1>
+        <h1 class="text-2xl font-bold text-gray-900">{{ lang('stats.title') }}</h1>
         <div class="flex items-center space-x-2 bg-gray-100 p-1 rounded-lg">
             {% for d in [7, 30, 60, 90] %}
             <a href="?days={{ d }}" class="px-3 py-1.5 rounded-md text-sm font-medium transition {{ days == d ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-800' }}">
@@ -20,15 +20,15 @@
     <!-- Карточки KPI -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-lg shadow-sm border p-5">
-            <p class="text-sm text-gray-500">{ lang('stats.hits') }</p>
+            <p class="text-sm text-gray-500">{{ lang('stats.hits') }}</p>
             <p class="text-2xl font-bold text-gray-900">{{ summary.total_hits|number_format(0, '.', ' ') }}</p>
         </div>
         <div class="bg-white rounded-lg shadow-sm border p-5">
-            <p class="text-sm text-gray-500">{ lang('stats.uniques') }</p>
+            <p class="text-sm text-gray-500">{{ lang('stats.uniques') }}</p>
             <p class="text-2xl font-bold text-gray-900">{{ summary.total_unique|number_format(0, '.', ' ') }}</p>
         </div>
         <div class="bg-white rounded-lg shadow-sm border p-5">
-            <p class="text-sm text-gray-500">{ lang('stats.mobile') }</p>
+            <p class="text-sm text-gray-500">{{ lang('stats.mobile') }}</p>
             <p class="text-2xl font-bold text-gray-900">
                 {% set mt = summary.device_split.mobile|default(0) + summary.device_split.tablet|default(0) %}
                 {% set dt = summary.device_split.desktop|default(0) %}
@@ -37,14 +37,14 @@
             </p>
         </div>
         <div class="bg-white rounded-lg shadow-sm border p-5">
-            <p class="text-sm text-gray-500">{ lang('stats.referrers') }</p>
+            <p class="text-sm text-gray-500">{{ lang('stats.referrers') }}</p>
             <p class="text-2xl font-bold text-gray-900">{{ summary.top_referrers|length }}</p>
         </div>
     </div>
 
     <!-- График по дням -->
     <div class="bg-white rounded-lg shadow-sm border p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">{ lang('stats.visits_by_day') }</h2>
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ lang('stats.visits_by_day') }}</h2>
         {% if daily is empty %}
         <p class="text-gray-400 text-center py-8">{{ lang('stats.empty') }}</p>
         {% else %}
@@ -65,9 +65,9 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Источники трафика -->
         <div class="bg-white rounded-lg shadow-sm border p-6">
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">{ lang('stats.traffic_sources') }</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">{{ lang('stats.traffic_sources') }}</h3>
             {% if summary.top_referrers is empty %}
-            <p class="text-gray-400 text-sm">{ lang('stats.no_data') }</p>
+            <p class="text-gray-400 text-sm">{{ lang('stats.no_data') }}</p>
             {% else %}
             <div class="space-y-2">
                 {% set refTotal = 0 %}
@@ -89,9 +89,9 @@
 
         <!-- Устройства -->
         <div class="bg-white rounded-lg shadow-sm border p-6">
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">{ lang('stats.devices') }</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">{{ lang('stats.devices') }}</h3>
             {% if summary.device_split is empty %}
-            <p class="text-gray-400 text-sm">{ lang('stats.no_data') }</p>
+            <p class="text-gray-400 text-sm">{{ lang('stats.no_data') }}</p>
             {% else %}
             <div class="space-y-2">
                 {% set devTotal = 0 %}
@@ -115,9 +115,9 @@
 
         <!-- Браузеры -->
         <div class="bg-white rounded-lg shadow-sm border p-6">
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">{ lang('stats.browsers') }</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">{{ lang('stats.browsers') }}</h3>
             {% if summary.top_browsers is empty %}
-            <p class="text-gray-400 text-sm">{ lang('stats.no_data') }</p>
+            <p class="text-gray-400 text-sm">{{ lang('stats.no_data') }}</p>
             {% else %}
             <div class="space-y-2">
                 {% set brTotal = 0 %}
@@ -139,9 +139,9 @@
 
         <!-- Дни недели -->
         <div class="bg-white rounded-lg shadow-sm border p-6">
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">{ lang('stats.weekdays') }</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">{{ lang('stats.weekdays') }}</h3>
             {% if summary.weekday_split is empty %}
-            <p class="text-gray-400 text-sm">{ lang('stats.no_data') }</p>
+            <p class="text-gray-400 text-sm">{{ lang('stats.no_data') }}</p>
             {% else %}
             <div class="flex items-end space-x-1 h-24">
                 {% set wdMax = 0 %}
@@ -163,18 +163,18 @@
     <!-- Топ страниц -->
     <div class="bg-white rounded-lg shadow-sm border">
         <div class="px-6 py-4 border-b">
-            <h2 class="text-lg font-semibold text-gray-900">{ lang('stats.top_pages') }</h2>
+            <h2 class="text-lg font-semibold text-gray-900">{{ lang('stats.top_pages') }}</h2>
         </div>
         <div class="p-6">
             {% if top is empty %}
-            <p class="text-gray-400 text-center py-8">{ lang('stats.no_data') }</p>
+            <p class="text-gray-400 text-center py-8">{{ lang('stats.no_data') }}</p>
             {% else %}
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 border-b">
                         <th class="pb-2 w-8">#</th>
-                        <th class="pb-2">{ lang('stats.col_page') }</th>
-                        <th class="pb-2 text-right">{ lang('stats.col_hits') }</th>
+                        <th class="pb-2">{{ lang('stats.col_page') }}</th>
+                        <th class="pb-2 text-right">{{ lang('stats.col_hits') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -194,7 +194,7 @@
     <!-- Часы пик -->
     {% if summary.peak_hours is not empty %}
     <div class="bg-white rounded-lg shadow-sm border p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">{ lang('stats.peak_hours') }</h2>
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ lang('stats.peak_hours') }}</h2>
         <div class="flex items-end space-x-0.5 h-24">
             {% set hrMax = 0 %}
             {% for h, v in summary.peak_hours %}{% if v > hrMax %}{% set hrMax = v %}{% endif %}{% endfor %}

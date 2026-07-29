@@ -38,7 +38,7 @@ class PluginAdminController extends BaseController
                 $this->setFlash('success', $this->lang->t('plugins.activated', ['name' => $name]));
             }
         } catch (\Throwable $e) {
-            $this->setFlash('error', "Ошибка: " . $e->getMessage());
+            $this->setFlash('error', $this->lang->t('common.error') . ': ' . $e->getMessage());
         }
         $this->redirect('/plugins');
     }
@@ -72,7 +72,7 @@ class PluginAdminController extends BaseController
         $rawConfig = json_encode($plugin, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
         $this->render('plugins/view', [
-            'title' => "Плагин: {$name}",
+            'title' => $this->lang->t('plugins.plugin_title', ['name' => \$name]),
             'plugin' => $plugin,
             'plugin_name' => $name,
             'tab' => $tab,
@@ -128,7 +128,7 @@ class PluginAdminController extends BaseController
 
         $content = file_get_contents($filePath);
         $this->render('plugins/edit_template', [
-            'title' => "Редактирование: {$file}",
+            'title' => $this->lang->t('plugins.edit_template_title', ['file' => \$file]),
             'plugin' => $plugin,
             'plugin_name' => $name,
             'file_name' => $file,

@@ -1,17 +1,17 @@
 {# admin/app/views/filemanager/index.html.twig — v2: таблица/сетка, per-page, пагинация #}
 {% extends "base.html.twig" %}
 
-{% block title %}{ lang('filemanager.page_title') }{% endblock %}
+{% block title %}{{ lang('filemanager.page_title') }}{% endblock %}
 
-{% block page_title %}{ lang('filemanager.page_title') }{% endblock %}
+{% block page_title %}{{ lang('filemanager.page_title') }}{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto">
     <!-- Заголовок и кнопки -->
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">{ lang('filemanager.page_title') }</h1>
-            <p class="text-sm text-gray-500 mt-1">{ lang('filemanager.subtitle') }</p>
+            <h1 class="text-2xl font-bold text-gray-900">{{ lang('filemanager.page_title') }}</h1>
+            <p class="text-sm text-gray-500 mt-1">{{ lang('filemanager.subtitle') }}</p>
         </div>
         <div class="flex items-center space-x-3">
             <button onclick="showUploadModal()" 
@@ -22,7 +22,7 @@
             <button onclick="createFolder()" 
                     class="inline-flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
                 <i class="fas fa-folder-plus"></i>
-                <span>{ lang('filemanager.create_folder') }</span>
+                <span>{{ lang('filemanager.create_folder') }}</span>
             </button>
         </div>
     </div>
@@ -54,7 +54,7 @@
         <div class="flex items-center justify-between flex-wrap gap-4">
             <!-- Переключатель вида -->
             <div class="flex items-center space-x-2">
-                <span class="text-sm text-gray-500 mr-1">{ lang('filemanager.view_label') }</span>
+                <span class="text-sm text-gray-500 mr-1">{{ lang('filemanager.view_label') }}</span>
                 <button onclick="setViewMode('grid')" id="btn-grid" 
                         class="p-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
                         title="{{ lang('filemanager.view_grid') }}">
@@ -62,14 +62,14 @@
                 </button>
                 <button onclick="setViewMode('table')" id="btn-table"
                         class="p-2 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
-                        title="Таблица">
+                        title="{{ lang('filemanager.view_table') }}">
                     <i class="fas fa-list"></i>
                 </button>
             </div>
 
             <!-- Кол-во колонок в сетке -->
             <div class="flex items-center space-x-2">
-                <span class="text-sm text-gray-500">{ lang('filemanager.cols_label') }</span>
+                <span class="text-sm text-gray-500">{{ lang('filemanager.cols_label') }}</span>
                 <select id="colsSelect" onchange="changeCols(this.value)" 
                         class="border border-gray-300 rounded-md text-sm px-3 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="2" {{ cols == 2 ? 'selected' : '' }}>2</option>
@@ -81,7 +81,7 @@
 
             <!-- Селектор кол-ва записей -->
             <div class="flex items-center space-x-2">
-                <span class="text-sm text-gray-500">{ lang('filemanager.show_label') }</span>
+                <span class="text-sm text-gray-500">{{ lang('filemanager.show_label') }}</span>
                 <select id="perPageSelect" onchange="changePerPage(this.value)" 
                         class="border border-gray-300 rounded-md text-sm px-3 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="10" {{ pagination.per_page == 10 ? 'selected' : '' }}>10</option>
@@ -93,9 +93,9 @@
             <!-- Счётчик -->
             <div class="text-sm text-gray-500">
                 {% if pagination.total > 0 %}
-                    {{ pagination.from }}–{{ pagination.to }}{ lang('filemanager.page_of_suffix') }{{ pagination.total }}
+                    {{ pagination.from }}–{{ pagination.to }}{{ lang('filemanager.page_of_suffix') }}{{ pagination.total }}
                 {% else %}
-                    { lang('filemanager.no_files') }
+                    {{ lang('filemanager.no_files') }}
                 {% endif %}
             </div>
         </div>
@@ -106,12 +106,12 @@
         {% if items is empty %}
             <div class="p-12 text-center">
                 <i class="fas fa-folder-open text-gray-300 text-5xl mb-4"></i>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">{ lang('filemanager.folder_empty') }</h3>
-                <p class="text-gray-500 mb-4">{ lang('filemanager.empty_hint') }</p>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">{{ lang('filemanager.folder_empty') }}</h3>
+                <p class="text-gray-500 mb-4">{{ lang('filemanager.empty_hint') }}</p>
                 <button onclick="showUploadModal()" 
                         class="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
                     <i class="fas fa-upload"></i>
-                    <span>{ lang('filemanager.upload_first') }</span>
+                    <span>{{ lang('filemanager.upload_first') }}</span>
                 </button>
             </div>
         {% else %}
@@ -133,7 +133,7 @@
                                     <div class="file-name text-sm font-medium text-gray-900 truncate" title="{{ item.name }}">
                                         {{ item.name }}
                                     </div>
-                                    <div class="text-xs text-gray-500 mt-1">{ lang('filemanager.folder_badge') }</div>
+                                    <div class="text-xs text-gray-500 mt-1">{{ lang('filemanager.folder_badge') }}</div>
                                 </div>
                             {% else %}
                                 <div class="text-center">
@@ -166,13 +166,13 @@
                                     {% if not item.is_dir %}
                                         <button onclick="copyFileUrl('{{ item.path }}')" 
                                                 class="p-1 bg-white rounded shadow-sm hover:bg-gray-50 transition"
-                                                title="{ lang('filemanager.copy_link') }">
+                                                title="{{ lang('filemanager.copy_link') }}">
                                             <i class="fas fa-link text-xs text-gray-600"></i>
                                         </button>
                                     {% endif %}
                                     <button onclick="deleteItem('{{ item.path }}', '{{ item.is_dir ? 'folder' : 'file' }}')" 
                                             class="p-1 bg-white rounded shadow-sm hover:bg-red-50 transition"
-                                            title="Удалить">
+                                            title="{{ lang('common.delete') }}">
                                         <i class="fas fa-trash text-xs text-red-600"></i>
                                     </button>
                                 </div>
@@ -188,10 +188,10 @@
                     <table class="w-full">
                         <thead class="bg-gray-50 border-b">
                             <tr>
-                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">{ lang('filemanager.col_name') }</th>
-                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{ lang('filemanager.col_size') }</th>
-                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">{ lang('filemanager.col_modified') }</th>
-                                <th class="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">{ lang('filemanager.col_actions') }</th>
+                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">{{ lang('filemanager.col_name') }}</th>
+                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{{ lang('filemanager.col_size') }}</th>
+                                <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">{{ lang('filemanager.col_modified') }}</th>
+                                <th class="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">{{ lang('filemanager.col_actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -201,7 +201,7 @@
                                     data-path="{{ item.path }}"
                                     data-type="{{ item.is_dir ? 'folder' : 'file' }}">
                                     
-                                    <!-- { lang('filemanager.col_name') } -->
+                                    <!-- {{ lang('filemanager.col_name') }} -->
                                     <td class="py-3 px-4">
                                         <div class="flex items-center space-x-3">
                                             {% if item.is_dir %}
@@ -217,17 +217,17 @@
                                         </div>
                                     </td>
                                     
-                                    <!-- { lang('filemanager.col_size') } -->
+                                    <!-- {{ lang('filemanager.col_size') }} -->
                                     <td class="py-3 px-4 text-sm text-gray-500 hidden sm:table-cell">
                                         {{ item.is_dir ? '—' : item.size }}
                                     </td>
                                     
-                                    <!-- { lang('filemanager.col_modified') } -->
+                                    <!-- {{ lang('filemanager.col_modified') }} -->
                                     <td class="py-3 px-4 text-sm text-gray-500 hidden md:table-cell">
                                         {{ item.modified_formatted }}
                                     </td>
                                     
-                                    <!-- { lang('filemanager.col_actions') } -->
+                                    <!-- {{ lang('filemanager.col_actions') }} -->
                                     <td class="py-3 px-4 text-right">
                                         <div class="flex items-center justify-end space-x-1">
                                             <button onclick="event.stopPropagation(); renameItem('{{ item.path }}', '{{ item.is_dir ? 'folder' : 'file' }}', '{{ item.name }}')" 
@@ -238,13 +238,13 @@
                                             {% if not item.is_dir %}
                                                 <button onclick="event.stopPropagation(); copyFileUrl('{{ item.path }}')" 
                                                         class="p-1.5 rounded hover:bg-gray-100 transition"
-                                                        title="{ lang('filemanager.copy_link') }">
+                                                        title="{{ lang('filemanager.copy_link') }}">
                                                     <i class="fas fa-link text-sm text-gray-600"></i>
                                                 </button>
                                             {% endif %}
                                             <button onclick="event.stopPropagation(); deleteItem('{{ item.path }}', '{{ item.is_dir ? 'folder' : 'file' }}')" 
                                                     class="p-1.5 rounded hover:bg-red-50 transition"
-                                                    title="Удалить">
+                                                    title="{{ lang('common.delete') }}">
                                                 <i class="fas fa-trash text-sm text-red-600"></i>
                                             </button>
                                         </div>
@@ -262,19 +262,19 @@
     {% if pagination.total_pages > 1 %}
     <div class="mt-6 flex items-center justify-between">
         <div class="text-sm text-gray-500">
-            { lang('filemanager.page_of') }{{ pagination.page }}{ lang('filemanager.page_of_suffix') }{{ pagination.total_pages }}
+            {{ lang('filemanager.page_of') }}{{ pagination.page }}{{ lang('filemanager.page_of_suffix') }}{{ pagination.total_pages }}
         </div>
         <nav class="flex items-center space-x-1">
             {# Первая #}
             {% if pagination.page > 1 %}
                 <a href="?path={{ currentPath|url_encode }}&page=1&per_page={{ pagination.per_page }}&cols={{ cols }}" 
                    class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50 transition"
-                   title="Первая">
+                   title="{{ lang('filemanager.first_page') }}">
                     <i class="fas fa-angle-double-left"></i>
                 </a>
                 <a href="?path={{ currentPath|url_encode }}&page={{ pagination.page - 1 }}&per_page={{ pagination.per_page }}&cols={{ cols }}" 
                    class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50 transition"
-                   title="Предыдущая">
+                   title="{{ lang('filemanager.prev_page') }}">
                     <i class="fas fa-angle-left"></i>
                 </a>
             {% else %}
@@ -313,12 +313,12 @@
             {% if pagination.page < pagination.total_pages %}
                 <a href="?path={{ currentPath|url_encode }}&page={{ pagination.page + 1 }}&per_page={{ pagination.per_page }}&cols={{ cols }}" 
                    class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50 transition"
-                   title="Следующая">
+                   title="{{ lang('filemanager.next_page') }}">
                     <i class="fas fa-angle-right"></i>
                 </a>
                 <a href="?path={{ currentPath|url_encode }}&page={{ pagination.total_pages }}&per_page={{ pagination.per_page }}&cols={{ cols }}" 
                    class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-500 hover:bg-gray-50 transition"
-                   title="Последняя">
+                   title="{{ lang('filemanager.last_page') }}">
                     <i class="fas fa-angle-double-right"></i>
                 </a>
             {% else %}
@@ -338,25 +338,25 @@
 <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
         <div class="p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">{ lang('filemanager.upload_file') }</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ lang('filemanager.upload_file') }}</h3>
             <form id="uploadForm" enctype="multipart/form-data">
                 <input type="hidden" name="path" value="{{ currentPath }}">
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">{ lang('filemanager.select_file') }</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ lang('filemanager.select_file') }}</label>
                     <input type="file" name="file" 
                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                            required>
-                    <p class="text-xs text-gray-500 mt-1">{ lang('filemanager.max_size_hint') }</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ lang('filemanager.max_size_hint') }}</p>
                 </div>
                 <div class="flex justify-end space-x-3">
                     <button type="button" onclick="hideUploadModal()"
                             class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
-                        { lang('filemanager.cancel') }
+                        {{ lang('filemanager.cancel') }}
                     </button>
                     <button type="submit" 
                             class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center space-x-2">
                         <i class="fas fa-upload"></i>
-                        <span>{ lang('filemanager.upload_btn') }</span>
+                        <span>{{ lang('filemanager.upload_btn') }}</span>
                     </button>
                 </div>
             </form>
@@ -496,7 +496,7 @@ async function apiRequest(url, options = {}) {
         } catch (jsonError) {
             console.error('JSON parse error:', jsonError);
             console.error('Response text:', responseText);
-            throw new Error('Неверный формат ответа от сервера');
+            throw new Error(__t('filemanager.error_invalid_response'));
         }
     } catch (error) {
         console.error('API request failed:', error);
@@ -526,7 +526,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
     const formData = new FormData(this);
     const submitBtn = this.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Загрузка...</span>';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>{{ lang('common.loading') }}</span>';
     submitBtn.disabled = true;
     try {
         const response = await fetch('/admin/filemanager/upload', { method: 'POST', body: formData });
@@ -537,7 +537,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         catch (jsonError) {
             console.error('JSON parse error:', jsonError);
             console.error('Response text:', responseText);
-            throw new Error('Неверный формат ответа от сервера');
+            throw new Error(__t('filemanager.error_invalid_response'));
         }
         if (data.success) {
             hideUploadModal();
@@ -548,7 +548,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         }
     } catch (error) {
         console.error('Upload error:', error);
-        showNotification('Ошибка загрузки: ' + error.message, 'error');
+        showNotification(__t('filemanager.error_upload') + ': ' + error.message, 'error');
     } finally {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
@@ -559,7 +559,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
 function copyFileUrl(filePath) {
     const url = '{{ storageUrl }}' + filePath;
     navigator.clipboard.writeText(url).then(() => {
-        showNotification('Ссылка скопирована в буфер обмена', 'success');
+        showNotification(__t('filemanager.link_copied_clipboard'), 'success');
     }).catch(() => {
         const textArea = document.createElement('textarea');
         textArea.value = url;
@@ -567,7 +567,7 @@ function copyFileUrl(filePath) {
         textArea.select();
         document.execCommand('copy');
         document.body.removeChild(textArea);
-        showNotification('Ссылка скопирована', 'success');
+        showNotification(__t('filemanager.link_copied'), 'success');
     });
 }
 
@@ -597,17 +597,17 @@ async function deleteItem(path, type) {
         }
     } catch (error) {
         console.error('Delete error:', error);
-        showNotification('Ошибка удаления: ' + error.message, 'error');
+        showNotification(__t('filemanager.error_delete') + ': ' + error.message, 'error');
         if (clickedBtn) { clickedBtn.innerHTML = originalHtml; clickedBtn.disabled = false; }
     }
 }
 
 // === Создание папки ===
 async function createFolder() {
-    const folderName = prompt('Введите название папки:');
+    const folderName = prompt(__t('filemanager.enter_folder_name'));
     if (!folderName) return;
     if (!/^[a-zA-Z0-9_-]+$/.test(folderName)) {
-        alert('Название папки может содержать только буквы, цифры, дефисы и подчеркивания');
+        alert(__t('filemanager.folder_name_validation'));
         return;
     }
     const currentPath = '{{ currentPath }}';
@@ -624,7 +624,7 @@ async function createFolder() {
         }
     } catch (error) {
         console.error('Create folder error:', error);
-        showNotification('Ошибка создания папки: ' + error.message, 'error');
+        showNotification(__t('filemanager.error_create_folder') + ': ' + error.message, 'error');
     }
 }
 
@@ -640,27 +640,27 @@ async function showFileInfo(filePath) {
                     <p class="text-sm text-gray-500">${file.path}</p>
                 </div>
                 <div class="space-y-2 text-sm">
-                    <div class="flex justify-between"><span>{ lang('filemanager.col_size') }:</span><span class="font-medium">${file.size}</span></div>
-                    <div class="flex justify-between"><span>{ lang('filemanager.modified_label') }</span><span class="font-medium">${file.modified}</span></div>
+                    <div class="flex justify-between"><span>{{ lang('filemanager.col_size') }}:</span><span class="font-medium">${file.size}</span></div>
+                    <div class="flex justify-between"><span>{{ lang('filemanager.modified_label') }}</span><span class="font-medium">${file.modified}</span></div>
             `;
             if (file.is_image && file.dimensions) {
-                infoHtml += `<div class="flex justify-between"><span>{ lang('filemanager.col_size') }ы:</span><span class="font-medium">${file.dimensions}</span></div>`;
+                infoHtml += `<div class="flex justify-between"><span>{{ lang('filemanager.col_size') }}ы:</span><span class="font-medium">${file.dimensions}</span></div>`;
             }
             infoHtml += `
                 </div>
                 <div class="mt-4 pt-4 border-t">
                     <button onclick="copyFileUrl('${file.path}')" 
                             class="w-full inline-flex justify-center items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
-                        <i class="fas fa-link"></i><span>{ lang('filemanager.copy_link') }</span>
+                        <i class="fas fa-link"></i><span>{{ lang('filemanager.copy_link') }}</span>
                     </button>
                 </div>`;
-            showModal('Информация о файле', infoHtml);
+            showModal(__t('filemanager.file_info'), infoHtml);
         } else {
             showNotification(data.message, 'error');
         }
     } catch (error) {
         console.error('File info error:', error);
-        showNotification('Ошибка загрузки информации: ' + error.message, 'error');
+        showNotification(__t('filemanager.error_load_info') + ': ' + error.message, 'error');
     }
 }
 
@@ -674,7 +674,7 @@ function showModal(title, content) {
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">${title}</h3>
                     ${content}
                     <div class="mt-6 flex justify-end">
-                        <button onclick="closeModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">{ lang('filemanager.close') }</button>
+                        <button onclick="closeModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">{{ lang('filemanager.close') }}</button>
                     </div>
                 </div>
             </div>
@@ -724,7 +724,7 @@ async function renameItem(path, type, currentName) {
     const newName = prompt(__t('filemanager.rename_prompt_js').replace('{type}', type === 'folder' ? __t('filemanager.item_folder') : __t('filemanager.item_file')), suggestedName);
     if (!newName || newName === currentName) return;
     if (!/^[a-zA-Z0-9_\-\.]+$/.test(newName)) {
-        alert('Название может содержать только латинские буквы, цифры, точки, дефисы и подчеркивания');
+        alert(__t('filemanager.rename_validation'));
         return;
     }
     try {
@@ -740,7 +740,7 @@ async function renameItem(path, type, currentName) {
         }
     } catch (error) {
         console.error('Rename error:', error);
-        showNotification('Ошибка переименования: ' + error.message, 'error');
+        showNotification(__t('filemanager.error_rename') + ': ' + error.message, 'error');
     }
 }
 

@@ -7,7 +7,7 @@
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
         <div class="text-sm text-gray-600">
-            { lang('notifications.updated') }{{ current_time }}
+            {{ lang('notifications.updated') }}{{ current_time }}
         </div>
     </div>
 
@@ -21,7 +21,7 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm font-medium text-gray-600">{ lang('notifications.total_submissions') }</p>
+                    <p class="text-sm font-medium text-gray-600">{{ lang('notifications.total_submissions') }}</p>
                     <p class="text-2xl font-bold text-gray-900">
                         {{ stats|reduce((sum, stat) => sum + stat.total_count, 0) }}
                     </p>
@@ -37,7 +37,7 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm font-medium text-gray-600">{ lang('notifications.unread_label') }</p>
+                    <p class="text-sm font-medium text-gray-600">{{ lang('notifications.unread_label') }}</p>
                     <p class="text-2xl font-bold text-red-600">{{ total_unread }}</p>
                 </div>
             </div>
@@ -51,7 +51,7 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm font-medium text-gray-600">{ lang('notifications.today_label') }</p>
+                    <p class="text-sm font-medium text-gray-600">{{ lang('notifications.today_label') }}</p>
                     <p class="text-2xl font-bold text-gray-900">
                         {{ stats|reduce((sum, stat) => sum + stat.today_count, 0) }}
                     </p>
@@ -67,7 +67,7 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm font-medium text-gray-600">{ lang('notifications.active_forms') }</p>
+                    <p class="text-sm font-medium text-gray-600">{{ lang('notifications.active_forms') }}</p>
                     <p class="text-2xl font-bold text-gray-900">{{ forms|length }}</p>
                 </div>
             </div>
@@ -77,7 +77,7 @@
     <!-- Список форм -->
     <div class="bg-white rounded-lg shadow-sm border mb-8">
         <div class="px-6 py-4 border-b">
-            <h2 class="text-lg font-semibold text-gray-900">{ lang('notifications.forms_title') }</h2>
+            <h2 class="text-lg font-semibold text-gray-900">{{ lang('notifications.forms_title') }}</h2>
         </div>
         <div class="divide-y">
             {% for form in forms %}
@@ -94,7 +94,7 @@
                         </div>
                         <div class="ml-4">
                             <h3 class="text-lg font-medium text-gray-900">{{ form.title }}</h3>
-                            <p class="text-sm text-gray-500">{ lang('notifications.table_label') } {{ form.source_table }}</p>
+                            <p class="text-sm text-gray-500">{{ lang('notifications.table_label') }} {{ form.source_table }}</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-4">
@@ -102,15 +102,15 @@
                             <div class="flex items-center space-x-2">
                                 {% if form_stats.unread_count > 0 %}
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                    {{ form_stats.unread_count }} { lang('notifications.new_label') }
+                                    {{ form_stats.unread_count }} {{ lang('notifications.new_label') }}
                                 </span>
                                 {% endif %}
                                 <span class="text-sm text-gray-500">
-                                    { lang('notifications.total_label') } {{ form_stats.total_count }}
+                                    {{ lang('notifications.total_label') }} {{ form_stats.total_count }}
                                 </span>
                             </div>
                             <div class="text-xs text-gray-400 mt-1">
-                                { lang('notifications.today_label') }: {{ form_stats.today_count }}
+                                {{ lang('notifications.today_label') }}: {{ form_stats.today_count }}
                             </div>
                         </div>
                         <div class="flex space-x-2">
@@ -121,7 +121,7 @@
                             {% if form_stats.unread_count > 0 %}
                             <a href="{{ admin_url('notifications/mark-all-read/' ~ form.name) }}" 
                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                                { lang('notifications.mark_all_read') }
+                                {{ lang('notifications.mark_all_read') }}
                             </a>
                             {% endif %}
                         </div>
@@ -133,17 +133,17 @@
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">{ lang('notifications.no_active_forms') }</h3>
-                <p class="mt-1 text-sm text-gray-500">{ lang('notifications.no_forms_hint') }</p>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">{{ lang('notifications.no_active_forms') }}</h3>
+                <p class="mt-1 text-sm text-gray-500">{{ lang('notifications.no_forms_hint') }}</p>
             </div>
             {% endfor %}
         </div>
     </div>
 
-    <!-- { lang('notifications.recent_title') } -->
+    <!-- {{ lang('notifications.recent_title') }} -->
     <div class="bg-white rounded-lg shadow-sm border">
         <div class="px-6 py-4 border-b">
-            <h2 class="text-lg font-semibold text-gray-900">{ lang('notifications.recent_title') }</h2>
+            <h2 class="text-lg font-semibold text-gray-900">{{ lang('notifications.recent_title') }}</h2>
         </div>
         <div class="divide-y">
             {% for submission in recent_submissions %}
@@ -164,11 +164,11 @@
                                 {% elseif submission.email %}
                                     {{ submission.email|split('@')|first }}
                                 {% else %}
-                                    { lang('notifications.anonymous') }
+                                    {{ lang('notifications.anonymous') }}
                                 {% endif %}
                             </h4>
                             <p class="text-sm text-gray-500">
-                                { lang('notifications.form_label') } {{ submission.form_title }}
+                                {{ lang('notifications.form_label') }} {{ submission.form_title }}
                                 {% if submission.email %}
                                     • {{ submission.email }}
                                 {% endif %}
@@ -181,7 +181,7 @@
                     <div class="flex items-center space-x-2">
                         <a href="{{ admin_url('notifications/submission/' ~ submission.form_name ~ '/id/' ~ submission.id) }}" 
                            class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                            { lang('notifications.view_details') }
+                            {{ lang('notifications.view_details') }}
                         </a>
                     </div>
                 </div>
@@ -196,8 +196,8 @@
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
                 </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">{ lang('notifications.no_submissions') }</h3>
-                <p class="mt-1 text-sm text-gray-500">{ lang('notifications.no_submissions_hint') }</p>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">{{ lang('notifications.no_submissions') }}</h3>
+                <p class="mt-1 text-sm text-gray-500">{{ lang('notifications.no_submissions_hint') }}</p>
             </div>
             {% endfor %}
         </div>

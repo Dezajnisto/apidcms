@@ -1,24 +1,24 @@
 {# admin/app/views/cache/index.html.twig #}
 {% extends "base.html.twig" %}
 
-{% block title %}{ lang('cache.title') }{% endblock %}
+{% block title %}{{ lang('cache.title') }}{% endblock %}
 
-{% block page_title %}{ lang('cache.title') }{% endblock %}
+{% block page_title %}{{ lang('cache.title') }}{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
     <!-- Заголовок и кнопки -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-xl md:text-2xl font-bold text-gray-900">{ lang('cache.title') }</h1>
-            <p class="text-sm text-gray-500 mt-1">{ lang('cache.subtitle') }</p>
+            <h1 class="text-xl md:text-2xl font-bold text-gray-900">{{ lang('cache.title') }}</h1>
+            <p class="text-sm text-gray-500 mt-1">{{ lang('cache.subtitle') }}</p>
         </div>
         <div>
             <a href="/admin/cache/clear?type=all" 
                class="inline-flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition text-sm w-full sm:w-auto"
-               onclick="return confirm('Вы уверены, что хотите очистить{ lang('cache.clear_all_suffix') }?')">
+               onclick="return confirm('Вы уверены, что хотите очистить{{ lang('cache.clear_all_suffix') }}?')">
                 <i class="fas fa-broom"></i>
-                <span>{{ lang('cache.clear_btn') }}{ lang('cache.clear_all_suffix') }</span>
+                <span>{{ lang('cache.clear_btn') }}{{ lang('cache.clear_all_suffix') }}</span>
             </a>
         </div>
     </div>
@@ -29,26 +29,26 @@
         <div class="bg-white rounded-lg shadow-sm border p-4 md:p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base md:text-lg font-semibold text-gray-900 capitalize">
-                    {{ name == 'twig_admin' ? 'Twig (Админка)' : 'Twig (Фронтенд)' }}
+                    {{ name == 'twig_admin' ? lang('cache.twig_admin') : lang('cache.twig_frontend') }}
                 </h3>
                 <span class="text-xs px-2 py-1 rounded {{ info.exists ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                    {{ info.exists ? 'Активен' : 'Не найден' }}
+                    {{ info.exists ? lang('cache.active') : lang('cache.not_found') }}
                 </span>
             </div>
             
             <div class="space-y-2 text-sm text-gray-600">
                 <div class="flex justify-between">
-                    <span>{ lang('cache.files_label') }</span>
+                    <span>{{ lang('cache.files_label') }}</span>
                     <span class="font-medium">{{ info.file_count }}</span>
                 </div>
                 <div class="flex justify-between">
-                    <span>{ lang('cache.size_label') }</span>
+                    <span>{{ lang('cache.size_label') }}</span>
                     <span class="font-medium">{{ info.total_size }}</span>
                 </div>
                 <div class="flex justify-between">
-                    <span>{ lang('cache.writable_label') }</span>
+                    <span>{{ lang('cache.writable_label') }}</span>
                     <span class="font-medium {{ info.writable ? 'text-green-600' : 'text-red-600' }}">
-                        {{ info.writable ? 'Да' : 'Нет' }}
+                        {{ info.writable ? lang('common.yes') : lang('common.no') }}
                     </span>
                 </div>
             </div>
@@ -70,11 +70,11 @@
         <div class="flex items-start space-x-3">
             <i class="fas fa-info-circle text-blue-500 mt-1"></i>
             <div class="text-blue-700">
-                <strong>{ lang('cache.info_label') }</strong>
+                <strong>{{ lang('cache.info_label') }}</strong>
                 <ul class="mt-1 space-y-1">
-                    <li>• { lang('cache.info_twig') }</li>
-                    <li>• { lang('cache.info_perf') }</li>
-                    <li>• { lang('cache.info_recommend') }</li>
+                    <li>• {{ lang('cache.info_twig') }}</li>
+                    <li>• {{ lang('cache.info_perf') }}</li>
+                    <li>• {{ lang('cache.info_recommend') }}</li>
                 </ul>
             </div>
         </div>

@@ -26,7 +26,7 @@ class NotificationsController extends BaseController {
         $recentSubmissions = $this->getRecentSubmissions($forms, 10);
 
         $this->render('notifications/index', [
-            'title' => Lang::t('notifications.title'),
+            'title' => $this->lang->t('notifications.title'),
             'forms' => $forms,
             'stats' => $stats,
             'total_unread' => $totalUnread,
@@ -44,7 +44,7 @@ class NotificationsController extends BaseController {
 
         if (!$this->db->tableExists($table)) {
             $this->render('error/404', [
-                'message' => Lang::t('table.table_not_found_short', ['table' => $table])
+                'message' => $this->lang->t('table.table_not_found_short', ['table' => $table])
             ]);
             return;
         }
@@ -93,7 +93,7 @@ class NotificationsController extends BaseController {
 
         if (!$this->db->tableExists($table)) {
             $this->render('error/404', [
-                'message' => Lang::t('table.table_not_found_short', ['table' => $table])
+                'message' => $this->lang->t('table.table_not_found_short', ['table' => $table])
             ]);
             return;
         }
@@ -128,7 +128,7 @@ class NotificationsController extends BaseController {
 
         if (!$this->db->tableExists($table)) {
             $this->render('error/404', [
-                'message' => Lang::t('table.table_not_found_short', ['table' => $table])
+                'message' => $this->lang->t('table.table_not_found_short', ['table' => $table])
             ]);
             return;
         }

@@ -32,18 +32,7 @@ class Lang
         return self::$instance;
     }
 
-    /**
-     * Magic: delegate static calls to instance methods.
-     * Allows Lang::t('key') as shorthand for Lang::getInstance()->t('key').
-     */
-    public static function __callStatic(string $name, array $args)
-    {
-        $instance = self::getInstance();
-        if (method_exists($instance, $name)) {
-            return $instance->$name(...$args);
-        }
-        throw new \BadMethodCallException("Method Lang::{$name}() not found");
-    }
+    
 
     private function __construct(string $locale)
     {

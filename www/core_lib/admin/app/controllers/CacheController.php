@@ -28,13 +28,13 @@ class CacheController extends BaseController {
             $cacheInfo = $this->getCacheInfo();
             
             $this->render('cache/index', [
-                'title' => Lang::t('cache.title'),
+                'title' => $this->lang->t('cache.title'),
                 'cacheInfo' => $cacheInfo
             ]);
             
         } catch (Exception $e) {
             $this->render('error/404', [
-                'message' => Lang::t('cache.load_error') . ' ' . $e->getMessage()
+                'message' => $this->lang->t('cache.load_error') . ' ' . $e->getMessage()
             ]);
         }
     }
@@ -75,12 +75,12 @@ class CacheController extends BaseController {
             if ($success) {
                 $this->redirect("/admin/cache?cleared=1&type=" . urlencode($type));
             } else {
-                throw new Exception(Lang::t('cache.clear_error'));
+                throw new Exception($this->lang->t('cache.clear_error'));
             }
             
         } catch (Exception $e) {
             $this->render('error/404', [
-                'message' => Lang::t('cache.clear_load_error') . ' ' . $e->getMessage()
+                'message' => $this->lang->t('cache.clear_load_error') . ' ' . $e->getMessage()
             ]);
         }
     }

@@ -175,7 +175,7 @@ class TableController extends BaseController {
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => Lang::t('table.table_not_found', ['table' => $table])
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
@@ -211,7 +211,7 @@ class TableController extends BaseController {
             'tableName' => $table,
             'data' => $data,
             'structure' => $structure,
-            'title' => Lang::t('table.table_title', ['table' => $table]),
+            'title' => $this->lang->t('table.table_title', ['table' => $table]),
             'search' => $search,
             'sort' => $sort,
             'order' => $order,
@@ -235,7 +235,7 @@ class TableController extends BaseController {
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => Lang::t('table.table_not_found', ['table' => $table])
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
@@ -258,7 +258,7 @@ class TableController extends BaseController {
         $this->render('table/form', [
             'tableName' => $table,
             'structure' => $structure,
-            'title' => Lang::t('table.add_record_title', ['table' => $table]),
+            'title' => $this->lang->t('table.add_record_title', ['table' => $table]),
             'action' => 'create',
             'item' => null,
             'relations' => $relations,
@@ -277,7 +277,7 @@ class TableController extends BaseController {
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => Lang::t('table.table_not_found', ['table' => $table])
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
@@ -326,7 +326,7 @@ class TableController extends BaseController {
             $this->render('table/form', [
                 'tableName' => $table,
                 'structure' => $structure,
-                'title' => Lang::t('table.add_record_title', ['table' => $table]),
+                'title' => $this->lang->t('table.add_record_title', ['table' => $table]),
                 'action' => 'create',
                 'item' => $_POST,
                 'relations' => $relations,
@@ -347,7 +347,7 @@ class TableController extends BaseController {
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => Lang::t('table.table_not_found', ['table' => $table])
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
@@ -357,7 +357,7 @@ class TableController extends BaseController {
         
         if (!$item) {
             $this->render('error/404', [
-                'message' => Lang::t('table.record_not_found_in_table', ['id' => $id, 'table' => $table])
+                'message' => $this->lang->t('table.record_not_found_in_table', ['id' => $id, 'table' => $table])
             ]);
             return;
         }
@@ -381,7 +381,7 @@ class TableController extends BaseController {
         $this->render('table/form', [
             'tableName' => $table,
             'structure' => $structure,
-            'title' => Lang::t('table.edit_record_title', ['table' => $table]),
+            'title' => $this->lang->t('table.edit_record_title', ['table' => $table]),
             'action' => 'edit',
             'item' => $item,
             'itemId' => $id,
@@ -402,7 +402,7 @@ class TableController extends BaseController {
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => Lang::t('table.table_not_found', ['table' => $table])
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
@@ -411,7 +411,7 @@ class TableController extends BaseController {
         $existingItem = $this->db->getById($table, $id);
         if (!$existingItem) {
             $this->render('error/404', [
-                'message' => Lang::t('table.record_not_found_in_table', ['id' => $id, 'table' => $table])
+                'message' => $this->lang->t('table.record_not_found_in_table', ['id' => $id, 'table' => $table])
             ]);
             return;
         }
@@ -454,7 +454,7 @@ class TableController extends BaseController {
                                 $page = $_GET['page'] ?? 1;
                 $this->redirect("/table/{$table}/edit/{$id}?updated=1&page={$page}");
             } else {
-                throw new Exception(Lang::t('table.update_failed'));
+                throw new Exception($this->lang->t('table.update_failed'));
             }
             
         } catch (Exception $e) {
@@ -463,7 +463,7 @@ class TableController extends BaseController {
             $this->render('table/form', [
                 'tableName' => $table,
                 'structure' => $structure,
-                'title' => Lang::t('table.edit_record_title', ['table' => $table]),
+                'title' => $this->lang->t('table.edit_record_title', ['table' => $table]),
                 'action' => 'edit',
                 'item' => array_merge($existingItem, $_POST),
                 'itemId' => $id,
@@ -485,7 +485,7 @@ class TableController extends BaseController {
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => Lang::t('table.table_not_found', ['table' => $table])
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
@@ -511,16 +511,16 @@ class TableController extends BaseController {
                 }
                 $this->redirect($redirectUrl);
             } else {
-                throw new Exception(Lang::t('table.delete_failed'));
+                throw new Exception($this->lang->t('table.delete_failed'));
             }
             
         } catch (Exception $e) {
             // On error: show error page
-            $errorMessage = Lang::t('table.delete_error') . ' ' . $e->getMessage();
+            $errorMessage = $this->lang->t('table.delete_error') . ' ' . $e->getMessage();
             
             // Clearer message for FK constraint errors
             if (strpos($e->getMessage(), 'FOREIGN KEY constraint failed') !== false) {
-                $errorMessage = Lang::t('table.delete_fk_error');
+                $errorMessage = $this->lang->t('table.delete_fk_error');
             }
             
             $this->render('error/404', [
@@ -540,7 +540,7 @@ class TableController extends BaseController {
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => Lang::t('table.table_not_found', ['table' => $table])
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
@@ -551,7 +551,7 @@ class TableController extends BaseController {
         $this->render('table/structure', [
             'tableName' => $table,
             'structure' => $structure,
-            'title' => Lang::t('table.structure_title', ['table' => $table]),
+            'title' => $this->lang->t('table.structure_title', ['table' => $table]),
             'get' => $_GET
         ]);
     }
@@ -567,14 +567,14 @@ class TableController extends BaseController {
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => Lang::t('table.table_not_found', ['table' => $table])
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
         
         $this->render('table/add_column', [
             'tableName' => $table,
-            'title' => Lang::t('table.add_column_title', ['table' => $table]),
+            'title' => $this->lang->t('table.add_column_title', ['table' => $table]),
             'formData' => []
         ]);
     }
@@ -590,7 +590,7 @@ class TableController extends BaseController {
             $tables = $this->db->getTables();
             
             if (!in_array($table, $tables)) {
-                throw new Exception(Lang::t('table.table_not_found_short', ['table' => $table]));
+                throw new Exception($this->lang->t('table.table_not_found_short', ['table' => $table]));
             }
             
             $columnName = $_POST['column_name'] ?? '';
@@ -599,19 +599,19 @@ class TableController extends BaseController {
             $defaultValue = $_POST['default_value'] ?? null;
             
             if (empty($columnName) || empty($columnType)) {
-                throw new Exception(Lang::t('table.column_name_type_required'));
+                throw new Exception($this->lang->t('table.column_name_type_required'));
             }
             
             // Validate column name
             if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $columnName)) {
-                throw new Exception(Lang::t('table.invalid_column_name'));
+                throw new Exception($this->lang->t('table.invalid_column_name'));
             }
             
             // Check column doesn't exist
             $structure = $this->db->getTableStructure($table);
             foreach ($structure as $column) {
                 if ($column['name'] === $columnName) {
-                    throw new Exception(Lang::t('table.column_exists', ['column' => $columnName]));
+                    throw new Exception($this->lang->t('table.column_exists', ['column' => $columnName]));
                 }
             }
             
@@ -624,7 +624,7 @@ class TableController extends BaseController {
         } catch (Exception $e) {
             $this->render('table/add_column', [
                 'tableName' => $table,
-                'title' => Lang::t('table.add_column_title', ['table' => $table]),
+                'title' => $this->lang->t('table.add_column_title', ['table' => $table]),
                 'error' => $e->getMessage(),
                 'formData' => $_POST
             ]);
@@ -644,7 +644,7 @@ class TableController extends BaseController {
             
             if (!in_array($table, $tables)) {
                 $this->render('error/404', [
-                    'message' => Lang::t('table.table_not_found', ['table' => $table])
+                    'message' => $this->lang->t('table.table_not_found', ['table' => $table])
                 ]);
                 return;
             }
@@ -661,7 +661,7 @@ class TableController extends BaseController {
             
             if (!$columnExists) {
                 $this->render('error/404', [
-                    'message' => Lang::t('table.column_not_found', ['column' => $column, 'table' => $table])
+                    'message' => $this->lang->t('table.column_not_found', ['column' => $column, 'table' => $table])
                 ]);
                 return;
             }
@@ -674,7 +674,7 @@ class TableController extends BaseController {
             
         } catch (Exception $e) {
             $this->render('error/404', [
-                'message' => Lang::t('table.delete_column_error') . ' ' . $e->getMessage()
+                'message' => $this->lang->t('table.delete_column_error') . ' ' . $e->getMessage()
             ]);
         }
     }
@@ -686,14 +686,14 @@ class TableController extends BaseController {
     public function duplicate($table, $id) {
         $tables = $this->db->getTables();
         if (!in_array($table, $tables)) {
-            $this->setFlash('error', Lang::t('table.table_not_found_short', ['table' => $table]));
+            $this->setFlash('error', $this->lang->t('table.table_not_found_short', ['table' => $table]));
             $this->redirect('/');
             return;
         }
 
         $item = $this->db->getById($table, $id);
         if (!$item) {
-            $this->setFlash("error", Lang::t('table.record_not_found', ['id' => $id]));
+            $this->setFlash("error", $this->lang->t('table.record_not_found', ['id' => $id]));
             $this->redirect("/table/{$table}");
             return;
         }
@@ -732,11 +732,11 @@ class TableController extends BaseController {
 
         try {
             $newId = $this->db->insert($table, $data);
-            $this->setFlash("success", Lang::t('table.record_copied', ['newId' => $newId]));
+            $this->setFlash("success", $this->lang->t('table.record_copied', ['newId' => $newId]));
             $page = $_GET['page'] ?? 1;
             $this->redirect("/table/{$table}/edit/{$newId}?page={$page}");
         } catch (Exception $e) {
-            $this->setFlash("error", Lang::t('table.copy_error') . ' ' . $e->getMessage());
+            $this->setFlash("error", $this->lang->t('table.copy_error') . ' ' . $e->getMessage());
             $this->redirect("/table/{$table}/edit/{$id}");
         }
     }

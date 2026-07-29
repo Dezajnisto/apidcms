@@ -61,14 +61,14 @@ class DesignController extends BaseController
             $saved = isset($_GET['saved']);
 
             $this->render('design/css', [
-                'title' => Lang::t('design.css_title'),
+                'title' => $this->lang->t('design.css_title'),
                 'css_content' => $currentCss,
                 'css_url' => $cssUrl,
                 'saved' => $saved
             ]);
         } catch (Exception $e) {
             $this->render('error/404', [
-                'message' => Lang::t('design.css_load_error') . ' ' . $e->getMessage()
+                'message' => $this->lang->t('design.css_load_error') . ' ' . $e->getMessage()
             ]);
         }
     }
@@ -88,7 +88,7 @@ class DesignController extends BaseController
             }
 
             if (file_put_contents($cssPath, $css) === false) {
-                throw new Exception(Lang::t('design.css_write_error'));
+                throw new Exception($this->lang->t('design.css_write_error'));
             }
 
             // Автоматически сбрасываем кэш браузера — инкрементим версию

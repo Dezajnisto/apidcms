@@ -21,7 +21,7 @@ class HomeController extends BaseController {
         $tableCount = count($this->db->getTables());
 
         $this->render('home/index', [
-            'title' => Lang::t('home.title'),
+            'title' => $this->lang->t('home.title'),
             'table_count' => $tableCount,
         ]);
     }
@@ -66,14 +66,14 @@ class HomeController extends BaseController {
         // System group
         $systemInfo = $buildInfo($systemTableNames);
         if (!empty($systemInfo)) {
-            $groups[] = ['label' => Lang::t('home.system_tables'), 'tables' => $systemInfo];
+            $groups[] = ['label' => $this->lang->t('home.system_tables'), 'tables' => $systemInfo];
         }
 
         // Plugin groups (one per plugin that has tables)
         foreach ($pluginTablesMap as $pluginName => $pluginTables) {
             $pluginInfo = $buildInfo($pluginTables);
             if (!empty($pluginInfo)) {
-                $groups[] = ['label' => Lang::t('home.plugin_tables', ['name' => $pluginName]), 'tables' => $pluginInfo];
+                $groups[] = ['label' => $this->lang->t('home.plugin_tables', ['name' => $pluginName]), 'tables' => $pluginInfo];
             }
         }
 
@@ -82,13 +82,13 @@ class HomeController extends BaseController {
         $userTableNames = array_diff($tables, $allKnown);
         $userInfo = $buildInfo($userTableNames);
         if (!empty($userInfo)) {
-            $groups[] = ['label' => Lang::t('home.user_tables'), 'tables' => $userInfo];
+            $groups[] = ['label' => $this->lang->t('home.user_tables'), 'tables' => $userInfo];
         }
 
         // Render
         $this->render('home/tables', [
             'groups' => $groups,
-            'title' => Lang::t('home.tables_list'),
+            'title' => $this->lang->t('home.tables_list'),
             '_GET' => $_GET,
         ]);
     }
@@ -98,7 +98,7 @@ class HomeController extends BaseController {
      */
     public function createTableForm() {
         $this->render('home/create_table', [
-            'title' => Lang::t('create_table.title'),
+            'title' => $this->lang->t('create_table.title'),
             'formData' => []
         ]);
     }
@@ -113,17 +113,17 @@ class HomeController extends BaseController {
             $addTimestamps = isset($_POST['add_timestamps']);
             
             if (empty($tableName)) {
-                throw new Exception(Lang::t('create_table.name_required'));
+                throw new Exception($this->lang->t('create_table.name_required'));
             }
             
             // Validate table name
             if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $tableName)) {
-                throw new Exception(Lang::t('create_table.name_pattern'));
+                throw new Exception($this->lang->t('create_table.name_pattern'));
             }
             
             // Check table does not exist
             if ($this->db->tableExists($tableName)) {
-                throw new Exception(Lang::t('create_table.table_exists', ['name' => $tableName]));
+                throw new Exception($this->lang->t('create_table.table_exists', ['name' => $tableName]));
             }
             
             // Prepare columns
@@ -164,7 +164,7 @@ class HomeController extends BaseController {
             
         } catch (Exception $e) {
             $this->render('home/create_table', [
-                'title' => Lang::t('create_table.title'),
+                'title' => $this->lang->t('create_table.title'),
                 'error' => $e->getMessage(),
                 'formData' => $_POST
             ]);
@@ -180,20 +180,20 @@ class HomeController extends BaseController {
             $sql = $_POST['sql_code'] ?? '';
             
             if (empty(trim($sql))) {
-                throw new \Exception(Lang::t('home.sql_empty'));
+                throw new \Exception($this->lang->t('home.sql_empty'));
             }
             
             // Allow only CREATE TABLE (with optional IF NOT EXISTS)
             $sqlTrimmed = trim($sql);
             if (!preg_match('/^CREATE\s+TABLE/i', $sqlTrimmed)) {
-                throw new \Exception(Lang::t('home.sql_only_create'));
+                throw new \Exception($this->lang->t('home.sql_only_create'));
             }
             
             // Block nested dangerous statements
             $dangerous = ['DROP', 'DELETE', 'INSERT', 'UPDATE', 'ALTER', 'TRUNCATE', 'REPLACE'];
             foreach ($dangerous as $cmd) {
                 if (preg_match('/;\s*' . $cmd . '/i', $sql)) {
-                    throw new \Exception(Lang::t('home.sql_dangerous_cmd', ['cmd' => $cmd]));
+                    throw new \Exception($this->lang->t('home.sql_dangerous_cmd', ['cmd' => $cmd]));
                 }
             }
             
@@ -208,7 +208,7 @@ class HomeController extends BaseController {
             
         } catch (\Exception $e) {
             $this->render('home/create_table', [
-                'title' => Lang::t('create_table.title'),
+                'title' => $this->lang->t('create_table.title'),
                 'error' => $e->getMessage()
             ]);
         }
@@ -225,7 +225,7 @@ class HomeController extends BaseController {
             // Verify table exists
             if (!$this->db->tableExists($table)) {
                 $this->render('error/404', [
-                    'message' => Lang::t('table.table_not_found_short', ['table' => $table])
+                    'message' => $this->lang->t('table.table_not_found_short', ['table' => $table])
                 ]);
                 return;
             }
@@ -238,7 +238,7 @@ class HomeController extends BaseController {
             
         } catch (Exception $e) {
             $this->render('error/404', [
-                'message' => Lang::t('home.delete_table_error') . ' ' . $e->getMessage()
+                'message' => $this->lang->t('home.delete_table_error') . ' ' . $e->getMessage()
             ]);
         }
     }

@@ -15,7 +15,7 @@ class PluginAdminController extends BaseController
             $plugins = [];
         }
         $this->render('plugins/index', [
-            'title' => Lang::t('plugins.title'),
+            'title' => $this->lang->t('plugins.title'),
             'plugins' => $plugins
         ]);
     }
@@ -26,16 +26,16 @@ class PluginAdminController extends BaseController
             $pm = \Core\PluginManager::getInstance();
             $plugin = $pm->getPlugin($name);
             if (!$plugin) {
-                $this->setFlash('error', Lang::t('plugins.not_found', ['name' => $name]));
+                $this->setFlash('error', $this->lang->t('plugins.not_found', ['name' => $name]));
                 $this->redirect('/plugins');
                 return;
             }
             if (!empty($plugin['enabled'])) {
                 $pm->deactivate($name);
-                $this->setFlash('success', Lang::t('plugins.deactivated', ['name' => $name]));
+                $this->setFlash('success', $this->lang->t('plugins.deactivated', ['name' => $name]));
             } else {
                 $pm->activate($name);
-                $this->setFlash('success', Lang::t('plugins.activated', ['name' => $name]));
+                $this->setFlash('success', $this->lang->t('plugins.activated', ['name' => $name]));
             }
         } catch (\Throwable $e) {
             $this->setFlash('error', "Ошибка: " . $e->getMessage());
@@ -53,7 +53,7 @@ class PluginAdminController extends BaseController
         }
 
         if (!$plugin) {
-            $this->setFlash('error', Lang::t('plugins.not_found', ['name' => $name]));
+            $this->setFlash('error', $this->lang->t('plugins.not_found', ['name' => $name]));
             $this->redirect('/plugins');
             return;
         }
@@ -92,7 +92,7 @@ class PluginAdminController extends BaseController
         }
 
         if (!$plugin) {
-            $this->setFlash('error', Lang::t('plugins.not_found', ['name' => $name]));
+            $this->setFlash('error', $this->lang->t('plugins.not_found', ['name' => $name]));
             $this->redirect('/plugins');
             return;
         }
@@ -103,13 +103,13 @@ class PluginAdminController extends BaseController
         $realFilePath = realpath($filePath) ?: '';
         $realTemplatesDir = realpath($templatesDir) ?: '___';
         if (strpos($realFilePath, $realTemplatesDir) !== 0) {
-            $this->setFlash('error', Lang::t('plugins.edit_tpl.error_path'));
+            $this->setFlash('error', $this->lang->t('plugins.edit_tpl.error_path'));
             $this->redirect("/plugins/{$name}?tab=templates");
             return;
         }
 
         if (!file_exists($filePath)) {
-            $this->setFlash('error', Lang::t('plugins.edit_tpl.error_notfound'));
+            $this->setFlash('error', $this->lang->t('plugins.edit_tpl.error_notfound'));
             $this->redirect("/plugins/{$name}?tab=templates");
             return;
         }
@@ -118,11 +118,11 @@ class PluginAdminController extends BaseController
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newContent = $_POST['content'] ?? '';
             if (file_put_contents($filePath, $newContent) !== false) {
-                $this->setFlash('success', Lang::t('plugins.edit_tpl.saved'));
+                $this->setFlash('success', $this->lang->t('plugins.edit_tpl.saved'));
                 $this->redirect("/plugins/{$name}?tab=templates");
                 return;
             } else {
-                $this->setFlash('error', Lang::t('plugins.edit_tpl.error_save'));
+                $this->setFlash('error', $this->lang->t('plugins.edit_tpl.error_save'));
             }
         }
 
@@ -191,9 +191,9 @@ class PluginAdminController extends BaseController
             json_encode($saveData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
         if ($saved !== false) {
-            $this->setFlash('success', Lang::t('plugins.settings_saved', ['name' => $name]));
+            $this->setFlash('success', $this->lang->t('plugins.settings_saved', ['name' => $name]));
         } else {
-            $this->setFlash('error', Lang::t('plugins.settings_error'));
+            $this->setFlash('error', $this->lang->t('plugins.settings_error'));
         }
     }
 }

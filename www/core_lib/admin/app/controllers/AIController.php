@@ -91,7 +91,7 @@ class AIController extends BaseController {
             $currentPage = $input["current_page"] ?? "";
 
             if (empty($message)) {
-                $this->jsonResponse(["error" => Lang::t("common.empty_request")], 400);
+                $this->jsonResponse(["error" => $this->lang->t("common.empty_request")], 400);
             }
 
             $tablesContext = $this->getTablesContext();
@@ -149,7 +149,7 @@ class AIController extends BaseController {
             $pageType = $input["page_type"] ?? "";
 
             if (empty($prompt)) {
-                $this->jsonResponse(["error" => Lang::t("common.empty_request")], 400);
+                $this->jsonResponse(["error" => $this->lang->t("common.empty_request")], 400);
             }
 
             $tablesContext = $this->getTablesContext();
@@ -198,7 +198,7 @@ class AIController extends BaseController {
             $prompt = $input["prompt"] ?? "";
 
             if (empty($prompt)) {
-                $this->jsonResponse(["error" => Lang::t("common.empty_request")], 400);
+                $this->jsonResponse(["error" => $this->lang->t("common.empty_request")], 400);
             }
 
             $result = $this->ai->generateTableStructure($prompt, $this->aiPrompts["table"] ?? "");
@@ -235,12 +235,12 @@ class AIController extends BaseController {
             $count = min((int)($input["count"] ?? 5), 20);
 
             if (empty($tableName) || empty($prompt)) {
-                $this->jsonResponse(["error" => Lang::t("common.table_not_specified")], 400);
+                $this->jsonResponse(["error" => $this->lang->t("common.table_not_specified")], 400);
             }
 
             // Проверяем существование таблицы
             if (!$this->db->tableExists($tableName)) {
-                $this->jsonResponse(["error" => Lang::t("common.table_not_found", ["name" => $tableName])], 404);
+                $this->jsonResponse(["error" => $this->lang->t("common.table_not_found", ["name" => $tableName])], 404);
             }
 
             // Получаем структуру
@@ -279,11 +279,11 @@ class AIController extends BaseController {
             $records = $input["records"] ?? [];
 
             if (empty($tableName) || empty($records)) {
-                $this->jsonResponse(["error" => Lang::t("common.records_not_specified")], 400);
+                $this->jsonResponse(["error" => $this->lang->t("common.records_not_specified")], 400);
             }
 
             if (!$this->db->tableExists($tableName)) {
-                $this->jsonResponse(["error" => Lang::t("common.table_not_found", ["name" => $tableName])], 404);
+                $this->jsonResponse(["error" => $this->lang->t("common.table_not_found", ["name" => $tableName])], 404);
             }
 
             $inserted = 0;

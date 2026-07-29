@@ -1699,7 +1699,7 @@ private function handleFormSubmission() {
 
         try {
             $loader = new \Core\ExternalPageLoader($config);
-            $locale = $this->getSetting('admin_language') ?: 'ru';
+            $locale = 'ru'; // frontend locale — independent of admin language
             $data = $loader->fetch($_GET);
             $data['items'] = $loader->resolveLocale($data['items'], $locale);
 

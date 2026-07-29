@@ -242,6 +242,13 @@ function resolveLangUrl(url) {
         xhr.send();
     }
 
+    function resolveI18n(value, lang) {
+        if (typeof value === 'object' && value !== null) {
+            return value[lang] || value['ru'] || Object.values(value)[0] || '';
+        }
+        return String(value || '');
+    }
+
     function showToc() {
         document.getElementById('help-toc-link').classList.add('active');
         document.getElementById('help-title').textContent = __t('common.contents');
@@ -267,13 +274,13 @@ function resolveLangUrl(url) {
                 var sk = secOrder[s].key;
                 var items = grouped[sk];
                 if (!items || !items.length) continue;
-                var secTitle = (sections[sk] && sections[sk].title) ? sections[sk].title : sk;
+                var secTitle = resolveI18n((sections[sk] && sections[sk].title) ? sections[sk].title : sk, ADMIN_LANG);
                 html += '<div class="help-toc-section">';
                 html += '<div class="help-toc-section-title">' + secTitle + '</div>';
                 items.sort(function(a,b){return (a.order||999)-(b.order||999);});
                 for (var d = 0; d < items.length; d++) {
                     var doc = items[d];
-                    html += '<a class="help-toc-item" onclick="loadHelpDoc(\'' + resolveLangUrl(doc.content_url).replace(/'/g, "\\'") + '\', \'' + doc.title.replace(/'/g, "\\'") + '\')">' + doc.title + '</a>';
+                    html += '<a class="help-toc-item" onclick="loadHelpDoc(\'' + resolveLangUrl(doc.content_url).replace(/'/g, "\\'") + '\', \'' + resolveI18n(doc.title, ADMIN_LANG).replace(/'/g, "\\'") + '\')">' + resolveI18n(doc.title, ADMIN_LANG) + '</a>';
                 }
                 html += '</div>';
             }

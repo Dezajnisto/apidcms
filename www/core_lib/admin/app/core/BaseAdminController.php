@@ -35,6 +35,7 @@ class BaseAdminController {
             // DB not available yet — keep default 'ru'
         }
         $this->lang = Lang::getInstance($locale);
+        $this->adminLang = $locale;
     }
     
     /**
@@ -62,6 +63,9 @@ class BaseAdminController {
 
         // i18n: {{ lang('key') }} in templates
         $this->twig->addFunction(new TwigFunction('lang', [$this->lang, 't']));
+        
+        // i18n: {{ admin_lang }} for help panel JS locale resolution
+        $this->twig->addGlobal('admin_lang', $this->adminLang ?? 'ru');
     }
     
     /**

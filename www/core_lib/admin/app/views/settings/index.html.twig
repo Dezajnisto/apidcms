@@ -512,7 +512,7 @@
                         </thead>
                         <tbody>
                             {% for setting in system_settings %}
-                            {% if 'ai_' not in setting.key and setting.key not in ['site_title', 'site_description', 'site_email', 'posts_per_page', 'site_favicon', 'maintenance_mode', 'stats_enabled', 'stats_retention_days'] %}
+                            {% if 'ai_' not in setting.key and setting.key not in ['site_title', 'site_description', 'site_email', 'posts_per_page', 'site_favicon', 'maintenance_mode', 'stats_enabled', 'stats_retention_days', 'admin_language', 'site_language', 'site_languages'] %}
                             <tr class="border-b hover:bg-gray-50">
                                 <td class="py-3 pr-4 font-mono text-xs">{{ setting.key }}</td>
                                 <td class="py-3 pr-4 text-xs text-gray-500">{{ setting.type }}</td>

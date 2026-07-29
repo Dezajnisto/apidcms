@@ -1826,11 +1826,17 @@ private function handleFormSubmission() {
                     $item['content_url'] = $baseUrl . '/v2/pages/' . $item['id'] . '/content/markdown';
                 }
 
-                // Fetch detail content if item has content_url
+                // Fetch detail content — use locale-specific URL if available
                 $detailContent = null;
-                if (!empty($item['content_url'])) {
+                $contentUrl = $item['content_url'] ?? null;
+                // Check for locale-specific content URL: content_url_en, content_url_de, etc.
+                $localeUrlKey = 'content_url_' . $this->locale;
+                if (!empty($item[$localeUrlKey])) {
+                    $contentUrl = $item[$localeUrlKey];
+                }
+                if (!empty($contentUrl)) {
                     try {
-                        $detailContent = $loader->fetchContent($item['content_url']);
+                        $detailContent = $loader->fetchContent($contentUrl);
                     } catch (\RuntimeException $e) {
                         error_log('ExternalPageLoader content fetch error: ' . $e->getMessage());
                         // Graceful: show page without content

@@ -388,3 +388,19 @@
 ## 2026-06-16 — Связи таблиц и GET-фильтрация
 
 ### Новые возможности
+
+## v1.5.2 — Multilingual Frontend (2026-07-29)
+
+### New
+- **Core\I18n** — universal JSON-based multilingual resolver (resolve, resolveArray, encode, searchExpr)
+- **site_language + site_languages** system settings — opt-in multilingual frontend
+- **URL prefix routing** (/en/page) with auto-redirect and site_lang cookie
+- **_t translation object** in base.html.twig — 100+ i18n keys
+- **Translated templates**: home, docs, changelog, plugins, 404, success, blog, ai
+
+### Fixed
+- Dead  before  in admin error handler
+- ExternalPageLoader: refactored to use Core\I18n
+
+### Changed
+- FrontController::render() auto-resolves i18n fields from DB data

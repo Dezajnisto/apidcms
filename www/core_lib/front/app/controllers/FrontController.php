@@ -375,14 +375,15 @@ class FrontController {
             return $firstSegment;
         }
 
-        // Check cookie for extra language → redirect to prefixed URL
-        $cookieLang = $_COOKIE['site_lang'] ?? null;
-        if ($cookieLang && in_array($cookieLang, $extraLangs, true)) {
-            $newPath = $cookieLang . '/' . ltrim($path, '/');
-            $query = $_SERVER['QUERY_STRING'] ?? '';
-            $url = '/' . $newPath . ($query ? '?' . $query : '');
-            header('Location: ' . $url, true, 302);
-            exit;
+        // Clear cookie when visiting base language (user explicitly chose base)
+        if (isset($_COOKIE['site_lang'])) {
+            setcookie('site_lang', '', [
+                'expires' => time() - 3600,
+                'path' => '/',
+                'httponly' => true,
+                'samesite' => 'Lax',
+                'secure' => !empty($_SERVER['HTTPS']),
+            ]);
         }
 
         return $baseLang;

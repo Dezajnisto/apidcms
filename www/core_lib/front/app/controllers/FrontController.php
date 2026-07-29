@@ -1699,7 +1699,9 @@ private function handleFormSubmission() {
 
         try {
             $loader = new \Core\ExternalPageLoader($config);
+            $locale = $this->getSetting('admin_language') ?: 'ru';
             $data = $loader->fetch($_GET);
+            $data['items'] = $loader->resolveLocale($data['items'], $locale);
 
             // Single-item mode: find matching item by slug/name
             if ($itemSlug !== null) {

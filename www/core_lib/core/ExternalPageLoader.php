@@ -346,6 +346,24 @@ class ExternalPageLoader
     /**
      * Clear this loader's cache.
      */
+    private function resolveLocaleValue($value, string $locale): string {
+        if (is_string($value)) return $value;
+        if (is_array($value)) return $value[$locale] ?? $value['ru'] ?? reset($value) ?? '';
+        return (string)$value;
+    }
+
+    public function resolveLocale(array $items, string $locale): array {
+        $fields = ['title','section_title','description','summary','intro','whats_new','improvements'];
+        foreach ($items as &$item) {
+            foreach ($fields as $f) {
+                if (isset($item[$f]) && is_array($item[$f])) {
+                    $item[$f] = $this->resolveLocaleValue($item[$f], $locale);
+                }
+            }
+        }
+        return $items;
+    }
+
     public function clearCache(): void
     {
         $file = $this->cacheFilePath();

@@ -40,6 +40,24 @@ class DocsFetcher
     }
 
     /**
+     * Resolve a localised value (plain string or {"ru":"...", "en":"..."} object).
+     * Backward-compatible: plain strings pass through unchanged.
+     *
+     * @param string|array $value
+     * @return string
+     */
+    private function localeValue($value)
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+        if (is_array($value)) {
+            return $value[$this->lang] ?? $value['ru'] ?? reset($value) ?? '';
+        }
+        return '';
+    }
+
+    /**
      * Set current language for {lang} placeholder resolution.
      *
      * @param string $lang e.g. 'ru', 'en'

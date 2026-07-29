@@ -1,0 +1,369 @@
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<script>
+// Show selected filename (available on both upload and preview pages)
+function updateFileLabel(input) {
+    var label = document.getElementById('csv-file-label');
+    var info = document.getElementById('csv-file-info');
+    if (input && input.files && input.files.length > 0) {
+        var file = input.files[0];
+        if (label) {
+            label.textContent = file.name;
+            label.className = 'text-green-600 font-medium';
+        }
+        if (info) {
+            var sizeKB = (file.size / 1024).toFixed(0);
+            info.textContent = '{{ lang('table.import.file_info')|replace({'%name%': '" + file.name + "', '%size%': '" + sizeKB + "'})|e('js') }}';
+            info.className = 'text-xs text-green-600';
+        }
+    }
+}
+</script>
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <a href="{{ admin_url('table/' ~ tableName|url_encode) }}"
+           class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition text-sm">
+            <i class="fas fa-arrow-left"></i>
+            <span>{{ lang('table.import.back_to_table') }}</span>
+        </a>
+    </div>
+
+    {% if error == 'upload_failed' %}
+        <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            <i class="fas fa-exclamation-circle"></i> {{ lang('table.import.error_upload') }}
+        </div>
+    {% elseif error == 'read_failed' %}
+        <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            <i class="fas fa-exclamation-circle"></i> {{ lang('table.import.error_read') }}
+        </div>
+    {% elseif error == 'empty_file' %}
+        <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            <i class="fas fa-exclamation-circle"></i> {{ lang('table.import.error_empty') }}
+        </div>
+    {% elseif error %}
+        <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+    {% endif %}
+
+    {% if preview is not null and mapping is not null %}
+        {# === PREVIEW + MAPPING === #}
+        <div class="bg-white rounded-lg shadow-sm border mb-6">
+            <div class="px-6 py-4 border-b bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">{{ lang('table.import.column_mapping') }}</h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    {% if firstRowIsHeader %}
+                        {{ lang('table.import.header_detected') }} {{ csvHeaders|length }} {{ lang('table.import.columns_found') }} {{ mapping|filter(m => m.table_column is not null)|length }} {{ lang('table.import.mapped_auto') }}
+                    {% else %}
+                        {{ csvHeaders|length }} {{ lang('table.import.columns_found_simple') }} {{ lang('table.import.no_header') }}
+                    {% endif %}
+                </p>
+            </div>
+            <div class="p-6">
+                <form method="POST" action="{{ admin_url('table/' ~ tableName|url_encode ~ '/process-csv') }}">
+                    <input type="hidden" name="confirm" value="1">
+                    <input type="hidden" name="mapping" id="mapping-json" value="">
+                    <input type="hidden" name="skip_first" value="{{ firstRowIsHeader ? '1' : '0' }}">
+
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ lang('table.import.csv_column') }}</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ lang('table.import.example') }}</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ lang('table.import.map_to') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for m in mapping %}
+                            <tr>
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900">
+                                    {{ m.csv_name }}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-500 max-w-[200px] truncate" title="{{ preview[0][m.csv_index] ?? '' }}">
+                                    {{ preview[0][m.csv_index] ?? '' }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <select class="mapping-select w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            data-csv-index="{{ m.csv_index }}">
+                                        <option value="__skip__">{{ lang('table.import.skip') }}</option>
+                                        {% for tc in tableColumns %}
+                                            {% if tc != 'created_at' %}
+                                                <option value="{{ tc }}" {% if m.table_column == tc %}selected{% endif %}>{{ tc }}{% if tc == pkCol %} (PK){% endif %}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                    {% if m.table_column is not null %}
+                                        <span class="text-xs text-green-600 mt-1 block"><i class="fas fa-check"></i> {{ lang('table.import.matched') }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <!-- Import mode -->
+                    <div class="mt-6 p-4 bg-gray-50 rounded-lg border">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">{{ lang('table.import.import_mode') }}</h3>
+                        <div class="flex flex-wrap gap-4 mb-3">
+                            <label class="inline-flex items-center space-x-2 text-sm cursor-pointer">
+                                <input type="radio" name="mode" value="add_all" checked onchange="toggleKeyColumn()" class="w-4 h-4 text-blue-600">
+                                <span>{{ lang('table.import.add_all') }}</span>
+                            </label>
+                            <label class="inline-flex items-center space-x-2 text-sm cursor-pointer">
+                                <input type="radio" name="mode" value="skip_duplicates" onchange="toggleKeyColumn()" class="w-4 h-4 text-blue-600">
+                                <span>{{ lang('table.import.skip_duplicates') }}</span>
+                            </label>
+                            <label class="inline-flex items-center space-x-2 text-sm cursor-pointer">
+                                <input type="radio" name="mode" value="update_existing" onchange="toggleKeyColumn()" class="w-4 h-4 text-blue-600">
+                                <span>{{ lang('table.import.update_existing') }}</span>
+                            </label>
+                        </div>
+                        <div id="key-column-row" style="display:none;">
+                            <label class="text-sm text-gray-600 mr-2">{{ lang('table.import.key_column') }}:</label>
+                            <select name="key_column" id="key-column-select" class="px-3 py-1.5 border border-gray-300 rounded-md text-sm" onchange="updateKeyHint()">
+                                <option value="">{{ lang('table.import.select') }}</option>
+                                {% for tc in tableColumns %}
+                                    {% if tc != 'created_at' %}
+                                        <option value="{{ tc }}" data-in-mapping="false" {% if tc == pkCol %}selected{% endif %}>{{ tc }}{% if tc == pkCol %} (PK){% endif %}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            <span class="text-xs text-gray-400 ml-2">{{ lang('table.import.key_hint') }}</span>
+                            <span id="keycol-warning" class="text-xs text-red-500 ml-2" style="display:none;">
+                                <i class="fas fa-exclamation-triangle"></i> {{ lang('table.import.key_not_mapped') }}
+                            </span>
+                        </div>
+                        <div id="mode-hint-add" class="text-xs text-gray-500 mt-2">
+                            <i class="fas fa-info-circle"></i> {{ lang('table.import.mode_hint_add') }}
+                        </div>
+                        <div id="mode-hint-skip" class="text-xs text-gray-500 mt-2" style="display:none;">
+                            <i class="fas fa-info-circle"></i> {{ lang('table.import.mode_hint_skip') }}
+                        </div>
+                        <div id="mode-hint-update" class="text-xs text-gray-500 mt-2" style="display:none;">
+                            <i class="fas fa-info-circle"></i> {{ lang('table.import.mode_hint_update') }}
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center justify-between">
+                        <div class="text-sm text-gray-500">
+                            {{ lang('table.import.rows_preview')|replace({'%count%': preview|length}) }}
+                        </div>
+                        <button type="submit"
+                                class="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium">
+                            <i class="fas fa-upload"></i>
+                            <span>{{ lang('table.import.import') }}</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if preview|length > 0 %}
+        <div class="bg-white rounded-lg shadow-sm border">
+            <div class="px-6 py-4 border-b bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">{{ lang('table.import.preview_title')|replace({'%count%': preview|length}) }}</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            {% for h in csvHeaders %}
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ h }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for row in preview %}
+                        <tr class="hover:bg-gray-50">
+                            {% for cell in row %}
+                                <td class="px-4 py-2 text-sm text-gray-700 max-w-[200px] truncate" title="{{ cell }}">{{ cell }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <script>
+        // Serialize mapping on form submit
+        document.querySelector('form').addEventListener('submit', function() {
+            var selects = document.querySelectorAll('.mapping-select');
+            var mapping = [];
+            selects.forEach(function(sel) {
+                mapping.push({
+                    csv_index: sel.getAttribute('data-csv-index'),
+                    table_column: sel.value
+                });
+            });
+            document.getElementById('mapping-json').value = JSON.stringify(mapping);
+        });
+
+        // Populate key column dropdown from mapped columns
+        function updateKeyColumnOptions() {
+            var selects = document.querySelectorAll('.mapping-select');
+            var keySelect = document.getElementById('key-column-select');
+            var current = keySelect.value;
+            keySelect.innerHTML = '<option value="">{{ lang('table.import.select') }}</option>';
+            selects.forEach(function(sel) {
+                if (sel.value !== '__skip__') {
+                    var opt = document.createElement('option');
+                    opt.value = sel.value;
+                    opt.textContent = sel.value;
+                    if (sel.value === current) opt.selected = true;
+                    keySelect.appendChild(opt);
+                }
+            });
+            // Auto-select PK column (id) if nothing selected
+            if (!current || !Array.from(keySelect.options).some(function(o) { return o.value === current; })) {
+                {% if pkCol %}
+                var pkOpt = Array.from(keySelect.options).find(function(o) { return o.value === '{{ pkCol }}'; });
+                if (pkOpt) pkOpt.selected = true;
+                {% endif %}
+            }
+        }
+
+        // Toggle key column visibility based on mode
+        function toggleKeyColumn() {
+            var mode = document.querySelector('input[name="mode"]:checked').value;
+            var row = document.getElementById('key-column-row');
+            var hintAdd = document.getElementById('mode-hint-add');
+            var hintSkip = document.getElementById('mode-hint-skip');
+            var hintUpdate = document.getElementById('mode-hint-update');
+
+            row.style.display = (mode === 'skip_duplicates' || mode === 'update_existing') ? '' : 'none';
+            hintAdd.style.display = mode === 'add_all' ? '' : 'none';
+            hintSkip.style.display = mode === 'skip_duplicates' ? '' : 'none';
+            hintUpdate.style.display = mode === 'update_existing' ? '' : 'none';
+
+            if (mode !== 'add_all') updateKeyColumnOptions();
+        }
+
+        // Update key column options when mapping changes
+        document.querySelectorAll('.mapping-select').forEach(function(sel) {
+            sel.addEventListener('change', function() {
+                var mode = document.querySelector('input[name="mode"]:checked').value;
+                if (mode !== 'add_all') updateKeyColumnOptions();
+            });
+        });
+
+        // Update key column hint - warn if key not in mapping
+        function updateKeyHint() {
+            var keySel = document.getElementById('key-column-select');
+            var warning = document.getElementById('keycol-warning');
+            if (!keySel || !warning) return;
+            var selectedCol = keySel.value;
+            var mappingOpts = document.querySelectorAll('.mapping-select');
+            var inMapping = false;
+            mappingOpts.forEach(function(sel) {
+                if (sel.value === selectedCol) inMapping = true;
+            });
+            warning.style.display = (selectedCol && !inMapping) ? '' : 'none';
+        }
+
+        // Update mapping selects to sync key column warning
+        document.querySelectorAll('.mapping-select').forEach(function(sel) {
+            sel.addEventListener('change', updateKeyHint);
+        });
+        document.getElementById('key-column-select').addEventListener('change', function() {
+            updateKeyHint();
+        });
+
+        // Init
+        updateKeyColumnOptions();
+        </script>
+
+    {% else %}
+        {# === UPLOAD FORM === #}
+        <div class="bg-white rounded-lg shadow-sm border">
+            <div class="px-6 py-4 border-b bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">{{ lang('table.import.import_title')|replace({'%table%': tableName}) }}</h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    {{ lang('table.import.upload_hint') }}
+                </p>
+            </div>
+            <div class="p-6">
+                <form method="POST" action="{{ admin_url('table/' ~ tableName|url_encode ~ '/process-csv') }}" enctype="multipart/form-data">
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">CSV File</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition">
+                            <div class="space-y-1 text-center">
+                                <i class="fas fa-file-csv text-gray-400 text-4xl mb-3"></i>
+                                <div class="text-sm text-gray-600">
+                                    <label for="csv_file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
+                                        <span id="csv-file-label">{{ lang('table.import.choose_file') }}</span>
+                                        <input id="csv_file" name="csv_file" type="file" accept=".csv,text/csv" class="sr-only" required onchange="updateFileLabel(this)">
+                                    </label>
+                                    <span class="pl-1">{{ lang('table.import.drag_and_drop') }}</span>
+                                </div>
+                                <p class="text-xs text-gray-500" id="csv-file-info">{{ lang('table.import.max_size') }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-700">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>{{ lang('table.import.tips') }}:</strong>
+                        <ul class="list-disc list-inside mt-2 space-y-1">
+                            <li>{{ lang('table.import.tip1') }}</li>
+                            <li>{{ lang('table.import.tip2') }}</li>
+                            <li>{{ lang('table.import.tip3') }}</li>
+                            <li>{{ lang('table.import.tip4') }}</li>
+                        </ul>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-500">{{ lang('table.import.columns_in_table') }}: {{ structure|length }}</span>
+                        <button type="submit"
+                                class="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                            <i class="fas fa-upload"></i>
+                            <span>{{ lang('table.import.upload_and_verify') }}</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-6 bg-white rounded-lg shadow-sm border">
+            <div class="px-6 py-4 border-b bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">{{ lang('table.import.table_structure') }}</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ lang('table.import.column') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Тип</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ lang('table.import.required') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for col in structure %}
+                        <tr>
+                            <td class="px-4 py-2 text-sm font-medium text-gray-900">
+                                <code>{{ col.name }}</code>
+                                {% if col.pk == 1 %}<span class="text-xs text-blue-500 ml-1">{{ lang('table.import.pk') }}</span>{% endif %}
+                            </td>
+                            <td class="px-4 py-2 text-sm text-gray-500">{{ col.type }}</td>
+                            <td class="px-4 py-2 text-sm text-gray-500">
+                                {% if col.notnull == 1 and col.pk == 0 %}
+                                    <span class="text-red-500">{{ lang('table.import.yes') }}</span>
+                                {% else %}
+                                    <span class="text-gray-400">{{ lang('table.import.no') }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

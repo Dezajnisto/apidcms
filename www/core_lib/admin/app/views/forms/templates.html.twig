@@ -6,7 +6,7 @@
         <a href="{{ admin_url('forms/edit/' ~ form_name) }}" class="text-gray-400 hover:text-gray-600 transition">
             <i class="fas fa-arrow-left"></i>
         </a>
-        <h1 class="text-2xl font-bold text-gray-900">📄 Шаблоны формы: {{ form.display_name }}</h1>
+        <h1 class="text-2xl font-bold text-gray-900">📄 {{ lang('forms.templates_title') }} {{ form.display_name }}</h1>
         <span class="text-sm text-gray-400">({{ form_name }})</span>
     </div>
 
@@ -51,8 +51,8 @@
         <table class="w-full text-sm">
             <thead>
                 <tr class="border-b text-left text-gray-500">
-                    <th class="py-2 pr-4">Файл</th>
-                    <th class="py-2 pr-4">Размер</th>
+                    <th class="py-2 pr-4">{{ lang('forms.templates_col_file') }}</th>
+                    <th class="py-2 pr-4">{{ lang('forms.templates_col_size') }}</th>
                     <th class="py-2 pr-4">Изменён</th>
                     <th class="py-2"></th>
                 </tr>
@@ -65,7 +65,7 @@
                     <td class="py-2 pr-4 text-gray-500">{{ t.modified|date('d.m.Y H:i') }}</td>
                     <td class="py-2 text-right">
                         <a href="{{ admin_url('forms/' ~ form_name ~ '/templates/' ~ t.name) }}" class="text-blue-600 hover:text-blue-800 text-sm">
-                            <i class="fas fa-edit mr-1"></i>Редактировать
+                            <i class="fas fa-edit mr-1"></i>{{ lang('forms.templates_action_edit') }}
                         </a>
                     </td>
                 </tr>
@@ -83,8 +83,8 @@
         <table class="w-full text-sm">
             <thead>
                 <tr class="border-b text-left text-gray-500">
-                    <th class="py-2 pr-4">Файл</th>
-                    <th class="py-2 pr-4">Размер</th>
+                    <th class="py-2 pr-4">{{ lang('forms.templates_col_file') }}</th>
+                    <th class="py-2 pr-4">{{ lang('forms.templates_col_size') }}</th>
                     <th class="py-2 pr-4">Изменён</th>
                     <th class="py-2"></th>
                 </tr>
@@ -97,7 +97,7 @@
                     <td class="py-2 pr-4 text-gray-500">{{ t.modified|date('d.m.Y H:i') }}</td>
                     <td class="py-2 text-right">
                         <a href="{{ admin_url('forms/' ~ form_name ~ '/templates/' ~ t.name) }}" class="text-blue-600 hover:text-blue-800 text-sm">
-                            <i class="fas fa-edit mr-1"></i>Редактировать
+                            <i class="fas fa-edit mr-1"></i>{{ lang('forms.templates_action_edit') }}
                         </a>
                     </td>
                 </tr>

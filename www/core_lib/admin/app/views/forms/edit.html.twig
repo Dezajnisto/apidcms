@@ -27,9 +27,9 @@
     <form method="post" action="{{ admin_url('forms/save') }}" class="space-y-6">
         <input type="hidden" name="name" value="{{ form.name }}">
 
-        {# Основные настройки #}
+        {# {{ lang('forms.basic_settings') }} #}
         <div class="bg-white rounded-xl shadow-sm border p-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-4">Основные настройки</h2>
+            <h2 class="text-lg font-bold text-gray-800 mb-4">{{ lang('forms.basic_settings') }}</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Название</label>
@@ -37,7 +37,7 @@
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Таблица для данных</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ lang('forms.source_table') }}</label>
                     <select name="source_table" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                         {% for t in tables %}
                             <option value="{{ t }}" {{ form.source_table == t ? 'selected' : '' }}>{{ t }}</option>
@@ -53,7 +53,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Сообщение об успехе</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ lang('forms.success_message') }}</label>
                     <input type="text" name="success_message" value="{{ form.success_message }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
@@ -72,13 +72,13 @@
             </div>
         </div>
 
-        {# Дизайн #}
+        {# {{ lang('forms.design') }} #}
         <div class="bg-white rounded-xl shadow-sm border p-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-4">Дизайн (CSS-классы по умолчанию)</h2>
+            <h2 class="text-lg font-bold text-gray-800 mb-4">{{ lang('forms.design') }} (CSS-классы по умолчанию)</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Текст кнопки</label>
-                    <input type="text" name="design_submit_text" value="{{ form.design.submit_text|default('Отправить') }}"
+                    <input type="text" name="design_submit_text" value="{{ form.design.submit_text|default('{{ lang('forms.default_submit_text') }}') }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
@@ -114,9 +114,9 @@
             </p>
         </div>
 
-        {# Уведомления #}
+        {# {{ lang('forms.notifications') }} #}
         <div class="bg-white rounded-xl shadow-sm border p-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-4">Уведомления</h2>
+            <h2 class="text-lg font-bold text-gray-800 mb-4">{{ lang('forms.notifications') }}</h2>
             <div class="space-y-4">
                 <label class="flex items-center">
                     <input type="checkbox" name="notify_admin" value="1" 
@@ -127,13 +127,13 @@
                 </label>
                 <div id="admin-notify-details" class="ml-6 space-y-3 {{ form.notifications.admin_notify ? '' : 'hidden' }}">
                     <div>
-                        <label class="block text-sm text-gray-600 mb-1">Email администратора (через запятую)</label>
+                        <label class="block text-sm text-gray-600 mb-1">{{ lang('forms.admin_email') }} (через запятую)</label>
                         <input type="text" name="admin_emails" value="{{ form.notifications.admin_emails|join(', ')|default('') }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm text-gray-600 mb-1">Тема письма</label>
-                        <input type="text" name="admin_subject" value="{{ form.notifications.admin_subject|default('Новая заявка с сайта') }}"
+                        <input type="text" name="admin_subject" value="{{ form.notifications.admin_subject|default('{{ lang('forms.default_admin_subject') }}') }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
@@ -143,12 +143,12 @@
                            onchange="document.getElementById('autoreply-details').classList.toggle('hidden', !this.checked);"
                            {{ form.notifications.auto_reply ? 'checked' : '' }}
                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                    <span class="ml-2 text-sm font-medium text-gray-700">Автоответ пользователю</span>
+                    <span class="ml-2 text-sm font-medium text-gray-700">{{ lang('forms.auto_reply') }} пользователю</span>
                 </label>
                 <div id="autoreply-details" class="ml-6 space-y-3 {{ form.notifications.auto_reply ? '' : 'hidden' }}">
                     <div>
-                        <label class="block text-sm text-gray-600 mb-1">Тема автоответа</label>
-                        <input type="text" name="auto_reply_subject" value="{{ form.notifications.auto_reply_subject|default('Мы получили ваше сообщение') }}"
+                        <label class="block text-sm text-gray-600 mb-1">{{ lang('forms.auto_reply_subject') }}</label>
+                        <input type="text" name="auto_reply_subject" value="{{ form.notifications.auto_reply_subject|default('{{ lang('forms.default_reply_subject') }}') }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>

@@ -34,7 +34,7 @@
             <a href="/admin/templates" 
                class="inline-flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
                 <i class="fas fa-arrow-left"></i>
-                <span>Назад к списку</span>
+                <span>{{ lang('templates.back_to_list') }}
             </a>
         </div>
     </div>
@@ -52,7 +52,7 @@
     <!-- Форма редактирования -->
     <div class="bg-white rounded-lg shadow-sm border">
         <div class="px-6 py-4 border-b">
-            <h2 class="text-lg font-semibold text-gray-900">Редактирование: {{ templateName }}</h2>
+            <h2 class="text-lg font-semibold text-gray-900">{{ lang('templates.editing') }} {{ templateName }}</h2>
         </div>
         
         <div class="p-6">
@@ -88,8 +88,8 @@
                 <!-- Статистика кода -->
                 <div class="flex items-center justify-between text-sm text-gray-500">
                     <div class="flex items-center space-x-4">
-                        <span id="lineCount">Строк: {{ content|split('\n')|length }}</span>
-                        <span id="charCount">Символов: {{ content|length }}</span>
+                        <span id="lineCount">{{ lang('templates.line_count') }} {{ content|split('\n')|length }}</span>
+                        <span id="charCount">{{ lang('templates.char_count') }} {{ content|length }}</span>
                     </div>
                     <div class="flex items-center space-x-2">
                         
@@ -100,7 +100,7 @@
                 <div class="flex items-center justify-end space-x-4 pt-6 border-t">
             <a href="/admin/templates" 
                        class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
-                        Отмена
+                        {{ lang('templates.cancel') }}
                     </a>
                     <button type="submit" 
                             class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center space-x-2">

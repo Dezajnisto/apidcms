@@ -1834,7 +1834,9 @@ private function handleFormSubmission() {
                 if (!empty($item[$localeUrlKey])) {
                     $contentUrl = $item[$localeUrlKey];
                 }
+                // Resolve {lang} placeholder in content_url
                 if (!empty($contentUrl)) {
+                    $contentUrl = str_replace('{lang}', $this->locale, $contentUrl);
                     try {
                         $detailContent = $loader->fetchContent($contentUrl);
                     } catch (\RuntimeException $e) {

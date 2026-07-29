@@ -743,6 +743,15 @@ class FrontController {
         $data['custom_css'] = $this->getSetting('custom_css') ?: '';
         $data['css_version'] = $this->getSetting('custom_css_version') ?: '1';
         $data['site_lang'] = $this->locale;
+        $rawPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/');
+        // Strip locale prefix from current_path for lang switcher
+        $cleanPath = $rawPath;
+        if ($this->locale !== 'ru' && strpos($rawPath, $this->locale . '/') === 0) {
+            $cleanPath = substr($rawPath, strlen($this->locale) + 1);
+        } elseif ($this->locale !== 'ru' && $rawPath === $this->locale) {
+            $cleanPath = '';
+        }
+        $data['current_path'] = $cleanPath;
         $data["session"] = new \Core\SessionProxy();
 
         // Хук: фильтр данных перед рендером

@@ -294,11 +294,16 @@ class FrontController {
             return substr($path, 1);
         }
         $url = '/' . ltrim($path, '/');
-        // Prepend language prefix when on a non-base language
+        // Prepend language prefix for page URLs (not assets/admin)
         if ($this->locale !== 'ru' && $this->locale !== '') {
             $baseLang = $this->getSetting('site_language') ?: 'ru';
             if ($this->locale !== $baseLang && strpos($url, '/' . $this->locale . '/') !== 0) {
-                $url = '/' . $this->locale . $url;
+                // Don't prefix asset/admin paths
+                $firstSegment = explode('/', ltrim($url, '/'))[0] ?? '';
+                $skipPrefix = ['storage', 'admin', 'static', 'install.php'];
+                if (!in_array($firstSegment, $skipPrefix, true)) {
+                    $url = '/' . $this->locale . $url;
+                }
             }
         }
         return $url;

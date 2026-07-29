@@ -243,7 +243,6 @@ if (strpos($uri, 'admin') === 0 || $uri === 'admin') {
         $app->run();
         exit;  // App должен exit, но на всякий случай
     } catch (\Throwable $e) {
-        exit;
         http_response_code(500);
         echo "<h1>Внутренняя ошибка сервера</h1>";
         echo "<p>Произошла непредвиденная ошибка в панели управления.</p>";

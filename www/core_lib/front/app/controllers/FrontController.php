@@ -13,6 +13,7 @@ class FrontController {
     private $config;
     private $twig;
     private $emailNotifier;
+    private $locale = 'ru';
     
     /**
      * Конструктор фронтенд контроллера
@@ -319,9 +320,9 @@ class FrontController {
         // Убираем начальные и конечные слеши
         $path = trim($path, '/');
         
-        // Логирование для отладки
+        // Language detection (before routing)
+        $this->locale = $this->detectLocale($path);
 
-        
         // Хук: перед роутингом
         try {
             $pm = \Core\PluginManager::getInstance();
@@ -342,6 +343,64 @@ class FrontController {
         }
     }
     
+    /**
+     * Detect frontend locale from URL prefix, cookie, or default setting.
+     * Modifies $path by stripping language prefix when detected.
+     * Redirects to prefixed URL when cookie is set but URL is bare.
+     */
+    private function detectLocale(&$path): string {
+        $baseLang = $this->getSetting('site_language') ?: 'ru';
+        $extraLangsJson = $this->getSetting('site_languages');
+        $extraLangs = [];
+        if ($extraLangsJson) {
+            $decoded = json_decode($extraLangsJson, true);
+            if (is_array($decoded)) $extraLangs = $decoded;
+        }
+
+        // No extra languages configured — just base language
+        if (empty($extraLangs)) return $baseLang;
+
+        // Parse first URL segment
+        $segments = explode('/', $path);
+        $firstSegment = $segments[0] ?? '';
+
+        // Skip /admin
+        if ($firstSegment === 'admin') return $baseLang;
+
+        // If first segment is a known extra language, use it
+        if (in_array($firstSegment, $extraLangs, true)) {
+            // Strip prefix from path
+            $path = implode('/', array_slice($segments, 1));
+            $this->setLanguageCookie($firstSegment);
+            return $firstSegment;
+        }
+
+        // Check cookie for extra language → redirect to prefixed URL
+        $cookieLang = $_COOKIE['site_lang'] ?? null;
+        if ($cookieLang && in_array($cookieLang, $extraLangs, true)) {
+            $newPath = $cookieLang . '/' . ltrim($path, '/');
+            $query = $_SERVER['QUERY_STRING'] ?? '';
+            $url = '/' . $newPath . ($query ? '?' . $query : '');
+            header('Location: ' . $url, true, 302);
+            exit;
+        }
+
+        return $baseLang;
+    }
+
+    /**
+     * Set site_lang cookie for 1 year.
+     */
+    private function setLanguageCookie(string $lang): void {
+        setcookie('site_lang', $lang, [
+            'expires' => time() + 86400 * 365,
+            'path' => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+            'secure' => !empty($_SERVER['HTTPS']),
+        ]);
+    }
+
     /**
      * Обработка маршрута
      */
@@ -645,6 +704,7 @@ class FrontController {
         $data['site_description'] = $this->getSetting('site_description') ?: 'Описание сайта';
         $data['custom_css'] = $this->getSetting('custom_css') ?: '';
         $data['css_version'] = $this->getSetting('custom_css_version') ?: '1';
+        $data['site_lang'] = $this->locale;
         $data["session"] = new \Core\SessionProxy();
 
         // Хук: фильтр данных перед рендером
@@ -1699,7 +1759,7 @@ private function handleFormSubmission() {
 
         try {
             $loader = new \Core\ExternalPageLoader($config);
-            $locale = 'ru'; // frontend locale — independent of admin language
+            $locale = $this->locale;
             $data = $loader->fetch($_GET);
             $data['items'] = $loader->resolveLocale($data['items'], $locale);
 

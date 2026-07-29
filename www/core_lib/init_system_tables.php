@@ -168,6 +168,8 @@ $settings = [
     ['site_email', null, 'string'],
     ['posts_per_page', '10', 'string'],
     ['admin_language', 'ru', 'string'],
+    ['site_language', 'ru', 'string'],
+    ['site_languages', null, 'string'],
     ['site_favicon', null, 'string'],
     ['maintenance_mode', '0', 'string'],
     ['external_default_token', null, 'string'],

@@ -293,7 +293,15 @@ class FrontController {
         if (strpos($path, '/#') === 0) {
             return substr($path, 1);
         }
-        return '/' . ltrim($path, '/');
+        $url = '/' . ltrim($path, '/');
+        // Prepend language prefix when on a non-base language
+        if ($this->locale !== 'ru' && $this->locale !== '') {
+            $baseLang = $this->getSetting('site_language') ?: 'ru';
+            if ($this->locale !== $baseLang && strpos($url, '/' . $this->locale . '/') !== 0) {
+                $url = '/' . $this->locale . $url;
+            }
+        }
+        return $url;
     }
     
     /**

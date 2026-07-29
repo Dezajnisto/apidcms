@@ -18,7 +18,7 @@ function updateFileLabel(input) {
         }
         if (info) {
             var sizeKB = (file.size / 1024).toFixed(0);
-            info.textContent = file.name + ' (' + sizeKB + ' КБ)';
+            info.textContent = '{{ lang('table.import.file_info')|replace({'%name%': '" + file.name + "', '%size%': '" + sizeKB + "'})|e('js') }}';
             info.className = 'text-xs text-green-600';
         }
     }
@@ -29,21 +29,21 @@ function updateFileLabel(input) {
         <a href="{{ admin_url('table/' ~ tableName|url_encode) }}"
            class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition text-sm">
             <i class="fas fa-arrow-left"></i>
-            <span>Назад к таблице</span>
+            <span>{{ lang('table.import.back_to_table') }}</span>
         </a>
     </div>
 
     {% if error == 'upload_failed' %}
         <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-            <i class="fas fa-exclamation-circle"></i> Ошибка загрузки. Убедитесь, что файл в формате CSV.
+            <i class="fas fa-exclamation-circle"></i> {{ lang('table.import.error_upload') }}
         </div>
     {% elseif error == 'read_failed' %}
         <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-            <i class="fas fa-exclamation-circle"></i> Не удалось прочитать CSV-файл.
+            <i class="fas fa-exclamation-circle"></i> {{ lang('table.import.error_read') }}
         </div>
     {% elseif error == 'empty_file' %}
         <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-            <i class="fas fa-exclamation-circle"></i> CSV-файл пуст.
+            <i class="fas fa-exclamation-circle"></i> {{ lang('table.import.error_empty') }}
         </div>
     {% elseif error %}
         <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
@@ -55,12 +55,12 @@ function updateFileLabel(input) {
         {# === PREVIEW + MAPPING === #}
         <div class="bg-white rounded-lg shadow-sm border mb-6">
             <div class="px-6 py-4 border-b bg-gray-50">
-                <h2 class="text-lg font-semibold text-gray-900">Сопоставление колонок</h2>
+                <h2 class="text-lg font-semibold text-gray-900">{{ lang('table.import.column_mapping') }}</h2>
                 <p class="text-sm text-gray-500 mt-1">
                     {% if firstRowIsHeader %}
-                        Первая строка определена как заголовок. {{ csvHeaders|length }} колонок найдено, {{ mapping|filter(m => m.table_column is not null)|length }} сопоставлено автоматически.
+                        {{ lang('table.import.header_detected') }} {{ csvHeaders|length }} {{ lang('table.import.columns_found') }} {{ mapping|filter(m => m.table_column is not null)|length }} {{ lang('table.import.mapped_auto') }}
                     {% else %}
-                        {{ csvHeaders|length }} колонок найдено. Заголовок не обнаружен.
+                        {{ csvHeaders|length }} {{ lang('table.import.columns_found_simple') }} {{ lang('table.import.no_header') }}
                     {% endif %}
                 </p>
             </div>
@@ -73,9 +73,9 @@ function updateFileLabel(input) {
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Колонка CSV</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Пример</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">В колонку</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ lang('table.import.csv_column') }}</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ lang('table.import.example') }}</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ lang('table.import.map_to') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -90,7 +90,7 @@ function updateFileLabel(input) {
                                 <td class="px-4 py-3">
                                     <select class="mapping-select w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             data-csv-index="{{ m.csv_index }}">
-                                        <option value="__skip__">-- Пропустить --</option>
+                                        <option value="__skip__">{{ lang('table.import.skip') }}</option>
                                         {% for tc in tableColumns %}
                                             {% if tc != 'created_at' %}
                                                 <option value="{{ tc }}" {% if m.table_column == tc %}selected{% endif %}>{{ tc }}{% if tc == pkCol %} (PK){% endif %}</option>
@@ -98,7 +98,7 @@ function updateFileLabel(input) {
                                         {% endfor %}
                                     </select>
                                     {% if m.table_column is not null %}
-                                        <span class="text-xs text-green-600 mt-1 block"><i class="fas fa-check"></i> Совпало</span>
+                                        <span class="text-xs text-green-600 mt-1 block"><i class="fas fa-check"></i> {{ lang('table.import.matched') }}</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -108,55 +108,55 @@ function updateFileLabel(input) {
 
                     <!-- Import mode -->
                     <div class="mt-6 p-4 bg-gray-50 rounded-lg border">
-                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Режим импорта</h3>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">{{ lang('table.import.import_mode') }}</h3>
                         <div class="flex flex-wrap gap-4 mb-3">
                             <label class="inline-flex items-center space-x-2 text-sm cursor-pointer">
                                 <input type="radio" name="mode" value="add_all" checked onchange="toggleKeyColumn()" class="w-4 h-4 text-blue-600">
-                                <span>Добавить все строки</span>
+                                <span>{{ lang('table.import.add_all') }}</span>
                             </label>
                             <label class="inline-flex items-center space-x-2 text-sm cursor-pointer">
                                 <input type="radio" name="mode" value="skip_duplicates" onchange="toggleKeyColumn()" class="w-4 h-4 text-blue-600">
-                                <span>Пропустить дубликаты</span>
+                                <span>{{ lang('table.import.skip_duplicates') }}</span>
                             </label>
                             <label class="inline-flex items-center space-x-2 text-sm cursor-pointer">
                                 <input type="radio" name="mode" value="update_existing" onchange="toggleKeyColumn()" class="w-4 h-4 text-blue-600">
-                                <span>Обновить существующие</span>
+                                <span>{{ lang('table.import.update_existing') }}</span>
                             </label>
                         </div>
                         <div id="key-column-row" style="display:none;">
-                            <label class="text-sm text-gray-600 mr-2">Ключевая колонка:</label>
+                            <label class="text-sm text-gray-600 mr-2">{{ lang('table.import.key_column') }}:</label>
                             <select name="key_column" id="key-column-select" class="px-3 py-1.5 border border-gray-300 rounded-md text-sm" onchange="updateKeyHint()">
-                                <option value="">-- Выберите --</option>
+                                <option value="">{{ lang('table.import.select') }}</option>
                                 {% for tc in tableColumns %}
                                     {% if tc != 'created_at' %}
                                         <option value="{{ tc }}" data-in-mapping="false" {% if tc == pkCol %}selected{% endif %}>{{ tc }}{% if tc == pkCol %} (PK){% endif %}</option>
                                     {% endif %}
                                 {% endfor %}
                             </select>
-                            <span class="text-xs text-gray-400 ml-2">Используется для поиска существующих записей</span>
+                            <span class="text-xs text-gray-400 ml-2">{{ lang('table.import.key_hint') }}</span>
                             <span id="keycol-warning" class="text-xs text-red-500 ml-2" style="display:none;">
-                                <i class="fas fa-exclamation-triangle"></i> Эта колонка не участвует в импорте
+                                <i class="fas fa-exclamation-triangle"></i> {{ lang('table.import.key_not_mapped') }}
                             </span>
                         </div>
                         <div id="mode-hint-add" class="text-xs text-gray-500 mt-2">
-                            <i class="fas fa-info-circle"></i> Каждая строка добавляется как новая запись.
+                            <i class="fas fa-info-circle"></i> {{ lang('table.import.mode_hint_add') }}
                         </div>
                         <div id="mode-hint-skip" class="text-xs text-gray-500 mt-2" style="display:none;">
-                            <i class="fas fa-info-circle"></i> Строки, где ключевая колонка совпадает с существующей записью, пропускаются.
+                            <i class="fas fa-info-circle"></i> {{ lang('table.import.mode_hint_skip') }}
                         </div>
                         <div id="mode-hint-update" class="text-xs text-gray-500 mt-2" style="display:none;">
-                            <i class="fas fa-info-circle"></i> Совпавшие записи обновляются значениями из CSV. Несовпавшие — добавляются как новые.
+                            <i class="fas fa-info-circle"></i> {{ lang('table.import.mode_hint_update') }}
                         </div>
                     </div>
 
                     <div class="mt-6 flex items-center justify-between">
                         <div class="text-sm text-gray-500">
-                            {{ preview|length }} строк для предпросмотра
+                            {{ lang('table.import.rows_preview')|replace({'%count%': preview|length}) }}
                         </div>
                         <button type="submit"
                                 class="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium">
                             <i class="fas fa-upload"></i>
-                            <span>Импортировать</span>
+                            <span>{{ lang('table.import.import') }}</span>
                         </button>
                     </div>
                 </form>
@@ -166,7 +166,7 @@ function updateFileLabel(input) {
         {% if preview|length > 0 %}
         <div class="bg-white rounded-lg shadow-sm border">
             <div class="px-6 py-4 border-b bg-gray-50">
-                <h2 class="text-lg font-semibold text-gray-900">Предпросмотр (первые {{ preview|length }} строк)</h2>
+                <h2 class="text-lg font-semibold text-gray-900">{{ lang('table.import.preview_title')|replace({'%count%': preview|length}) }}</h2>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -210,7 +210,7 @@ function updateFileLabel(input) {
             var selects = document.querySelectorAll('.mapping-select');
             var keySelect = document.getElementById('key-column-select');
             var current = keySelect.value;
-            keySelect.innerHTML = '<option value="">-- Выберите --</option>';
+            keySelect.innerHTML = '<option value="">{{ lang('table.import.select') }}</option>';
             selects.forEach(function(sel) {
                 if (sel.value !== '__skip__') {
                     var opt = document.createElement('option');
@@ -283,9 +283,9 @@ function updateFileLabel(input) {
         {# === UPLOAD FORM === #}
         <div class="bg-white rounded-lg shadow-sm border">
             <div class="px-6 py-4 border-b bg-gray-50">
-                <h2 class="text-lg font-semibold text-gray-900">Импорт CSV в «{{ tableName }}»</h2>
+                <h2 class="text-lg font-semibold text-gray-900">{{ lang('table.import.import_title')|replace({'%table%': tableName}) }}</h2>
                 <p class="text-sm text-gray-500 mt-1">
-                    Загрузите CSV-файл. Названия колонок будут сопоставлены автоматически.
+                    {{ lang('table.import.upload_hint') }}
                 </p>
             </div>
             <div class="p-6">
@@ -297,33 +297,33 @@ function updateFileLabel(input) {
                                 <i class="fas fa-file-csv text-gray-400 text-4xl mb-3"></i>
                                 <div class="text-sm text-gray-600">
                                     <label for="csv_file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
-                                        <span id="csv-file-label">Выберите файл</span>
+                                        <span id="csv-file-label">{{ lang('table.import.choose_file') }}</span>
                                         <input id="csv_file" name="csv_file" type="file" accept=".csv,text/csv" class="sr-only" required onchange="updateFileLabel(this)">
                                     </label>
-                                    <span class="pl-1">или перетащите сюда</span>
+                                    <span class="pl-1">{{ lang('table.import.drag_and_drop') }}</span>
                                 </div>
-                                <p class="text-xs text-gray-500" id="csv-file-info">CSV до 10 МБ</p>
+                                <p class="text-xs text-gray-500" id="csv-file-info">{{ lang('table.import.max_size') }}</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-700">
                         <i class="fas fa-info-circle"></i>
-                        <strong>Советы:</strong>
+                        <strong>{{ lang('table.import.tips') }}:</strong>
                         <ul class="list-disc list-inside mt-2 space-y-1">
-                            <li>Первая строка должна содержать названия колонок, совпадающие с таблицей</li>
-                            <li>Несовпадающие колонки можно пропустить или сопоставить вручную</li>
-                            <li>Пустые значения в необязательных колонках станут NULL</li>
-                            <li>Колонки id и created_at заполняются автоматически</li>
+                            <li>{{ lang('table.import.tip1') }}</li>
+                            <li>{{ lang('table.import.tip2') }}</li>
+                            <li>{{ lang('table.import.tip3') }}</li>
+                            <li>{{ lang('table.import.tip4') }}</li>
                         </ul>
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-500">Колонок в таблице: {{ structure|length }}</span>
+                        <span class="text-sm text-gray-500">{{ lang('table.import.columns_in_table') }}: {{ structure|length }}</span>
                         <button type="submit"
                                 class="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
                             <i class="fas fa-upload"></i>
-                            <span>Загрузить и проверить</span>
+                            <span>{{ lang('table.import.upload_and_verify') }}</span>
                         </button>
                     </div>
                 </form>
@@ -332,15 +332,15 @@ function updateFileLabel(input) {
 
         <div class="mt-6 bg-white rounded-lg shadow-sm border">
             <div class="px-6 py-4 border-b bg-gray-50">
-                <h2 class="text-lg font-semibold text-gray-900">Структура таблицы</h2>
+                <h2 class="text-lg font-semibold text-gray-900">{{ lang('table.import.table_structure') }}</h2>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Колонка</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ lang('table.import.column') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Тип</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Обязательное</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ lang('table.import.required') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
@@ -348,14 +348,14 @@ function updateFileLabel(input) {
                         <tr>
                             <td class="px-4 py-2 text-sm font-medium text-gray-900">
                                 <code>{{ col.name }}</code>
-                                {% if col.pk == 1 %}<span class="text-xs text-blue-500 ml-1">PK</span>{% endif %}
+                                {% if col.pk == 1 %}<span class="text-xs text-blue-500 ml-1">{{ lang('table.import.pk') }}</span>{% endif %}
                             </td>
                             <td class="px-4 py-2 text-sm text-gray-500">{{ col.type }}</td>
                             <td class="px-4 py-2 text-sm text-gray-500">
                                 {% if col.notnull == 1 and col.pk == 0 %}
-                                    <span class="text-red-500">Да</span>
+                                    <span class="text-red-500">{{ lang('table.import.yes') }}</span>
                                 {% else %}
-                                    <span class="text-gray-400">Нет</span>
+                                    <span class="text-gray-400">{{ lang('table.import.no') }}</span>
                                 {% endif %}
                             </td>
                         </tr>

@@ -12,12 +12,12 @@
         <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '?page=' ~ (currentPage|default(1))) }}" 
            class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition text-sm">
             <i class="fas fa-arrow-left"></i>
-            <span>Назад к таблице</span>
+            <span>{{ lang('table.form.back_to_table') }}</span>
         </a>
         <a href="{{ admin_url('') }}" 
            class="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition text-sm">
             <i class="fas fa-table"></i>
-            <span>Список таблиц</span>
+            <span>{{ lang('table.form.table_list') }}</span>
         </a>
     </div>
 
@@ -27,7 +27,7 @@
         <div class="mb-4 md:mb-6 p-3 md:p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm">
             <div class="flex items-center space-x-3">
                 <i class="fas fa-check-circle"></i>
-                <span>Запись успешно создана</span>
+                <span>{{ lang('table.form.created_success') }}</span>
             </div>
         </div>
     {% endif %}
@@ -35,7 +35,7 @@
         <div class="mb-4 md:mb-6 p-3 md:p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded-lg text-sm">
             <div class="flex items-center space-x-3">
                 <i class="fas fa-info-circle"></i>
-                <span>Запись успешно обновлена</span>
+                <span>{{ lang('table.form.updated_success') }}</span>
             </div>
         </div>
     {% endif %}
@@ -52,24 +52,24 @@
         <button type="submit" form="table-edit-form"
                 class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm">
             <i class="fas fa-save"></i>
-            <span>Сохранить</span>
+            <span>{{ lang('table.form.save') }}</span>
         </button>
         <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/duplicate/' ~ (itemId ?? '')) }}"
            class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition text-sm"
-           onclick="return confirm('Создать копию этой записи?')">
+           onclick="return confirm('{{ lang('table.form.confirm_duplicate') }}')">
             <i class="fas fa-copy"></i>
-            <span>Копировать</span>
+            <span>{{ lang('table.form.duplicate') }}</span>
         </a>
         <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/delete/' ~ (itemId ?? '') ~ '?page=' ~ (currentPage|default(1))) }}"
            class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition text-sm"
-           onclick="return confirm('Вы уверены, что хотите удалить эту запись?')">
+           onclick="return confirm('{{ lang('table.form.confirm_delete') }}')">
             <i class="fas fa-trash"></i>
-            <span>Удалить</span>
+            <span>{{ lang('table.form.delete') }}</span>
         </a>
         <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/create') }}"
            class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition text-sm">
             <i class="fas fa-plus"></i>
-            <span>Создать новую</span>
+            <span>{{ lang('table.form.create_new') }}</span>
         </a>
     </div>
     {% endif %}
@@ -79,7 +79,7 @@
             <div class="flex items-center space-x-3">
                 <i class="fas fa-exclamation-circle"></i>
                 <div>
-                    <strong class="font-medium">Ошибка:</strong>
+                    <strong class="font-medium">{{ lang('table.form.error') }}:</strong>
                     <span>{{ error }}</span>
                 </div>
             </div>
@@ -97,13 +97,13 @@
             {% if itemId is defined %}
             <div class="flex items-center space-x-2">
                 <i class="fas fa-key"></i>
-                <span>ID: <code class="bg-gray-200 px-2 py-1 rounded cursor-pointer" title="Кликните для копирования" onclick="navigator.clipboard.writeText('{{ itemId|e('js') }}').then(function(){var n=document.createElement('div');n.className='fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';n.textContent='ID скопирован!';document.body.appendChild(n);setTimeout(function(){n.remove()},2000)})">{{ itemId }}</code></span>
+                <span>ID: <code class="bg-gray-200 px-2 py-1 rounded cursor-pointer" title="Кликните для копирования" onclick="navigator.clipboard.writeText('{{ itemId|e('js') }}').then(function(){var n=document.createElement('div');n.className='fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';n.textContent='{{ lang('table.form.id_copied')|e('js') }}';document.body.appendChild(n);setTimeout(function(){n.remove()},2000)})">{{ itemId }}</code></span>
             </div>
             {% endif %}
             {% if action == 'create' %}
             <div class="flex items-center space-x-2">
                 <i class="fas fa-plus-circle text-green-600"></i>
-                <span class="text-green-700">Новая запись</span>
+                <span class="text-green-700">{{ lang('table.form.new_record') }}</span>
             </div>
             {% endif %}
         </div>
@@ -113,8 +113,8 @@
         <div class="flex items-start space-x-3">
             <i class="fas fa-info-circle text-blue-500 mt-1"></i>
             <div class="text-blue-700">
-                <strong class="font-medium">Подсказка:</strong>
-                <p>Поля с <span class="text-red-500">*</span> обязательны для заполнения.</p>
+                <strong class="font-medium">{{ lang('table.form.tip_title') }}:</strong>
+                <p>{{ lang('table.form.tip_text')|raw }}</p>
             </div>
         </div>
     </div>
@@ -123,7 +123,7 @@
     <div class="bg-white rounded-lg shadow-sm border">
         <div class="px-4 md:px-6 py-3 md:py-4 border-b">
             <h2 class="text-base md:text-lg font-semibold text-gray-900">
-                {{ action == 'create' ? 'Создание новой записи' : 'Редактирование записи #' ~ itemId }}
+                {{ action == 'create' ? lang('table.form.creating') : lang('table.form.editing')|replace({'%id%': itemId}) }}
             </h2>
         </div>
         
@@ -132,7 +132,7 @@
             <button type="button" onclick="AIAssistant.init({mode:'fill-form',tableName:'{{ tableName|e('js') }}',structure:JSON.parse(document.getElementById('ai-structure-data').textContent)});AIAssistant.open()" 
                     class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 transition text-sm mb-4">
                 <i class="fas fa-magic"></i>
-                <span>AI — Заполнить поля</span>
+                <span>{{ lang('table.form.ai_fill') }}</span>
             </button>
 
             <script id="ai-structure-data" type="application/json">
@@ -158,18 +158,18 @@
                                     {% if column.pk == 1 %}
                                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                             <i class="fas fa-key mr-1"></i>
-                                            Первичный ключ
+                                            {{ lang('table.form.primary_key') }}
                                         </span>
                                     {% endif %}
                                     {% if column.notnull == 1 and column.pk == 0 %}
                                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                            Обязательное
+                                            {{ lang('table.form.required_badge') }}
                                         </span>
                                     {% endif %}
                                     {% if relations is defined and relations[column.name] is defined %}
                                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                                             <i class="fas fa-link mr-1"></i>
-                                            Связь: {{ relations[column.name].table }}
+                                            {{ lang('table.form.relation') }}: {{ relations[column.name].table }}
                                         </span>
                                     {% endif %}
                                 </div>
@@ -181,7 +181,7 @@
                                        value="{{ item[column.name] ?? 'Автоматически' }}" readonly 
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed text-sm">
                                 <p class="text-xs text-gray-500">
-                                    <i class="fas fa-info-circle mr-1"></i> Заполняется автоматически
+                                    <i class="fas fa-info-circle mr-1"></i> {{ lang('table.form.auto_filled') }}
                                 </p>
                             {% elseif relations is defined and relations[column.name] is defined and relations[column.name].search %}
                                 <!-- Searchable combobox -->
@@ -194,12 +194,12 @@
                                 <div class="relation-combobox relative" data-name="{{ column.name }}">
                                     <input type="text" 
                                            class="relation-search-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                           placeholder="Поиск..."
+                                           placeholder="{{ lang('table.form.search_placeholder') }}"
                                            autocomplete="off"
                                            value="{{ currentLabel|e('html_attr') }}">
                                     <input type="hidden" name="{{ column.name }}" value="{{ currentValue|e('html_attr') }}">
                                     <div class="relation-dropdown hidden absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
-                                        <div class="relation-option px-3 py-2 hover:bg-blue-50 cursor-pointer text-gray-400 text-sm" data-value="">-- Выберите --</div>
+                                        <div class="relation-option px-3 py-2 hover:bg-blue-50 cursor-pointer text-gray-400 text-sm" data-value="">{{ lang('table.form.select') }}</div>
                                         {% for opt in rel.options %}
                                             <div class="relation-option px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm {% if currentValue == opt.value %}bg-blue-100 font-medium{% endif %}"
                                                  data-value="{{ opt.value|e('html_attr') }}"
@@ -216,7 +216,7 @@
                                 <select id="{{ column.name }}" name="{{ column.name }}"
                                         {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white">
-                                    <option value="">-- Выберите --</option>
+                                    <option value="">{{ lang('table.form.select') }}</option>
                                     {% for opt in rel.options %}
                                         <option value="{{ opt.value }}" {% if item is not null and item[column.name] == opt.value %}selected{% endif %}>
                                             {% for i in 1..opt.level %}&mdash;&nbsp;{% endfor %}{{ opt.label }}
@@ -231,7 +231,7 @@
                                        value="{{ item[column.name] ?? '' }}"
                                        {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                       placeholder="Введите число...">
+                                       placeholder="{{ lang('table.form.enter_number') }}">
                             {% elseif 'DATE' in column.type|upper or 'TIME' in column.type|upper %}
                                 <input type="datetime-local" id="{{ column.name }}" name="{{ column.name }}" 
                                        value="{{ item[column.name] ?? '' }}"
@@ -249,14 +249,14 @@
                                        value="{{ item[column.name] ?? '' }}"
                                        {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                       placeholder="Введите значение...">
+                                       placeholder="{{ lang('table.form.enter_value') }}">
                             {% endif %}
 
                             <!-- Информация о поле -->
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-500 gap-1">
-                                <span>Тип: <code class="bg-gray-100 px-1 rounded">{{ column.type }}</code></span>
+                                <span>{{ lang('table.form.type') }}: <code class="bg-gray-100 px-1 rounded">{{ column.type }}</code></span>
                                 {% if column.dflt_value is not null %}
-                                    <span>По умолчанию: <code class="bg-gray-100 px-1 rounded">{{ column.dflt_value }}</code></span>
+                                    <span>{{ lang('table.form.default') }}: <code class="bg-gray-100 px-1 rounded">{{ column.dflt_value }}</code></span>
                                 {% endif %}
                             </div>
                         </div>
@@ -276,13 +276,13 @@
                                     </label>
                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                                         <i class="fas fa-link mr-1"></i>
-                                        Связь M:M: {{ rel.table }}
+                                        {{ lang('table.form.relation_mm') }}: {{ rel.table }}
                                     </span>
                                 </div>
                                 <div class="relation-multiselect border border-gray-300 rounded-md" data-name="{{ relName }}">
                                     <input type="text" 
                                            class="multiselect-search w-full px-3 py-2 border-b border-gray-200 text-sm focus:outline-none focus:ring-0 rounded-t-md"
-                                           placeholder="Поиск..."
+                                           placeholder="{{ lang('table.form.search_placeholder') }}"
                                            autocomplete="off">
                                     <div class="multiselect-options max-h-48 overflow-y-auto p-2 space-y-1">
                                         {% for opt in rel.options %}
@@ -309,7 +309,7 @@
                     <button type="submit" 
                             class="px-4 md:px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center justify-center space-x-2 text-sm">
                         <i class="fas {{ action == 'create' ? 'fa-plus' : 'fa-save' }}"></i>
-                        <span>{{ action == 'create' ? 'Создать запись' : 'Сохранить изменения' }}</span>
+                        <span>{{ action == 'create' ? lang('table.form.create_record') : lang('table.form.save_changes') }}</span>
                     </button>
                 </div>
             </form>
@@ -322,7 +322,7 @@
             <div class="flex items-center space-x-3">
                 <i class="fas fa-list text-gray-500"></i>
                 <div>
-                    <p class="text-xs text-gray-700 font-medium">Всего полей</p>
+                    <p class="text-xs text-gray-700 font-medium">{{ lang('table.form.total_fields') }}</p>
                     <p class="text-lg md:text-2xl font-bold text-gray-900">{{ structure|length }}</p>
                 </div>
             </div>
@@ -331,7 +331,7 @@
             <div class="flex items-center space-x-3">
                 <i class="fas fa-edit text-blue-500"></i>
                 <div>
-                    <p class="text-xs text-blue-700 font-medium">Можно редактировать</p>
+                    <p class="text-xs text-blue-700 font-medium">{{ lang('table.form.editable') }}</p>
                     <p class="text-lg md:text-2xl font-bold text-blue-700">
                         {{ structure|filter(col => not (action == 'create' and (col.pk == 1 or col.name == 'created_at')))|length }}
                     </p>
@@ -342,7 +342,7 @@
             <div class="flex items-center space-x-3">
                 <i class="fas fa-exclamation-circle text-red-500"></i>
                 <div>
-                    <p class="text-xs text-red-700 font-medium">Обязательных</p>
+                    <p class="text-xs text-red-700 font-medium">{{ lang('table.form.required_fields') }}</p>
                     <p class="text-lg md:text-2xl font-bold text-red-700">
                         {{ structure|filter(col => col.notnull == 1 and col.pk == 0)|length }}
                     </p>
@@ -363,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
     numberInputs.forEach(input => {
         input.addEventListener('blur', function() {
             if (this.value && isNaN(this.value)) {
-                this.setCustomValidity('Пожалуйста, введите корректное число');
+                this.setCustomValidity('{{ lang('table.form.valid_number')|e('js') }}');
             } else {
                 this.setCustomValidity('');
             }

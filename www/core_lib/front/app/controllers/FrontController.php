@@ -696,7 +696,31 @@ class FrontController {
     /**
      * Отобразить шаблон
      */
+    /**
+     * Resolve i18n fields in template data for the current locale.
+     * Handles both single items and arrays of items.
+     */
+    private function resolveI18nData(array $data): array
+    {
+        $fields = ['title','description','content','summary','intro','body','text','name','meta_title','meta_description'];
+        
+        foreach (['item','page','post'] as $singleKey) {
+            if (!empty($data[$singleKey]) && is_array($data[$singleKey])) {
+                $data[$singleKey] = \Core\I18n::resolveArray([$data[$singleKey]], $fields, $this->locale)[0];
+            }
+        }
+        
+        if (!empty($data['items']) && is_array($data['items'])) {
+            $data['items'] = \Core\I18n::resolveArray($data['items'], $fields, $this->locale);
+        }
+        
+        return $data;
+    }
+
     private function render($template, $data = []) {
+        // Resolve i18n in template data
+        $data = $this->resolveI18nData($data);
+        
         // Добавляем общие данные для всех шаблонов
         $data['_GET'] = $_GET;
         $data['navigation'] = $this->getNavigation();

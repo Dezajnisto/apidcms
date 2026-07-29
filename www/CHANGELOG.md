@@ -1,3 +1,13 @@
+## 2026-07-29 — v1.5.1 — Фикс локализации на фронтенде и в хелп-панели
+
+- ExternalPageLoader::resolveLocale() — раскрытие i18n-объектов {"ru":"...","en":"..."} для docs/changelog
+- FrontController: фронтенд всегда русский (не зависит от admin_language)
+- BaseAdminController: admin_lang передаётся в Twig глобально
+- Хелп-панель: resolveI18n() в JS ресолвит i18n-заголовки в Contents по текущему языку
+- Исправлена структура core_lib после коррапта (vendor, дубликаты cms.db)
+- Файлы: core/ExternalPageLoader.php, front/app/controllers/FrontController.php, admin/app/core/BaseAdminController.php, admin/app/views/_help_panel.html.twig
+
+
 ---
 
 ## 2026-07-29 — v1.5.0 — Полная интернационализация админки

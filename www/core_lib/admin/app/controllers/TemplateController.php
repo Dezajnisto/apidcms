@@ -7,6 +7,7 @@
 
 namespace Admin;
 
+use Admin\Core\Lang;
 use Exception;
 
 class TemplateController extends BaseController {
@@ -34,14 +35,14 @@ class TemplateController extends BaseController {
             $templates = $this->getTemplatesList();
             
             $this->render('template/index', [
-                'title' => 'Управление шаблонами',
+                'title' => Lang::t('template.manage_title'),
                 'templates' => $templates,
                 'templatesPath' => $this->templatesPath
             ]);
             
         } catch (Exception $e) {
             $this->render('error/404', [
-                'message' => 'Ошибка при загрузке списка шаблонов: ' . $e->getMessage()
+                'message' => Lang::t('template.load_error') . ' ' . $e->getMessage()
             ]);
         }
     }
@@ -55,21 +56,21 @@ class TemplateController extends BaseController {
         try {
             // Проверяем безопасность имени файла
             if (!$this->isValidTemplateName($templateName)) {
-                throw new Exception('Некорректное имя шаблона');
+                throw new Exception(Lang::t('template.invalid_name'));
             }
             
             $templatePath = $this->templatesPath . $templateName;
             
             // Проверяем существование файла
             if (!file_exists($templatePath)) {
-                throw new Exception("Шаблон '{$templateName}' не найден");
+                throw new Exception(Lang::t('template.not_found', ['name' => $templateName]));
             }
             
             // Получаем содержимое файла
             $content = file_get_contents($templatePath);
             
             if ($content === false) {
-                throw new Exception("Не удалось прочитать файл шаблона");
+                throw new Exception(Lang::t('template.read_error'));
             }
             
             // Если форма отправлена - сохраняем изменения
@@ -80,12 +81,12 @@ class TemplateController extends BaseController {
                     $this->redirect("/admin/templates?saved=1");
                     return;
                 } else {
-                    throw new Exception("Не удалось сохранить шаблон");
+                    throw new Exception(Lang::t('template.save_error'));
                 }
             }
             
             $this->render('template/edit', [
-                'title' => 'Редактирование шаблона: ' . $templateName,
+                'title' => Lang::t('template.edit_title', ['name' => $templateName]),
                 'templateName' => $templateName,
                 'content' => $content,
                 'templatePath' => $templatePath
@@ -109,7 +110,7 @@ class TemplateController extends BaseController {
                 $content = $_POST['content'] ?? '';
                 
                 if (empty($templateName)) {
-                    throw new Exception('Название шаблона обязательно');
+                    throw new Exception(Lang::t('template.name_required'));
                 }
                 
                 // Добавляем расширение .html.twig если его нет
@@ -119,14 +120,14 @@ class TemplateController extends BaseController {
                 
                 // Проверяем безопасность имени файла
                 if (!$this->isValidTemplateName($templateName)) {
-                    throw new Exception('Некорректное имя шаблона');
+                    throw new Exception(Lang::t('template.invalid_name'));
                 }
                 
                 $templatePath = $this->templatesPath . $templateName;
                 
                 // Проверяем, не существует ли уже такой файл
                 if (file_exists($templatePath)) {
-                    throw new Exception("Шаблон с именем '{$templateName}' уже существует");
+                    throw new Exception(Lang::t('template.exists', ['name' => $templateName]));
                 }
                 
                 // Сохраняем новый шаблон
@@ -134,17 +135,17 @@ class TemplateController extends BaseController {
                     $this->redirect("/admin/templates?created=1");
                     return;
                 } else {
-                    throw new Exception("Не удалось создать шаблон");
+                    throw new Exception(Lang::t('template.create_error'));
                 }
             }
             
             $this->render('template/create', [
-                'title' => 'Создание нового шаблона'
+                'title' => Lang::t('template.create_title')
             ]);
             
         } catch (Exception $e) {
             $this->render('template/create', [
-                'title' => 'Создание нового шаблона',
+                'title' => Lang::t('template.create_title'),
                 'error' => $e->getMessage(),
                 'formData' => $_POST
             ]);
@@ -160,26 +161,26 @@ class TemplateController extends BaseController {
         try {
             // Проверяем безопасность имени файла
             if (!$this->isValidTemplateName($templateName)) {
-                throw new Exception('Некорректное имя шаблона');
+                throw new Exception(Lang::t('template.invalid_name'));
             }
             
             $templatePath = $this->templatesPath . $templateName;
             
             // Проверяем существование файла
             if (!file_exists($templatePath)) {
-                throw new Exception("Шаблон '{$templateName}' не найден");
+                throw new Exception(Lang::t('template.not_found', ['name' => $templateName]));
             }
             
             // Не позволяем удалить базовый шаблон
             if ($templateName === 'base.html.twig') {
-                throw new Exception("Нельзя удалить базовый шаблон (base.html.twig)");
+                throw new Exception(Lang::t('template.cant_delete_base'));
             }
             
             // Удаляем файл
             if (unlink($templatePath)) {
                 $this->redirect("/admin/templates?deleted=1");
             } else {
-                throw new Exception("Не удалось удалить шаблон");
+                throw new Exception(Lang::t('template.delete_error'));
             }
             
         } catch (Exception $e) {
@@ -198,7 +199,7 @@ class TemplateController extends BaseController {
         $templates = [];
         
         if (!is_dir($this->templatesPath)) {
-            throw new Exception("Папка с шаблонами не найдена: " . $this->templatesPath);
+            throw new Exception(Lang::t('template.dir_not_found') . ' ' . $this->templatesPath);
         }
         
         $files = scandir($this->templatesPath);

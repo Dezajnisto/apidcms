@@ -29,10 +29,10 @@ class StatsController extends BaseController
         }
 
         // Имена дней недели
-        $dayNames = ['', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+        $dayNames = ['', Lang::t('stats.day_mon'), Lang::t('stats.day_tue'), Lang::t('stats.day_wed'), Lang::t('stats.day_thu'), Lang::t('stats.day_fri'), Lang::t('stats.day_sat'), Lang::t('stats.day_sun')];
 
         $this->render('stats/index', [
-            'title' => 'Статистика посещений',
+            'title' => Lang::t('stats.visit_stats'),
             'days' => $days,
             'summary' => $summary,
             'top' => $top,

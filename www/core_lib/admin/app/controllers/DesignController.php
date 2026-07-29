@@ -2,8 +2,8 @@
 /**
  * Контроллер дизайна — редактирование CSS-файла
  *
- * Стили хранятся в проекте: {ROOT_PATH}/storage/css/custom.css
- * Подключаются через <link> в base.html.twig на фронтенде.
+ * Styles stored in project: {ROOT_PATH}/storage/css/custom.css
+ * Included via <link> in base.html.twig on the frontend.
  */
 
 namespace Admin;
@@ -13,7 +13,7 @@ use Exception;
 class DesignController extends BaseController
 {
     /**
-     * Путь к директории с CSS-файлами проекта
+     * Path to project CSS directory
      */
     private function getCssDir(): string
     {
@@ -22,7 +22,7 @@ class DesignController extends BaseController
     }
 
     /**
-     * Полный путь к файлу custom.css
+     * Full path to custom.css
      */
     private function getCssPath(): string
     {
@@ -30,7 +30,7 @@ class DesignController extends BaseController
     }
 
     /**
-     * URL файла custom.css (для <link> в шаблоне)
+     * URL of custom.css (for <link> in template)
      */
     private function getCssUrl(): string
     {
@@ -38,7 +38,7 @@ class DesignController extends BaseController
     }
 
     /**
-     * Страница редактора CSS
+     * CSS editor page
      */
     public function css()
     {
@@ -61,20 +61,20 @@ class DesignController extends BaseController
             $saved = isset($_GET['saved']);
 
             $this->render('design/css', [
-                'title' => 'Редактор CSS-стилей',
+                'title' => Lang::t('design.css_title'),
                 'css_content' => $currentCss,
                 'css_url' => $cssUrl,
                 'saved' => $saved
             ]);
         } catch (Exception $e) {
             $this->render('error/404', [
-                'message' => 'Ошибка загрузки редактора CSS: ' . $e->getMessage()
+                'message' => Lang::t('design.css_load_error') . ' ' . $e->getMessage()
             ]);
         }
     }
 
     /**
-     * Сохранить CSS в файл
+     * Save CSS to file
      */
     public function saveCss()
     {
@@ -88,7 +88,7 @@ class DesignController extends BaseController
             }
 
             if (file_put_contents($cssPath, $css) === false) {
-                throw new Exception('Не удалось записать файл CSS');
+                throw new Exception(Lang::t('design.css_write_error'));
             }
 
             // Автоматически сбрасываем кэш браузера — инкрементим версию
@@ -101,7 +101,7 @@ class DesignController extends BaseController
     }
 
     /**
-     * Инкрементировать версию CSS (для cache-busting ?v=N)
+     * Increment CSS version (for cache-busting ?v=N)
      */
     private function bumpCssVersion()
     {
@@ -111,7 +111,7 @@ class DesignController extends BaseController
     }
 
     /**
-     * Получить настройку из system_settings
+     * Get setting from system_settings
      */
     private function getSetting($key)
     {
@@ -127,7 +127,7 @@ class DesignController extends BaseController
     }
 
     /**
-     * Сохранить настройку в system_settings
+     * Save setting to system_settings
      */
     private function setSetting($key, $value)
     {

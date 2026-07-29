@@ -2,7 +2,7 @@
 /**
  * Контроллер для управления кэшем системы
  * 
- * Очищает кэш Twig и другие временные файлы
+ * Clears Twig cache and other temp files
  */
 
 namespace Admin;
@@ -28,19 +28,19 @@ class CacheController extends BaseController {
             $cacheInfo = $this->getCacheInfo();
             
             $this->render('cache/index', [
-                'title' => 'Управление кэшем',
+                'title' => Lang::t('cache.title'),
                 'cacheInfo' => $cacheInfo
             ]);
             
         } catch (Exception $e) {
             $this->render('error/404', [
-                'message' => 'Ошибка при загрузке информации о кэше: ' . $e->getMessage()
+                'message' => Lang::t('cache.load_error') . ' ' . $e->getMessage()
             ]);
         }
     }
     
     /**
-     * Очистка кэша
+     * Cache clearing
      */
     public function clear() {
         try {
@@ -75,18 +75,18 @@ class CacheController extends BaseController {
             if ($success) {
                 $this->redirect("/admin/cache?cleared=1&type=" . urlencode($type));
             } else {
-                throw new Exception("Не удалось полностью очистить кэш");
+                throw new Exception(Lang::t('cache.clear_error'));
             }
             
         } catch (Exception $e) {
             $this->render('error/404', [
-                'message' => 'Ошибка при очистке кэша: ' . $e->getMessage()
+                'message' => Lang::t('cache.clear_load_error') . ' ' . $e->getMessage()
             ]);
         }
     }
     
     /**
-     * Получить информацию о кэше
+     * Get cache info
      */
     private function getCacheInfo() {
         $info = [];
@@ -140,7 +140,7 @@ class CacheController extends BaseController {
     }
     
     /**
-     * Очистка кэша Twig
+     * Cache clearing Twig
      */
     private function clearTwigCache($cachePath) {
         if (!is_dir($cachePath)) {
@@ -164,7 +164,7 @@ class CacheController extends BaseController {
     }
     
     /**
-     * Форматирование размера в байтах
+     * Format size in bytes
      */
     private function formatBytes($bytes, $precision = 2) {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];

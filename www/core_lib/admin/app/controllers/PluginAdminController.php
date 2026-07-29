@@ -15,7 +15,7 @@ class PluginAdminController extends BaseController
             $plugins = [];
         }
         $this->render('plugins/index', [
-            'title' => 'Плагины',
+            'title' => Lang::t('plugins.title'),
             'plugins' => $plugins
         ]);
     }
@@ -26,16 +26,16 @@ class PluginAdminController extends BaseController
             $pm = \Core\PluginManager::getInstance();
             $plugin = $pm->getPlugin($name);
             if (!$plugin) {
-                $this->setFlash('error', "Плагин '{$name}' не найден");
+                $this->setFlash('error', Lang::t('plugins.not_found', ['name' => $name]));
                 $this->redirect('/plugins');
                 return;
             }
             if (!empty($plugin['enabled'])) {
                 $pm->deactivate($name);
-                $this->setFlash('success', "Плагин '{$name}' деактивирован");
+                $this->setFlash('success', Lang::t('plugins.deactivated', ['name' => $name]));
             } else {
                 $pm->activate($name);
-                $this->setFlash('success', "Плагин '{$name}' активирован");
+                $this->setFlash('success', Lang::t('plugins.activated', ['name' => $name]));
             }
         } catch (\Throwable $e) {
             $this->setFlash('error', "Ошибка: " . $e->getMessage());
@@ -53,7 +53,7 @@ class PluginAdminController extends BaseController
         }
 
         if (!$plugin) {
-            $this->setFlash('error', "Плагин '{$name}' не найден");
+            $this->setFlash('error', Lang::t('plugins.not_found', ['name' => $name]));
             $this->redirect('/plugins');
             return;
         }
@@ -92,7 +92,7 @@ class PluginAdminController extends BaseController
         }
 
         if (!$plugin) {
-            $this->setFlash('error', "Плагин '{$name}' не найден");
+            $this->setFlash('error', Lang::t('plugins.not_found', ['name' => $name]));
             $this->redirect('/plugins');
             return;
         }
@@ -103,13 +103,13 @@ class PluginAdminController extends BaseController
         $realFilePath = realpath($filePath) ?: '';
         $realTemplatesDir = realpath($templatesDir) ?: '___';
         if (strpos($realFilePath, $realTemplatesDir) !== 0) {
-            $this->setFlash('error', 'Недопустимый путь к шаблону');
+            $this->setFlash('error', Lang::t('plugins.edit_tpl.error_path'));
             $this->redirect("/plugins/{$name}?tab=templates");
             return;
         }
 
         if (!file_exists($filePath)) {
-            $this->setFlash('error', "Шаблон '{$file}' не найден");
+            $this->setFlash('error', Lang::t('plugins.edit_tpl.error_notfound'));
             $this->redirect("/plugins/{$name}?tab=templates");
             return;
         }
@@ -118,11 +118,11 @@ class PluginAdminController extends BaseController
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $newContent = $_POST['content'] ?? '';
             if (file_put_contents($filePath, $newContent) !== false) {
-                $this->setFlash('success', "Шаблон '{$file}' сохранён");
+                $this->setFlash('success', Lang::t('plugins.edit_tpl.saved'));
                 $this->redirect("/plugins/{$name}?tab=templates");
                 return;
             } else {
-                $this->setFlash('error', 'Не удалось сохранить шаблон');
+                $this->setFlash('error', Lang::t('plugins.edit_tpl.error_save'));
             }
         }
 
@@ -191,9 +191,9 @@ class PluginAdminController extends BaseController
             json_encode($saveData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
         if ($saved !== false) {
-            $this->setFlash('success', "Настройки плагина '{$name}' сохранены");
+            $this->setFlash('success', Lang::t('plugins.settings_saved', ['name' => $name]));
         } else {
-            $this->setFlash('error', 'Не удалось сохранить настройки');
+            $this->setFlash('error', Lang::t('plugins.settings_error'));
         }
     }
 }

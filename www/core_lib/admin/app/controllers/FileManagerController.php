@@ -6,6 +6,7 @@
 
 namespace Admin;
 
+use Admin\Core\Lang;
 use Exception;
 
 class FileManagerController extends BaseController {
@@ -62,7 +63,7 @@ class FileManagerController extends BaseController {
             $result = $this->getDirectoryItems($fullPath, $currentPath, $page, $perPage);
             
             $this->render('filemanager/index', [
-                'title' => 'Файловый менеджер',
+                'title' => Lang::t('filemanager.title'),
                 'currentPath' => $currentPath,
                 'items' => $result['items'],
                 'pagination' => $result['pagination'],
@@ -73,7 +74,7 @@ class FileManagerController extends BaseController {
             
         } catch (Exception $e) {
             $this->render('error/404', [
-                'message' => 'Ошибка при загрузке файлового менеджера: ' . $e->getMessage()
+                'message' => Lang::t('filemanager.load_error') . ' ' . $e->getMessage()
             ]);
         }
     }
@@ -104,7 +105,7 @@ class FileManagerController extends BaseController {
         }
         
         if (strpos($realFullPath, $realUploadsPath) !== 0) {
-            throw new Exception('Доступ за пределы разрешенной директории запрещен');
+            throw new Exception(Lang::t('filemanager.access_denied'));
         }
         
         return $realFullPath;
@@ -205,19 +206,19 @@ class FileManagerController extends BaseController {
     public function upload() {
         $startBufferLevel = ob_get_level();
         try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception('Метод не поддерживается');
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception(Lang::t('filemanager.method_not_allowed'));
             $currentPath = $_POST['path'] ?? 'images';
             $fullPath = $this->getFullPath($currentPath);
-            if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) throw new Exception('Ошибка загрузки файла');
+            if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) throw new Exception(Lang::t('filemanager.upload_error'));
             $uploadedFile = $_FILES['file'];
-            if ($uploadedFile['size'] > $this->maxFileSize) throw new Exception('Файл слишком большой. Максимальный размер: 5MB');
+            if ($uploadedFile['size'] > $this->maxFileSize) throw new Exception(Lang::t('filemanager.file_too_large'));
             $extension = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
-            if (!$this->isAllowedExtension($extension)) throw new Exception('Тип файла не разрешен');
+            if (!$this->isAllowedExtension($extension)) throw new Exception(Lang::t('filemanager.type_not_allowed'));
             $filename = $this->generateSafeFilename($uploadedFile['name']);
             $targetPath = $fullPath . '/' . $filename;
-            if (!move_uploaded_file($uploadedFile['tmp_name'], $targetPath)) throw new Exception('Не удалось сохранить файл');
+            if (!move_uploaded_file($uploadedFile['tmp_name'], $targetPath)) throw new Exception(Lang::t('filemanager.save_error'));
             chmod($targetPath, 0644);
-            $this->jsonResponse(['success' => true, 'message' => 'Файл успешно загружен', 'filename' => $filename]);
+            $this->jsonResponse(['success' => true, 'message' => Lang::t('filemanager.upload_success'), 'filename' => $filename]);
         } catch (\Throwable $e) {
             while (ob_get_level() > $startBufferLevel) ob_end_clean();
             $this->jsonResponse(['success' => false, 'message' => $e->getMessage()]);
@@ -227,10 +228,10 @@ class FileManagerController extends BaseController {
     public function delete() {
         $startBufferLevel = ob_get_level();
         try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception('Метод не поддерживается');
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception(Lang::t('filemanager.method_not_allowed'));
             $path = $_POST['path'] ?? '';
             $type = $_POST['type'] ?? 'file';
-            if (empty($path)) throw new Exception('Не указан путь');
+            if (empty($path)) throw new Exception(Lang::t('filemanager.path_required'));
             $fullPath = $this->getFullPath($path);
             if ($type === 'folder') { $this->deleteFolder($fullPath); }
             else { $this->deleteFile($fullPath); }
@@ -244,16 +245,16 @@ class FileManagerController extends BaseController {
     public function createFolder() {
         $startBufferLevel = ob_get_level();
         try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception('Метод не поддерживается');
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception(Lang::t('filemanager.method_not_allowed'));
             $currentPath = $_POST['path'] ?? 'images';
             $folderName = $_POST['name'] ?? '';
-            if (empty($folderName)) throw new Exception('Не указано название папки');
-            if (!preg_match('/^[a-zA-Z0-9_-]+$/', $folderName)) throw new Exception('Название папки может содержать только буквы, цифры, дефисы и подчеркивания');
+            if (empty($folderName)) throw new Exception(Lang::t('filemanager.folder_name_required'));
+            if (!preg_match('/^[a-zA-Z0-9_-]+$/', $folderName)) throw new Exception(Lang::t('filemanager.folder_name_invalid'));
             $fullPath = $this->getFullPath($currentPath);
             $newFolderPath = $fullPath . '/' . $folderName;
-            if (file_exists($newFolderPath)) throw new Exception('Папка с таким названием уже существует');
-            if (!mkdir($newFolderPath, 0755, true)) throw new Exception('Не удалось создать папку');
-            $this->jsonResponse(['success' => true, 'message' => 'Папка успешно создана']);
+            if (file_exists($newFolderPath)) throw new Exception(Lang::t('filemanager.folder_exists'));
+            if (!mkdir($newFolderPath, 0755, true)) throw new Exception(Lang::t('filemanager.folder_create_error'));
+            $this->jsonResponse(['success' => true, 'message' => Lang::t('filemanager.folder_created')]);
         } catch (\Throwable $e) {
             while (ob_get_level() > $startBufferLevel) ob_end_clean();
             $this->jsonResponse(['success' => false, 'message' => $e->getMessage()]);
@@ -264,9 +265,9 @@ class FileManagerController extends BaseController {
         $startBufferLevel = ob_get_level();
         try {
             $path = $_GET['path'] ?? '';
-            if (empty($path)) throw new Exception('Не указан путь');
+            if (empty($path)) throw new Exception(Lang::t('filemanager.path_required'));
             $fullPath = $this->getFullPath($path);
-            if (!file_exists($fullPath)) throw new Exception('Файл не существует');
+            if (!file_exists($fullPath)) throw new Exception(Lang::t('filemanager.file_not_found'));
             $info = [
                 'name' => basename($fullPath), 'path' => $path,
                 'size' => $this->formatFilesize(filesize($fullPath)),
@@ -320,7 +321,7 @@ class FileManagerController extends BaseController {
     public function rename() {
         $startBufferLevel = ob_get_level();
         try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception('Метод не поддерживается');
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception(Lang::t('filemanager.method_not_allowed'));
             $path = $_POST['path'] ?? '';
             $newName = $_POST['new_name'] ?? '';
             $type = $_POST['type'] ?? 'file';
@@ -490,7 +491,7 @@ class FileManagerController extends BaseController {
     public function uploadPopup() {
         $startBufferLevel = ob_get_level();
         try {
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception('Метод не поддерживается');
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception(Lang::t('filemanager.method_not_allowed'));
             $currentPath = $_POST['path'] ?? '';
             $fullPath = $this->getFullPath($currentPath);
             if (!isset($_FILES['files']) || empty($_FILES['files']['name'][0])) throw new Exception('Файлы не выбраны');
@@ -517,7 +518,7 @@ class FileManagerController extends BaseController {
                     continue;
                 }
                 chmod($targetPath, 0644);
-                $results[] = ['name' => $uploadedFiles['name'][$i], 'saved_as' => $filename, 'success' => true, 'message' => 'Файл успешно загружен'];
+                $results[] = ['name' => $uploadedFiles['name'][$i], 'saved_as' => $filename, 'success' => true, 'message' => Lang::t('filemanager.upload_success')];
             }
             $hasSuccess = false;
             foreach ($results as $result) { if ($result['success']) { $hasSuccess = true; break; } }

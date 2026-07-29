@@ -1,32 +1,33 @@
 <?php
 /**
- * Контроллер главной страницы
- * 
- * Отображает список таблиц и основную информацию
+ * Home page controller
+ *
+ * Displays table list and basic information
  */
 
 namespace Admin;
 
 use Core\Database;
+use Admin\Core\Lang;
 use Exception;
 
 class HomeController extends BaseController {
     
     /**
-     * Главная страница - дашборд
+     * Main page - dashboard
      */
     public function index() {
         // Count tables for dashboard
         $tableCount = count($this->db->getTables());
 
         $this->render('home/index', [
-            'title' => 'Панель управления',
+            'title' => Lang::t('home.title'),
             'table_count' => $tableCount,
         ]);
     }
 
     /**
-     * Страница "Таблицы" - список всех таблиц в базе данных
+     * Tables page - list of all database tables
      */
     public function tables() {
         // Get all tables
@@ -65,14 +66,14 @@ class HomeController extends BaseController {
         // System group
         $systemInfo = $buildInfo($systemTableNames);
         if (!empty($systemInfo)) {
-            $groups[] = ['label' => 'Системные таблицы', 'tables' => $systemInfo];
+            $groups[] = ['label' => Lang::t('home.system_tables'), 'tables' => $systemInfo];
         }
 
         // Plugin groups (one per plugin that has tables)
         foreach ($pluginTablesMap as $pluginName => $pluginTables) {
             $pluginInfo = $buildInfo($pluginTables);
             if (!empty($pluginInfo)) {
-                $groups[] = ['label' => 'Плагин: ' . $pluginName, 'tables' => $pluginInfo];
+                $groups[] = ['label' => Lang::t('home.plugin_tables', ['name' => $pluginName]), 'tables' => $pluginInfo];
             }
         }
 
@@ -81,29 +82,29 @@ class HomeController extends BaseController {
         $userTableNames = array_diff($tables, $allKnown);
         $userInfo = $buildInfo($userTableNames);
         if (!empty($userInfo)) {
-            $groups[] = ['label' => 'Пользовательские таблицы', 'tables' => $userInfo];
+            $groups[] = ['label' => Lang::t('home.user_tables'), 'tables' => $userInfo];
         }
 
         // Render
         $this->render('home/tables', [
             'groups' => $groups,
-            'title' => 'Таблицы',
+            'title' => Lang::t('home.tables_list'),
             '_GET' => $_GET,
         ]);
     }
 
     /**
-     * Показать форму создания таблицы
+     * Show create table form
      */
     public function createTableForm() {
         $this->render('home/create_table', [
-            'title' => 'Создание новой таблицы',
+            'title' => Lang::t('create_table.title'),
             'formData' => []
         ]);
     }
 
     /**
-     * Создать новую таблицу
+     * Create new table
      */
     public function createTable() {
         try {
@@ -112,24 +113,24 @@ class HomeController extends BaseController {
             $addTimestamps = isset($_POST['add_timestamps']);
             
             if (empty($tableName)) {
-                throw new Exception("Название таблицы не может быть пустым");
+                throw new Exception(Lang::t('create_table.name_required'));
             }
             
-            // Проверяем валидность имени таблицы
+            // Validate table name
             if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $tableName)) {
-                throw new Exception("Название таблицы может содержать только буквы, цифры и подчеркивания, и должно начинаться с буквы или подчеркивания");
+                throw new Exception(Lang::t('create_table.name_pattern'));
             }
             
-            // Проверяем, что таблица не существует
+            // Check table does not exist
             if ($this->db->tableExists($tableName)) {
-                throw new Exception("Таблица с названием '{$tableName}' уже существует");
+                throw new Exception(Lang::t('create_table.table_exists', ['name' => $tableName]));
             }
             
-            // Подготавливаем колонки
+            // Prepare columns
             $tableColumns = [];
             foreach ($columns as $index => $column) {
                 if (empty($column['name']) || empty($column['type'])) {
-                    continue; // Пропускаем пустые колонки
+                    continue; // Skip empty columns
                 }
                 
                 $tableColumns[] = [
@@ -140,7 +141,7 @@ class HomeController extends BaseController {
                 ];
             }
             
-            // Добавляем временные метки, если запрошено
+            // Add timestamps if requested
             if ($addTimestamps) {
                 $tableColumns[] = [
                     'name' => 'created_at',
@@ -155,15 +156,15 @@ class HomeController extends BaseController {
                 ];
             }
             
-            // Создаем таблицу (системная колонка id добавляется автоматически в Database::createTable)
+            // Create table (system id column added automatically by Database::createTable)
             $this->db->createTable($tableName, $tableColumns);
             
-            // Перенаправляем на страницу таблицы
+            // Redirect to table page
             $this->redirect("/table/{$tableName}?created=1");
             
         } catch (Exception $e) {
             $this->render('home/create_table', [
-                'title' => 'Создание новой таблицы',
+                'title' => Lang::t('create_table.title'),
                 'error' => $e->getMessage(),
                 'formData' => $_POST
             ]);
@@ -172,34 +173,34 @@ class HomeController extends BaseController {
 
 
     /**
-     * Создать таблицу из сырого SQL
+     * Create table from raw SQL
      */
     public function createTableSql() {
         try {
             $sql = $_POST['sql_code'] ?? '';
             
             if (empty(trim($sql))) {
-                throw new \Exception("SQL-код не может быть пустым");
+                throw new \Exception(Lang::t('home.sql_empty'));
             }
             
-            // Разрешаем только CREATE TABLE (с опциональным IF NOT EXISTS)
+            // Allow only CREATE TABLE (with optional IF NOT EXISTS)
             $sqlTrimmed = trim($sql);
             if (!preg_match('/^CREATE\s+TABLE/i', $sqlTrimmed)) {
-                throw new \Exception("Разрешены только операторы CREATE TABLE. Другие SQL-операции запрещены.");
+                throw new \Exception(Lang::t('home.sql_only_create'));
             }
             
-            // Запрещаем вложенные опасные операторы
+            // Block nested dangerous statements
             $dangerous = ['DROP', 'DELETE', 'INSERT', 'UPDATE', 'ALTER', 'TRUNCATE', 'REPLACE'];
             foreach ($dangerous as $cmd) {
                 if (preg_match('/;\s*' . $cmd . '/i', $sql)) {
-                    throw new \Exception("Обнаружена запрещённая команда {$cmd}. Разрешён только один CREATE TABLE.");
+                    throw new \Exception(Lang::t('home.sql_dangerous_cmd', ['cmd' => $cmd]));
                 }
             }
             
-            // Выполняем SQL
+            // Execute SQL
             $this->db->exec($sql);
             
-            // Извлекаем имя таблицы из SQL для редиректа
+            // Extract table name from SQL for redirect
             preg_match('/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"\x27]?([a-zA-Z_][a-zA-Z0-9_]*)[`"\x27]?\s*\(/i', $sql, $matches);
             $tableName = $matches[1] ?? 'unknown';
             
@@ -207,7 +208,7 @@ class HomeController extends BaseController {
             
         } catch (\Exception $e) {
             $this->render('home/create_table', [
-                'title' => 'Создание новой таблицы',
+                'title' => Lang::t('create_table.title'),
                 'error' => $e->getMessage()
             ]);
         }
@@ -221,23 +222,23 @@ class HomeController extends BaseController {
      */
     public function deleteTable($table) {
         try {
-            // Проверяем существование таблицы
+            // Verify table exists
             if (!$this->db->tableExists($table)) {
                 $this->render('error/404', [
-                    'message' => "Таблица '{$table}' не найдена"
+                    'message' => Lang::t('table.table_not_found_short', ['table' => $table])
                 ]);
                 return;
             }
             
-            // Удаляем таблицу
+            // Delete table
             $this->db->dropTable($table);
             
-            // Перенаправляем на главную с сообщением
+            // Redirect to home with message
             $this->redirect("/tables?table_deleted=1");
             
         } catch (Exception $e) {
             $this->render('error/404', [
-                'message' => "Ошибка при удалении таблицы: " . $e->getMessage()
+                'message' => Lang::t('home.delete_table_error') . ' ' . $e->getMessage()
             ]);
         }
     }

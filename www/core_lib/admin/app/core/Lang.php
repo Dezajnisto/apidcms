@@ -32,6 +32,19 @@ class Lang
         return self::$instance;
     }
 
+    /**
+     * Magic: delegate static calls to instance methods.
+     * Allows Lang::t('key') as shorthand for Lang::getInstance()->t('key').
+     */
+    public static function __callStatic(string $name, array $args)
+    {
+        $instance = self::getInstance();
+        if (method_exists($instance, $name)) {
+            return $instance->$name(...$args);
+        }
+        throw new \BadMethodCallException("Method Lang::{$name}() not found");
+    }
+
     private function __construct(string $locale)
     {
         $this->locale = $locale;
@@ -70,11 +83,20 @@ class Lang
     }
 
     /**
-     * Translate a key. Returns the key itself if no translation found.
+     * Translate a key with optional parameter substitution.
+     * Parameters are replaced via {name} placeholders:
+     *   Lang::t('forms.saved', ['name' => 'Feedback'])
+     *   => "Form 'Feedback' saved"
      */
-    public function t(string $key, ?string $default = null): string
+    public function t(string $key, array $params = [], ?string $default = null): string
     {
-        return $this->translations[$key] ?? $default ?? $key;
+        $text = $this->translations[$key] ?? $default ?? $key;
+        if ($params) {
+            foreach ($params as $k => $v) {
+                $text = str_replace('{' . $k . '}', $v, $text);
+            }
+        }
+        return $text;
     }
 
     /**

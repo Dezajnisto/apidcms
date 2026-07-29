@@ -1,13 +1,14 @@
 <?php
 /**
- * Контроллер для работы с таблицами
- * 
- * Отображает данные из произвольных таблиц
+ * Table controller
+ *
+ * Displays data from arbitrary tables
  */
 
 namespace Admin;
 
 use Core\Database;
+use Admin\Core\Lang;
 use Exception;
 
 class TableController extends BaseController {
@@ -164,29 +165,29 @@ class TableController extends BaseController {
         }
         return false;
     }    /**
-     * Просмотр содержимого таблицы с поддержкой поиска и сортировки
-     * 
-     * @param string $table Название таблицы
+     * View table contents with search and sort support
+     *
+     * @param string \$table Table name
      */
     public function view($table) {
-        // Проверяем существование таблицы
+        // Verify table exists
         $tables = $this->db->getTables();
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => "Таблица '{$table}' не найдена в базе данных"
+                'message' => Lang::t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
         
-        // Получаем параметры
+        // Get parameters
         $search = $_GET['search'] ?? '';
         $sort = $_GET['sort'] ?? 'id';
         $order = $_GET['order'] ?? 'ASC';
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $perPage = 10;
 
-        // Валидация параметров сортировки
+        // Validate sort params
         $structure = $this->db->getTableStructure($table);
         $validColumns = array_map(function($col) { 
             return $col['name']; 
@@ -197,20 +198,20 @@ class TableController extends BaseController {
         }
         $order = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
 
-        // Вычисляем offset для пагинации
+        // Calculate pagination offset
         $offset = ($page - 1) * $perPage;
 
-        // Получаем данные
+        // Fetch data
         $data = $this->db->search($table, $search, $sort, $order, $perPage, $offset);
         $totalCount = $this->db->getCount($table, $search);
         $totalPages = ceil($totalCount / $perPage);
 
-        // Отображаем шаблон
+        // Render template
         $this->render('table/view', [
             'tableName' => $table,
             'data' => $data,
             'structure' => $structure,
-            'title' => "Таблица: {$table}",
+            'title' => Lang::t('table.table_title', ['table' => $table]),
             'search' => $search,
             'sort' => $sort,
             'order' => $order,
@@ -224,22 +225,22 @@ class TableController extends BaseController {
     
 
     /**
-     * Показать форму создания записи
-     * 
-     * @param string $table Название таблицы
+     * Show create record form
+     *
+     * @param string \$table Table name
      */
     public function createForm($table) {
-        // Проверяем существование таблицы
+        // Verify table exists
         $tables = $this->db->getTables();
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => "Таблица '{$table}' не найдена в базе данных"
+                'message' => Lang::t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
         
-        // Получаем структуру таблицы
+        // Get table structure
         $structure = $this->db->getTableStructure($table);
         
         // Load relations from page_config
@@ -253,11 +254,11 @@ class TableController extends BaseController {
         }
         unset($rel);
         
-        // Отображаем форму создания
+        // Render create form
         $this->render('table/form', [
             'tableName' => $table,
             'structure' => $structure,
-            'title' => "Добавление записи в таблицу: {$table}",
+            'title' => Lang::t('table.add_record_title', ['table' => $table]),
             'action' => 'create',
             'item' => null,
             'relations' => $relations,
@@ -266,66 +267,66 @@ class TableController extends BaseController {
     }
 
     /**
-     * Создать новую запись
-     * 
-     * @param string $table Название таблицы
+     * Create new record
+     *
+     * @param string \$table Table name
      */
     public function create($table) {
-        // Проверяем существование таблицы
+        // Verify table exists
         $tables = $this->db->getTables();
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => "Таблица '{$table}' не найдена в базе данных"
+                'message' => Lang::t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
         
-        // Получаем структуру таблицы
+        // Get table structure
         $structure = $this->db->getTableStructure($table);
         
-        // Подготавливаем данные
+        // Prepare data
         $data = [];
         foreach ($structure as $column) {
             $columnName = $column['name'];
             
-            // Пропускаем автоинкрементные поля
+            // Skip auto-increment fields
             if ($column['pk'] == 1 && stripos($column['type'], 'INTEGER') !== false) {
                 continue;
             }
             
-            // Пропускаем поля с created_at (они заполнятся автоматически)
+            // Skip created_at (auto-filled)
             if ($columnName === 'created_at') {
                 continue;
             }
             
-            // Получаем значение из POST
+            // Get value from POST
             if (isset($_POST[$columnName])) {
                 $data[$columnName] = $_POST[$columnName];
             } elseif ($column['notnull'] == 1 && $column['pk'] == 0) {
-                // Для обязательных полей, если значение не передано, устанавливаем пустую строку
+                // For required fields with no value, set empty string
                 $data[$columnName] = '';
             }
         }
         
         try {
-            // Вставляем данные
+            // Insert data
             $newId = $this->db->insert($table, $data);
             
             // Save many-to-many pivot entries
             $this->savePivotRelations($table, $newId, $_POST, $this->getRelations($table));
             
-            // Перенаправляем на просмотр созданной записи
+            // Redirect to created record view
                             $page = $_GET['page'] ?? 1;
                 $this->redirect("/table/{$table}/edit/{$newId}?created=1&page={$page}");
             
         } catch (Exception $e) {
-            // В случае ошибки показываем форму снова
+            // On error: show form again
             $relations = $this->getRelations($table);
             $this->render('table/form', [
                 'tableName' => $table,
                 'structure' => $structure,
-                'title' => "Добавление записи в таблицу: {$table}",
+                'title' => Lang::t('table.add_record_title', ['table' => $table]),
                 'action' => 'create',
                 'item' => $_POST,
                 'relations' => $relations,
@@ -335,33 +336,33 @@ class TableController extends BaseController {
     }
 
     /**
-     * Показать форму редактирования записи
-     * 
-     * @param string $table Название таблицы
-     * @param int $id ID записи
+     * Show edit record form
+     *
+     * @param string \$table Table name
+     * @param int \$id Record ID
      */
     public function editForm($table, $id) {
-        // Проверяем существование таблицы
+        // Verify table exists
         $tables = $this->db->getTables();
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => "Таблица '{$table}' не найдена в базе данных"
+                'message' => Lang::t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
         
-        // Получаем запись
+        // Get record
         $item = $this->db->getById($table, $id);
         
         if (!$item) {
             $this->render('error/404', [
-                'message' => "Запись с ID {$id} не найдена в таблице '{$table}'"
+                'message' => Lang::t('table.record_not_found_in_table', ['id' => $id, 'table' => $table])
             ]);
             return;
         }
         
-        // Получаем структуру таблицы
+        // Get table structure
         $structure = $this->db->getTableStructure($table);
         
         // Load relations from page_config
@@ -376,11 +377,11 @@ class TableController extends BaseController {
         }
         unset($rel);
         
-        // Отображаем форму редактирования
+        // Render edit form
         $this->render('table/form', [
             'tableName' => $table,
             'structure' => $structure,
-            'title' => "Редактирование записи в таблице: {$table}",
+            'title' => Lang::t('table.edit_record_title', ['table' => $table]),
             'action' => 'edit',
             'item' => $item,
             'itemId' => $id,
@@ -390,49 +391,49 @@ class TableController extends BaseController {
     }
 
     /**
-     * Обновить запись
-     * 
-     * @param string $table Название таблицы
-     * @param int $id ID записи
+     * Update record
+     *
+     * @param string \$table Table name
+     * @param int \$id Record ID
      */
     public function update($table, $id) {
-        // Проверяем существование таблицы
+        // Verify table exists
         $tables = $this->db->getTables();
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => "Таблица '{$table}' не найдена в базе данных"
+                'message' => Lang::t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
         
-        // Проверяем существование записи
+        // Verify record exists
         $existingItem = $this->db->getById($table, $id);
         if (!$existingItem) {
             $this->render('error/404', [
-                'message' => "Запись с ID {$id} не найдена в таблице '{$table}'"
+                'message' => Lang::t('table.record_not_found_in_table', ['id' => $id, 'table' => $table])
             ]);
             return;
         }
         
-        // Получаем структуру таблицы
+        // Get table structure
         $structure = $this->db->getTableStructure($table);
         
-        // Подготавливаем данные
+        // Prepare data
         $data = [];
         foreach ($structure as $column) {
             $columnName = $column['name'];
             
-            // Пропускаем первичный ключ
+            // Skip primary key
             if ($column['pk'] == 1) {
                 continue;
             }
             
-            // Получаем значение из POST
+            // Get value from POST
             if (isset($_POST[$columnName])) {
                 $value = $_POST[$columnName];
                 
-                // Пустые строки для nullable-полей → null (иначе '' станет 0 для FK)
+                // Empty strings for nullable fields → null (otherwise '' becomes 0 for FK)
                 if ($value === '' && $column['notnull'] == 0) {
                     $value = null;
                 }
@@ -442,27 +443,27 @@ class TableController extends BaseController {
         }
         
         try {
-            // Обновляем данные
+            // Update data
             $success = $this->db->update($table, $id, $data);
             
             // Save many-to-many pivot entries
             $this->savePivotRelations($table, $id, $_POST, $this->getRelations($table));
             
             if ($success) {
-                // Перенаправляем на просмотр обновленной записи
+                // Redirect to updated record
                                 $page = $_GET['page'] ?? 1;
                 $this->redirect("/table/{$table}/edit/{$id}?updated=1&page={$page}");
             } else {
-                throw new Exception("Не удалось обновить запись");
+                throw new Exception(Lang::t('table.update_failed'));
             }
             
         } catch (Exception $e) {
-            // В случае ошибки показываем форму снова
+            // On error: show form again
             $relations = $this->getRelations($table);
             $this->render('table/form', [
                 'tableName' => $table,
                 'structure' => $structure,
-                'title' => "Редактирование записи в таблице: {$table}",
+                'title' => Lang::t('table.edit_record_title', ['table' => $table]),
                 'action' => 'edit',
                 'item' => array_merge($existingItem, $_POST),
                 'itemId' => $id,
@@ -473,18 +474,18 @@ class TableController extends BaseController {
     }
 
     /**
-     * Удалить запись
-     * 
-     * @param string $table Название таблицы
-     * @param int $id ID записи
+     * Delete record
+     *
+     * @param string \$table Table name
+     * @param int \$id Record ID
      */
     public function delete($table, $id) {
-        // Проверяем существование таблицы
+        // Verify table exists
         $tables = $this->db->getTables();
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => "Таблица '{$table}' не найдена в базе данных"
+                'message' => Lang::t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
@@ -498,11 +499,11 @@ class TableController extends BaseController {
                 );
             }
             
-            // Теперь удаляем основную запись
+            // Now delete the main record
             $success = $this->db->delete($table, $id);
             
             if ($success) {
-                // Перенаправляем на таблицу с сообщением об успехе (с сохранением страницы)
+                // Redirect to table with success message (preserve page)
                 $page = !empty($_GET['page']) ? (int)$_GET['page'] : 1;
                 $redirectUrl = "/table/{$table}?deleted=1";
                 if ($page > 1) {
@@ -510,17 +511,16 @@ class TableController extends BaseController {
                 }
                 $this->redirect($redirectUrl);
             } else {
-                throw new Exception("Не удалось удалить запись");
+                throw new Exception(Lang::t('table.delete_failed'));
             }
             
         } catch (Exception $e) {
-            // В случае ошибки показываем страницу с ошибкой
-            $errorMessage = "Ошибка при удалении: " . $e->getMessage();
+            // On error: show error page
+            $errorMessage = Lang::t('table.delete_error') . ' ' . $e->getMessage();
             
-            // Более понятное сообщение для ошибок внешнего ключа
+            // Clearer message for FK constraint errors
             if (strpos($e->getMessage(), 'FOREIGN KEY constraint failed') !== false) {
-                $errorMessage = "Не удалось удалить запись, потому что на нее есть ссылки в других таблицах. " .
-                            "Сначала удалите связанные записи из таблиц связей.";
+                $errorMessage = Lang::t('table.delete_fk_error');
             }
             
             $this->render('error/404', [
@@ -530,67 +530,67 @@ class TableController extends BaseController {
     }
 
     /**
-     * Показать структуру таблицы
-     * 
-     * @param string $table Название таблицы
+     * Show table structure
+     *
+     * @param string \$table Table name
      */
     public function structure($table) {
-        // Проверяем существование таблицы
+        // Verify table exists
         $tables = $this->db->getTables();
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => "Таблица '{$table}' не найдена в базе данных"
+                'message' => Lang::t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
         
-        // Получаем структуру таблицы
+        // Get table structure
         $structure = $this->db->getTableStructure($table);
         
         $this->render('table/structure', [
             'tableName' => $table,
             'structure' => $structure,
-            'title' => "Структура таблицы: {$table}",
+            'title' => Lang::t('table.structure_title', ['table' => $table]),
             'get' => $_GET
         ]);
     }
 
     /**
-     * Показать форму добавления колонки
-     * 
-     * @param string $table Название таблицы
+     * Show add column form
+     *
+     * @param string \$table Table name
      */
     public function addColumnForm($table) {
-        // Проверяем существование таблицы
+        // Verify table exists
         $tables = $this->db->getTables();
         
         if (!in_array($table, $tables)) {
             $this->render('error/404', [
-                'message' => "Таблица '{$table}' не найдена в базе данных"
+                'message' => Lang::t('table.table_not_found', ['table' => $table])
             ]);
             return;
         }
         
         $this->render('table/add_column', [
             'tableName' => $table,
-            'title' => "Добавление колонки в таблицу: {$table}",
+            'title' => Lang::t('table.add_column_title', ['table' => $table]),
             'formData' => []
         ]);
     }
 
     /**
-     * Добавить колонку в таблицу
-     * 
-     * @param string $table Название таблицы
+     * Add column to table
+     *
+     * @param string \$table Table name
      */
     public function addColumn($table) {
         try {
-            // Проверяем существование таблицы
+            // Verify table exists
             $tables = $this->db->getTables();
             
             if (!in_array($table, $tables)) {
-                throw new Exception("Таблица '{$table}' не найдена");
+                throw new Exception(Lang::t('table.table_not_found_short', ['table' => $table]));
             }
             
             $columnName = $_POST['column_name'] ?? '';
@@ -599,32 +599,32 @@ class TableController extends BaseController {
             $defaultValue = $_POST['default_value'] ?? null;
             
             if (empty($columnName) || empty($columnType)) {
-                throw new Exception("Название и тип колонки обязательны для заполнения");
+                throw new Exception(Lang::t('table.column_name_type_required'));
             }
             
-            // Проверяем валидность имени колонки
+            // Validate column name
             if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $columnName)) {
-                throw new Exception("Название колонки может содержать только буквы, цифры и подчеркивания, и должно начинаться с буквы или подчеркивания");
+                throw new Exception(Lang::t('table.invalid_column_name'));
             }
             
-            // Проверяем, что колонка не существует
+            // Check column doesn't exist
             $structure = $this->db->getTableStructure($table);
             foreach ($structure as $column) {
                 if ($column['name'] === $columnName) {
-                    throw new Exception("Колонка с названием '{$columnName}' уже существует в таблице");
+                    throw new Exception(Lang::t('table.column_exists', ['column' => $columnName]));
                 }
             }
             
-            // Добавляем колонку
+            // Add column
             $this->db->addColumn($table, $columnName, $columnType, $nullable, $defaultValue);
             
-            // Перенаправляем на страницу структуры
+            // Redirect to structure page
             $this->redirect("/table/{$table}/structure?column_added=1");
             
         } catch (Exception $e) {
             $this->render('table/add_column', [
                 'tableName' => $table,
-                'title' => "Добавление колонки в таблицу: {$table}",
+                'title' => Lang::t('table.add_column_title', ['table' => $table]),
                 'error' => $e->getMessage(),
                 'formData' => $_POST
             ]);
@@ -632,24 +632,24 @@ class TableController extends BaseController {
     }
 
     /**
-     * Удалить колонку из таблицы
-     * 
-     * @param string $table Название таблицы
-     * @param string $column Название колонки
+     * Delete column from table
+     *
+     * @param string \$table Table name
+     * @param string \$column Column name
      */
     public function deleteColumn($table, $column) {
         try {
-            // Проверяем существование таблицы
+            // Verify table exists
             $tables = $this->db->getTables();
             
             if (!in_array($table, $tables)) {
                 $this->render('error/404', [
-                    'message' => "Таблица '{$table}' не найдена в базе данных"
+                    'message' => Lang::t('table.table_not_found', ['table' => $table])
                 ]);
                 return;
             }
             
-            // Проверяем, что колонка существует
+            // Check column exists
             $structure = $this->db->getTableStructure($table);
             $columnExists = false;
             foreach ($structure as $col) {
@@ -661,39 +661,39 @@ class TableController extends BaseController {
             
             if (!$columnExists) {
                 $this->render('error/404', [
-                    'message' => "Колонка '{$column}' не найдена в таблице '{$table}'"
+                    'message' => Lang::t('table.column_not_found', ['column' => $column, 'table' => $table])
                 ]);
                 return;
             }
             
-            // Удаляем колонку
+            // Delete column
             $this->db->deleteColumn($table, $column);
             
-            // Перенаправляем на страницу структуры
+            // Redirect to structure page
             $this->redirect("/table/{$table}/structure?column_deleted=1");
             
         } catch (Exception $e) {
             $this->render('error/404', [
-                'message' => "Ошибка при удалении колонки: " . $e->getMessage()
+                'message' => Lang::t('table.delete_column_error') . ' ' . $e->getMessage()
             ]);
         }
     }
 
 
     /**
-     * Дублировать запись
+     * Duplicate record
      */
     public function duplicate($table, $id) {
         $tables = $this->db->getTables();
         if (!in_array($table, $tables)) {
-            $this->setFlash("error", "Таблица '{$table}' не найдена");
+            $this->setFlash('error', Lang::t('table.table_not_found_short', ['table' => $table]));
             $this->redirect('/');
             return;
         }
 
         $item = $this->db->getById($table, $id);
         if (!$item) {
-            $this->setFlash("error", "Запись с ID {$id} не найдена");
+            $this->setFlash("error", Lang::t('table.record_not_found', ['id' => $id]));
             $this->redirect("/table/{$table}");
             return;
         }
@@ -732,11 +732,11 @@ class TableController extends BaseController {
 
         try {
             $newId = $this->db->insert($table, $data);
-            $this->setFlash("success", "Запись скопирована. Новый ID: {$newId}");
+            $this->setFlash("success", Lang::t('table.record_copied', ['newId' => $newId]));
             $page = $_GET['page'] ?? 1;
             $this->redirect("/table/{$table}/edit/{$newId}?page={$page}");
         } catch (Exception $e) {
-            $this->setFlash("error", "Ошибка при копировании: " . $e->getMessage());
+            $this->setFlash("error", Lang::t('table.copy_error') . ' ' . $e->getMessage());
             $this->redirect("/table/{$table}/edit/{$id}");
         }
     }

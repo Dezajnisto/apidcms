@@ -1,14 +1,16 @@
 <?php
 /**
- * FormsController — управление формами в админке
+ * FormsController — manage forms in admin panel
  */
 
 namespace Admin;
 
+use Admin\Core\Lang;
+
 class FormsController extends BaseController {
 
     /**
-     * Список всех форм
+     * List all forms
      */
     public function index() {
         $rows = $this->db->query("SELECT * FROM forms ORDER BY display_name ASC")->fetchAll();
@@ -21,27 +23,27 @@ class FormsController extends BaseController {
         }
 
         $this->render('forms/index', [
-            'title' => 'Управление формами',
+            'title' => Lang::t('forms.manage_title'),
             'forms' => $forms,
         ]);
     }
 
     /**
-     * Редактирование формы
+     * Edit form
      */
     public function edit($name) {
         $form = $this->db->query("SELECT * FROM forms WHERE name = ?", [$name])->fetch();
         if (!$form) {
-            $this->render('error/404', ['message' => "Форма '{$name}' не найдена"]);
+            $this->render('error/404', ['message' => Lang::t('forms.not_found', ['name' => $name])]);
             return;
         }
 
-        // Парсим JSON
+        // Parse JSON
         $form['fields'] = json_decode($form['fields'] ?? '{}', true) ?: [];
         $form['notifications'] = json_decode($form['notifications'] ?? '{}', true) ?: [];
         $form['design'] = json_decode($form['design'] ?? '{}', true) ?: [];
 
-        // Список доступных таблиц
+        // Available tables list
         $tables = [];
         foreach ($this->db->getTables() as $t) {
             $tables[] = $t;
@@ -61,7 +63,7 @@ class FormsController extends BaseController {
         }
 
         $this->render('forms/edit', [
-            'title' => 'Редактирование формы: ' . $form['display_name'],
+            'title' => Lang::t('forms.edit_form_title', ['name' => $form['display_name']]),
             'form' => $form,
             'tables' => $tables,
             'available_templates' => $availableTemplates,
@@ -69,17 +71,17 @@ class FormsController extends BaseController {
     }
 
     /**
-     * Сохранение формы
+     * Save form
      */
     public function save() {
         $name = $_POST['name'] ?? '';
         if (empty($name)) {
-            $this->setFlash('error', 'Имя формы не указано');
+            $this->setFlash('error', Lang::t('forms.error_no_name'));
             $this->redirect('/forms');
             return;
         }
 
-        // Собираем данные
+        // Collect data
         $fields = [];
         $fieldNames = $_POST['field_name'] ?? [];
         $fieldLabels = $_POST['field_label'] ?? [];
@@ -124,19 +126,18 @@ class FormsController extends BaseController {
             $fields[$fname] = $field;
         }
 
-        // Уведомления
+        // Notifications
         $notifications = [
             'admin_notify' => !empty($_POST['notify_admin']),
             'admin_emails' => array_map('trim', explode(',', $_POST['admin_emails'] ?? '')),
-            'admin_subject' => $_POST['admin_subject'] ?? 'Новая заявка с сайта',
+            'admin_subject' => $_POST['admin_subject'] ?? Lang::t('forms.default_admin_subject'),
             'auto_reply' => !empty($_POST['auto_reply']),
-            'auto_reply_subject' => $_POST['auto_reply_subject'] ?? 'Мы получили ваше сообщение',
-            'auto_reply_field' => $_POST['auto_reply_field'] ?? 'email',
+            'auto_reply_subject' => $_POST['auto_reply_subject'] ?? Lang::t('forms.default_reply_subject'),
         ];
-        // Очищаем пустые email
+        // Clean empty emails
         $notifications['admin_emails'] = array_filter($notifications['admin_emails']);
 
-        // Обновляем
+        // Update
         $this->db->query(
             "UPDATE forms SET display_name = ?, source_table = ?, fields = ?, notifications = ?,
              design = ?, template = ?, success_message = ?, enable_csrf = ?, status = ?, updated_at = CURRENT_TIMESTAMP
@@ -147,37 +148,37 @@ class FormsController extends BaseController {
                 json_encode($fields, JSON_UNESCAPED_UNICODE),
                 json_encode($notifications, JSON_UNESCAPED_UNICODE),
                 json_encode([
-                    'submit_text' => $_POST['design_submit_text'] ?? 'Отправить',
+                    'submit_text' => $_POST['design_submit_text'] ?? Lang::t('forms.default_submit_text'),
                     'submit_class' => $_POST['design_submit_class'] ?? '',
                     'field_class' => $_POST['design_field_class'] ?? '',
                 ], JSON_UNESCAPED_UNICODE),
                 $_POST['template'] ?? 'default',
-                $_POST['success_message'] ?? 'Спасибо! Форма успешно отправлена.',
+                $_POST['success_message'] ?? Lang::t('forms.default_success'),
                 !empty($_POST['enable_csrf']) ? 1 : 0,
                 !empty($_POST['status']) ? 'active' : 'inactive',
                 $name,
             ]
         );
 
-        $this->setFlash('success', "Форма '{$name}' сохранена");
+        $this->setFlash('success', Lang::t('forms.form_saved', ['name' => $name]));
         $this->redirect('/forms');
     }
 
     /**
-     * Создание новой формы
+     * Create new form
      */
     public function create() {
         $name = $_POST['new_name'] ?? '';
         if (empty($name)) {
-            $this->setFlash('error', 'Укажите имя формы');
+            $this->setFlash('error', Lang::t('forms.error_enter_name'));
             $this->redirect('/forms');
             return;
         }
 
-        // Проверка уникальности
+        // Check uniqueness
         $exists = $this->db->query("SELECT id FROM forms WHERE name = ?", [$name])->fetch();
         if ($exists) {
-            $this->setFlash('error', "Форма с именем '{$name}' уже существует");
+            $this->setFlash('error', Lang::t('forms.error_exists'));
             $this->redirect('/forms');
             return;
         }
@@ -188,21 +189,21 @@ class FormsController extends BaseController {
             [$name, $name, ($_POST['new_source_table'] ?? $name)]
         );
 
-        $this->setFlash('success', "Форма '{$name}' создана");
+        $this->setFlash('success', Lang::t('forms.form_created', ['name' => $name]));
         $this->redirect('/forms/edit/' . $name);
     }
 
     /**
-     * Удаление формы
+     * Delete form
      */
     public function delete($name) {
         $this->db->query("DELETE FROM forms WHERE name = ?", [$name]);
-        $this->setFlash('success', "Форма '{$name}' удалена");
+        $this->setFlash('success', Lang::t('forms.form_deleted', ['name' => $name]));
         $this->redirect('/forms');
     }
 
     /**
-     * Переключение статуса (active/inactive)
+     * Toggle status (active/inactive)
      */
     public function toggle($name) {
         $form = $this->db->query("SELECT status FROM forms WHERE name = ?", [$name])->fetch();
@@ -214,12 +215,12 @@ class FormsController extends BaseController {
     }
 
     /**
-     * Список шаблонов формы
+     * Form templates list
      */
     public function templates($name) {
         $form = $this->db->query("SELECT * FROM forms WHERE name = ?", [$name])->fetch();
         if (!$form) {
-            $this->render("error/404", ["message" => "Форма '{$name}' не найдена"]);
+            $this->render("error/404", ["message" => Lang::t('forms.not_found', ['name' => $name])]);
             return;
         }
         $templatesDir = $this->getFormTemplatesDir();
@@ -249,19 +250,19 @@ class FormsController extends BaseController {
             usort($fieldTemplates, fn($a, $b) => strcmp($a["name"], $b["name"]));
         }
         $this->render("forms/templates", [
-            "title" => "Шаблоны формы: {$form["display_name"]}",
+            "title" => Lang::t('forms.form_templates_title', ['name' => $form["display_name"]]),
             "form" => $form, "form_name" => $name,
             "templates" => $templates, "field_templates" => $fieldTemplates,
         ]);
     }
 
     /**
-     * Редактирование шаблона формы
+     * Edit form template
      */
     public function editTemplate($name, $file) {
         $form = $this->db->query("SELECT * FROM forms WHERE name = ?", [$name])->fetch();
         if (!$form) {
-            $this->render("error/404", ["message" => "Форма '{$name}' не найдена"]);
+            $this->render("error/404", ["message" => Lang::t('forms.not_found', ['name' => $name])]);
             return;
         }
         $templatesDir = $this->getFormTemplatesDir();
@@ -269,35 +270,35 @@ class FormsController extends BaseController {
         $realFilePath = realpath($filePath) ?: "";
         $realTemplatesDir = realpath($templatesDir) ?: "___";
         if (strpos($realFilePath, $realTemplatesDir) !== 0) {
-            $this->setFlash("error", "Недопустимый путь к шаблону");
+            $this->setFlash("error", Lang::t('forms.edit_tpl_error_path'));
             $this->redirect("/forms/{$name}/templates");
             return;
         }
         if (!file_exists($filePath)) {
-            $this->setFlash("error", "Шаблон '{$file}' не найден");
+            $this->setFlash("error", Lang::t('forms.edit_tpl_error_notfound'));
             $this->redirect("/forms/{$name}/templates");
             return;
         }
         if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $newContent = $_POST["content"] ?? "";
             if (file_put_contents($filePath, $newContent) !== false) {
-                $this->setFlash("success", "Шаблон '{$file}' сохранён");
+                $this->setFlash("success", Lang::t('forms.edit_tpl_saved'));
                 $this->redirect("/forms/{$name}/templates");
                 return;
             } else {
-                $this->setFlash("error", "Не удалось сохранить шаблон");
+                $this->setFlash("error", Lang::t('forms.edit_tpl_error_save'));
             }
         }
         $content = file_get_contents($filePath);
         $this->render("forms/edit_template", [
-            "title" => "Редактирование: {$file}",
+            "title" => Lang::t('forms.edit_template_title', ['file' => $file]),
             "form" => $form, "form_name" => $name,
             "file_name" => $file, "content" => $content, "file_path" => $filePath
         ]);
     }
 
     /**
-     * Получить директорию шаблонов формы
+     * Get form templates directory
      */
     public function editFieldTemplate($name, $file) {
         return $this->editTemplate($name, "fields/" . $file);
@@ -406,7 +407,7 @@ TWIG;
             return realpath($projectFrontDir);
         }
         // Fall back to core templates
-        // __DIR__ is .../core/www/admin/app/controllers/ → go up 3 to reach www/
+        // __DIR__ is .../core/www/admin/app/controllers/ — go up 3 to reach www/
         $coreDir = dirname(dirname(dirname(__DIR__)));
         $coreFrontDir = $coreDir . '/front/app/views/form';
         if (is_dir($coreFrontDir)) {

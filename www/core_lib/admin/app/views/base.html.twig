@@ -376,7 +376,7 @@
                         </h1>
                     </div>
                     <div class="flex items-center space-x-2 md:space-x-3">
-                        <button class="help-toggle-btn" onclick="toggleHelp()" title="Справка по текущей странице">
+                        <button class="help-toggle-btn" onclick="toggleHelp()" title="{{ lang('topbar.help_title') }}">
                         <i class="fas fa-question-circle"></i>
                         <span class="hidden sm:inline">{{ lang('topbar.help') }}</span>
                     </button>
@@ -425,6 +425,11 @@
             </div>
         </main>
     </div>
+
+    <script>
+window.__lang = {{ lang_all|json_encode|raw }};
+window.__t = function(key) { return window.__lang[key] || key; };
+</script>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -543,7 +548,7 @@
          box-shadow:0 4px 20px rgba(99,102,241,0.5);cursor:pointer;z-index:9997;
          display:flex;align-items:center;justify-content:center;font-size:24px;
          transition:all 0.2s;" 
-  title="AI Ассистент"
+  title="{{ lang('topbar.ai_assistant') }}"
   onmouseover="this.style.transform='scale(1.1)'" 
   onmouseout="this.style.transform='scale(1)'">
   <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">

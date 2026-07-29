@@ -106,7 +106,8 @@ class BaseController {
             'flash' => $this->getFlash(),
             '_GET' => $_GET,
             'site_favicon' => $favicon,
-            'admin_lang' => $this->lang->getLocale()
+            'admin_lang' => $this->lang->getLocale(),
+            'lang_all' => $this->lang->all()
         ];
         
         $templateData = array_merge($globalData, $data);

@@ -680,6 +680,65 @@ class TableController extends BaseController {
     }
 
 
+
+    /**
+     * Bulk delete records
+     *
+     * @param string $table Table name
+     */
+    public function bulkDelete($table) {
+        $tables = $this->db->getTables();
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
+            ]);
+            return;
+        }
+
+        $idsRaw = $_POST['ids'] ?? '';
+        if (empty($idsRaw)) {
+            $this->redirect("/table/{$table}?bulk_error=no_selection");
+            return;
+        }
+
+        $ids = array_map('intval', explode(',', $idsRaw));
+        $ids = array_filter($ids, function($id) { return $id > 0; });
+
+        if (empty($ids)) {
+            $this->redirect("/table/{$table}?bulk_error=no_selection");
+            return;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+        try {
+            // Clean up entity_relations for all ids
+            if (in_array('entity_relations', $tables)) {
+                $this->db->query(
+                    "DELETE FROM entity_relations WHERE source_table = ? AND source_id IN ({$placeholders})",
+                    array_merge([$table], $ids)
+                );
+            }
+
+            // Delete the records
+            $sql = "DELETE FROM " . $this->db->quoteIdentifier($table) . " WHERE id IN ({$placeholders})";
+            $this->db->query($sql, $ids);
+
+            $count = count($ids);
+            $page = !empty($_GET['page']) ? (int)$_GET['page'] : 1;
+            $redirectUrl = "/table/{$table}?bulk_deleted={$count}";
+            if ($page > 1) {
+                $redirectUrl .= "&page={$page}";
+            }
+            $this->redirect($redirectUrl);
+        } catch (\Exception $e) {
+            $errorMsg = $this->lang->t('table.delete_fk_error');
+            $page = !empty($_GET['page']) ? (int)$_GET['page'] : 1;
+            $redirectUrl = "/table/{$table}?bulk_error=fk&page={$page}";
+            $this->redirect($redirectUrl);
+        }
+    }
+
     /**
      * Duplicate record
      */

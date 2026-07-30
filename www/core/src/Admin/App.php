@@ -66,6 +66,8 @@ class App {
         $this->addRoute('/table/{table}/update/{id}', 'TableController', 'update');
         $this->addRoute('/table/{table}/delete/{id}', 'TableController', 'delete');
         $this->addRoute('/table/{table}/duplicate/{id}', 'TableController', 'duplicate');
+        // Bulk delete
+        $this->addRoute('/table/{table}/bulk-delete', 'TableController', 'bulkDelete');
         // CSV import/export
         $this->addRoute('/table/{table}/export-csv', 'TableController', 'exportCsv');
         $this->addRoute('/table/{table}/import-csv', 'TableController', 'importCsvForm');

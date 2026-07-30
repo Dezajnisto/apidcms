@@ -1198,5 +1198,12 @@
   "topbar.help_title": "Справка по текущей странице",
   "topbar.mobile_site": "Сайт",
   "topbar.title": "Панель управления",
-  "topbar.view_site": "Просмотр сайта"
+  "topbar.view_site": "Просмотр сайта",
+    "table.view.select_all": "Выбрать всё",
+    "table.view.deselect_all": "Снять выбор",
+    "table.view.selected_count": "Выбрано",
+    "table.view.bulk_delete": "Удалить выбранные",
+    "table.view.confirm_bulk_delete": "Удалить выбранные записи (%count% шт.)?",
+    "table.view.bulk_deleted": "Записи удалены (%count% шт.)",
+    "table.view.no_selected": "Не выбрано ни одной записи"
 }

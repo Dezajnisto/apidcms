@@ -7,7 +7,7 @@
  */
 
 define('PROJECT_ROOT', realpath(__DIR__ . '/..'));
-define('CORE_PATH', PROJECT_ROOT . '/core');
+define('CORE_PATH', __DIR__ . '/core');
 
 require CORE_PATH . '/bootstrap.php';
 

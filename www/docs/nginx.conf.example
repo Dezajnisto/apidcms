@@ -1,0 +1,49 @@
+# apidcms nginx configuration example
+# Place in /etc/nginx/sites-available/your-site.conf
+
+server {
+    listen 80;
+    server_name example.com;
+    root /var/www/example.com/www;   # document root = www/
+    index index.php;
+
+    # Security: block access to sensitive directories
+    location ~ ^/(core|config|storage|themes|plugins|tmp)/ {
+        deny all;
+    }
+
+    # Core assets (CSS, JS, images) — served directly
+    location /assets/ {
+        alias /var/www/example.com/www/assets/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # User uploads (if you want them publicly accessible)
+    location /storage/uploads/ {
+        # Uncomment to allow:
+        # alias /var/www/example.com/storage/uploads/;
+    }
+
+    # S3 Proxy (if used)
+    location /s3-proxy/ {
+        try_files $uri /index.php?$query_string;
+    }
+
+    # Main router — everything else to index.php
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # PHP processing
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;  # adjust version
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    # Deny access to hidden files
+    location ~ /\. {
+        deny all;
+    }
+}

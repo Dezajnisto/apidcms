@@ -349,6 +349,11 @@ var AIAssistant = {
             endpoint = '/admin/ai/generate-css';
             payload.prompt = text;
             payload.existing_content = this.currentContext.existingContent || '';
+        } else if (this.currentContext.mode === 'prompt') {
+            endpoint = '/admin/ai/assistant';
+            var promptType = this.currentContext.promptType || '';
+            var typeHint = promptType ? ' Context: you are writing a system prompt for the "' + promptType + '" mode. Write a clear, detailed system prompt in Russian.' : '';
+            payload.message = text + typeHint;
         }
 
         fetch(endpoint, {
@@ -401,6 +406,13 @@ var AIAssistant = {
             return data.response_html;
         }
 
+        // Prompt mode: add insert button for the response
+        if (this.currentContext.mode === 'prompt' && data.response) {
+            html += '<div class="ai-toolbar">';
+            html += '<button class="ai-use-btn" onclick="AIAssistant.usePrompt(\'' + this.escapeJs(data.response) + '\')">📋 Insert into field</button>';
+            html += '</div>';
+        }
+
         // Проверяем, есть ли css в ответе (для режима css)
         if (this.currentContext.mode === 'css' && data.css) {
             html += '<div class="ai-toolbar">';
@@ -450,6 +462,20 @@ var AIAssistant = {
         }
 
         return html || '<p style="margin:0">' + this.escapeHtml(text).replace(/\n/g, '<br>') + '</p>';
+    },
+
+    /**
+     * Insert generated prompt text into a regular textarea
+     */
+    usePrompt: function(text) {
+        var textarea = document.getElementById(this.currentContext.textareaId);
+        if (textarea) {
+            textarea.value = text;
+            this.addMessage('✅ Prompt inserted into field! Do not forget to save.', 'assistant');
+        } else {
+            this.addMessage('⚠️ Could not find target field.', 'assistant');
+        }
+        this.close();
     },
 
     /**

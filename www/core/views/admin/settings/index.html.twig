@@ -233,9 +233,14 @@
                                     <form method="POST" action="{{ admin_url('settings/save') }}" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                         <input type="hidden" name="setting_key" value="{{ setting.key }}">
                                         <input type="hidden" name="setting_type" value="{{ setting.type }}">
-                                        {% if setting.key in ['ai_prompt_template', 'ai_prompt_table', 'ai_prompt_content', 'ai_prompt_fill_form', 'ai_prompt_assistant'] %}
-                                            <textarea name="setting_value" rows="3"
-                                                      class="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono">{{ setting.value }}</textarea>
+                                        {% if setting.key in ['ai_prompt_template', 'ai_prompt_table', 'ai_prompt_content', 'ai_prompt_fill_form', 'ai_prompt_assistant', 'ai_prompt_css'] %}
+                                            <div class="flex gap-1 w-full">
+                                                <textarea name="setting_value" id="setting_{{ setting.key }}" rows="3"
+                                                          class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm font-mono">{{ setting.value }}</textarea>
+                                                <button type="button" onclick="AIAssistant.init({mode:'prompt',textareaId:'setting_{{ setting.key }}',promptType:'{{ setting.key }}'});AIAssistant.open()" class="self-start px-2 py-1 border border-indigo-300 text-indigo-600 rounded hover:bg-indigo-50 transition text-xs" title="AI assist">
+                                                    <i class="fas fa-magic"></i>
+                                                </button>
+                                            </div>
                                         {% else %}
                                             <input type="text" name="setting_value" value="{{ setting.value }}"
                                                    class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm font-mono">

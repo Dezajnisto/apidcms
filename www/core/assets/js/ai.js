@@ -345,6 +345,10 @@ var AIAssistant = {
             payload.table = this.currentContext.tableName || '';
             payload.structure = this.currentContext.structure || [];
             payload.existing_values = this.collectFormValues();
+        } else if (this.currentContext.mode === 'css') {
+            endpoint = '/admin/ai/generate-css';
+            payload.prompt = text;
+            payload.existing_content = this.currentContext.existingContent || '';
         }
 
         fetch(endpoint, {
@@ -372,6 +376,10 @@ var AIAssistant = {
             if (self.currentContext.mode === 'template' && data.template) {
                 self.currentContext.existingContent = data.template;
             }
+            // css: update existingContent for iterative editing
+            if (self.currentContext.mode === 'css' && data.css) {
+                self.currentContext.existingContent = data.css;
+            }
             // fill-form: collectFormValues() at each request, don't cache AI output
         })
         .catch(function(err) {
@@ -391,6 +399,13 @@ var AIAssistant = {
         // (Parsedown converts Markdown to HTML on the server side)
         if (!this.currentContext.mode && data.response_html) {
             return data.response_html;
+        }
+
+        // Проверяем, есть ли css в ответе (для режима css)
+        if (this.currentContext.mode === 'css' && data.css) {
+            html += '<div class="ai-toolbar">';
+            html += '<button class="ai-use-btn ai-use-code" onclick="AIAssistant.useCss(\'' + this.escapeJs(data.css) + '\')">📋 Insert into editor</button>';
+            html += '</div>';
         }
 
         // Проверяем, есть ли template в ответе (для режима template)
@@ -438,13 +453,41 @@ var AIAssistant = {
     },
 
     /**
+     * Insert generated CSS into editor
+     */
+    useCss: function(css) {
+        var textarea = document.getElementById(this.currentContext.textareaId || 'cm-hidden-css');
+        if (textarea) {
+            textarea.value = css;
+            // Sync with CodeMirror if available
+            var cmEl = document.getElementById(this.currentContext.editorId || 'cm-css-editor');
+            if (cmEl && cmEl._cmView) {
+                var view = cmEl._cmView;
+                view.dispatch({
+                    changes: {from: 0, to: view.state.doc.length, insert: css}
+                });
+            }
+            this.addMessage('✅ CSS inserted into editor! Do not forget to save.', 'assistant');
+        }
+        this.close();
+    },
+
+    /**
      * Использовать сгенерированный шаблон
      */
     useTemplate: function(template) {
-        var textarea = document.getElementById(this.currentContext.textareaId || 'templateContent');
+        var textarea = document.getElementById(this.currentContext.textareaId || 'cm-hidden-input');
         if (textarea) {
             textarea.value = template;
-            this.addMessage('✅ Шаблон вставлен в редактор! Не забудьте сохранить.', 'assistant');
+            // Sync with CodeMirror if available
+            var cmEl = document.getElementById(this.currentContext.editorId || 'cm-editor');
+            if (cmEl && cmEl._cmView) {
+                var view = cmEl._cmView;
+                view.dispatch({
+                    changes: {from: 0, to: view.state.doc.length, insert: template}
+                });
+            }
+            this.addMessage('✅ Template inserted into editor! Do not forget to save.', 'assistant');
         }
         this.close();
     },

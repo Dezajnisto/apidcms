@@ -345,4 +345,44 @@ PROMPT;
 
         return $this->chat($messages, $systemPrompt, 0.7, 4096);
     }
+
+    /**
+     * Generate CSS code based on description
+     *
+     * @param string $userPrompt  Description of desired CSS
+     * @param string $existingCSS Existing CSS to edit (optional)
+     * @param string $customPrompt Custom system prompt (optional)
+     * @return string Generated CSS code
+     */
+    public function generateCSS($userPrompt, $existingCSS = '', $customPrompt = '') {
+        $systemPrompt = <<<PROMPT
+You are a CSS expert. Your task is to create and edit CSS code.
+
+IMPORTANT RULES:
+1. Reply ONLY with CSS code, no markdown wrapper, no explanations.
+2. The first line of your response must be CSS code.
+3. Use modern CSS (Custom Properties, flexbox, grid, calc, clamp).
+4. Comments only in English, keep them concise.
+5. Do NOT use !important unless absolutely necessary.
+6. Use responsive design patterns (media queries, min/max-width).
+7. Maintain consistent indentation (4 spaces).
+PROMPT;
+
+        if (!empty($customPrompt)) {
+            $systemPrompt .= "\n\nADDITIONAL INSTRUCTIONS:\n" . $customPrompt;
+        }
+
+        $contextInfo = "";
+        if (!empty($existingCSS)) {
+            $contextInfo .= "\n\nEXISTING CSS TO EDIT:\n" . $existingCSS . "\n";
+            $contextInfo .= "\nIMPORTANT: Return the COMPLETE CSS file with your changes applied. Do NOT return only modified fragments — return the entire CSS code.\n";
+        }
+
+        $messages = [
+            ["role" => "user", "content" => $userPrompt . $contextInfo]
+        ];
+
+        return $this->chat($messages, $systemPrompt, 0.5, 4096);
+    }
+
 }

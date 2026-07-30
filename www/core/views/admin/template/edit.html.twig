@@ -30,7 +30,7 @@
             {% elseif templateName == '404.html.twig' or templateName == 'success.html.twig' %}
                 {% set pageType = 'utility' %}
             {% endif %}
-            <button type="button" onclick="AIAssistant.init({mode:'template',textareaId:'cm-hidden-input',pageType:'{{ pageType }}',existingContent:document.getElementById('cm-hidden-input').value});AIAssistant.open()" class="inline-flex items-center space-x-2 px-4 py-2 border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 transition"><i class="fas fa-magic"></i><span>AI</span></button>
+            <button type="button" onclick="AIAssistant.init({mode:'template',textareaId:'cm-hidden-input',editorId:'cm-editor-container',pageType:'{{ pageType }}',existingContent:document.getElementById('cm-hidden-input').value});AIAssistant.open()" class="inline-flex items-center space-x-2 px-4 py-2 border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 transition"><i class="fas fa-magic"></i><span>AI</span></button>
             <a href="/admin/templates" 
                class="inline-flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
                 <i class="fas fa-arrow-left"></i>
@@ -118,6 +118,7 @@ import { initCodeMirror } from '/assets/js/cm-editor.bundle.js?v=2';
 
 const content = document.getElementById('cm-hidden-input').value;
 const view = initCodeMirror('cm-editor-container', 'cm-hidden-input', 'html', content, 500, false);
+if (view) { document.getElementById('cm-editor-container')._cmView = view; }
 
 // Line/char stats
 function updateStats() {

@@ -46,6 +46,7 @@ class AIController extends BaseController {
             "content" => $s->get("ai_prompt_content", ""),
             "fill_form" => $s->get("ai_prompt_fill_form", ""),
             "assistant" => $s->get("ai_prompt_assistant", ""),
+            "css" => $s->get("ai_prompt_css", ""),
         ];
     }
 
@@ -366,4 +367,30 @@ class AIController extends BaseController {
             $this->jsonResponse(["error" => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * POST /ai/generate-css
+     * Generate/edit CSS code
+     */
+    public function generateCss() {
+        try {
+            $input = json_decode(file_get_contents("php://input"), true);
+            $prompt = $input["prompt"] ?? "";
+            $existingContent = $input["existing_content"] ?? "";
+
+            if (empty($prompt)) {
+                $this->jsonResponse(["error" => $this->lang->t("common.empty_request")], 400);
+            }
+
+            $result = $this->ai->generateCSS($prompt, $existingContent, $this->aiPrompts["css"] ?? "");
+
+            $this->jsonResponse([
+                "response" => $result,
+                "css" => $result
+            ]);
+        } catch (Exception $e) {
+            $this->jsonResponse(["error" => $e->getMessage()], 500);
+        }
+    }
+
 }

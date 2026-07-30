@@ -147,6 +147,7 @@ class App {
         $this->addRoute('/ai/generate-content', 'AIController', 'generateContent');
         $this->addRoute('/ai/insert-content', 'AIController', 'insertContent');
         $this->addRoute('/ai/fill-form', 'AIController', 'fillForm');
+        $this->addRoute('/ai/generate-css', 'AIController', 'generateCss');
                 // +++ ДИЗАЙН +++
         // Редактор CSS-стилей
         $this->addRoute('/design/css', 'DesignController', 'css');

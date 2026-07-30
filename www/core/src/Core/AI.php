@@ -225,6 +225,15 @@ PROMPT;
             $contextInfo .= "\nИспользуй эти классы в HTML-разметке где это уместно. Не выдумывай классы которых нет в CSS.\n";
         }
 
+        // Templates context: reference for style consistency
+        if (!empty($context["templates"])) {
+            $contextInfo .= "\n\nСУЩЕСТВУЮЩИЕ ШАБЛОНЫ (для единого стиля):\n";
+            foreach ($context["templates"] as $name => $tmpl) {
+                $contextInfo .= "\n--- {$name} ---\n" . $tmpl . "\n";
+            }
+            $contextInfo .= "\nПиши шаблон в том же стиле что и существующие.\n";
+        }
+
         $messages = [
             ["role" => "user", "content" => $userPrompt . $contextInfo]
         ];
@@ -366,7 +375,7 @@ PROMPT;
      * @param string $customPrompt Custom system prompt (optional)
      * @return string Generated CSS code
      */
-    public function generateCSS($userPrompt, $existingCSS = '', $customPrompt = '') {
+    public function generateCSS($userPrompt, $existingCSS = '', $templates = [], $customPrompt = '') {
         $systemPrompt = <<<PROMPT
 You are a CSS expert. Your task is to create and edit CSS code.
 
@@ -388,6 +397,14 @@ PROMPT;
         if (!empty($existingCSS)) {
             $contextInfo .= "\n\nEXISTING CSS TO EDIT:\n" . $existingCSS . "\n";
             $contextInfo .= "\nIMPORTANT: Return the COMPLETE CSS file with your changes applied. Do NOT return only modified fragments — return the entire CSS code.\n";
+        }
+
+        // Templates context: HTML structure to style
+        if (!empty($templates)) {
+            $contextInfo .= "\n\nШАБЛОНЫ САЙТА (HTML-структура для которой пишется CSS):\n";
+            foreach ($templates as $name => $tmpl) {
+                $contextInfo .= "\n--- {$name} ---\n" . $tmpl . "\n";
+            }
         }
 
         $messages = [

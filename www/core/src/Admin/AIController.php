@@ -53,6 +53,106 @@ class AIController extends BaseController {
     private $aiPrompts = [];
 
     /**
+     * Get key Twig templates for AI context (HTML structure for CSS, style reference)
+     */
+    private function getTemplatesContext(): array {
+        $templates = [];
+        $maxSize = 6000; // per template
+        $totalMax = 20000; // total for all templates
+        $total = 0;
+
+        try {
+            $rootPath = $this->app->getConfig()['paths']['root'];
+
+            // Project frontend templates (overrides)
+            $projectViews = $rootPath . '/front/app/views';
+            // Core frontend templates (fallback)
+            $coreViews = $rootPath . '/core/views/front';
+            // Also check old-style core path
+            $coreViewsAlt = $rootPath . '/core_lib/front/app/views';
+
+            // Priority: project views first (actual active templates)
+            $viewDirs = [];
+            if (is_dir($projectViews)) $viewDirs[] = $projectViews;
+            if (is_dir($coreViews)) $viewDirs[] = $coreViews;
+            if (is_dir($coreViewsAlt)) $viewDirs[] = $coreViewsAlt;
+
+            // Key templates to include (most relevant for CSS/structure)
+            $keyTemplates = [
+                'base.html.twig',
+                'page.html.twig',
+                'home.html.twig',
+                'glavnaya.html.twig',
+                'blog.html.twig',
+                'blog/list.html.twig',
+                'blog/single.html.twig',
+                'blog_single.html.twig',
+                'single.html.twig',
+                'post.html.twig',
+                'form.html.twig',
+                'form/_base.html.twig',
+                'form/default.html.twig',
+                'search.html.twig',
+                '404.html.twig',
+                'external.html.twig',
+            ];
+
+            foreach ($keyTemplates as $name) {
+                if ($total >= $totalMax) break;
+
+                foreach ($viewDirs as $dir) {
+                    $file = $dir . '/' . $name;
+                    if (file_exists($file)) {
+                        $content = file_get_contents($file);
+                        if (!empty(trim($content))) {
+                            if (strlen($content) > $maxSize) {
+                                $content = substr($content, 0, $maxSize)
+                                    . "\n{# ... truncated for AI context #}";
+                            }
+                            $templates[$name] = $content;
+                            $total += strlen($content);
+                        }
+                        break; // Found in first matching dir
+                    }
+                }
+            }
+
+            // Also include subdirectory templates (blog/, form/fields/)
+            $subDirs = ['blog', 'form', 'form/fields'];
+            foreach ($subDirs as $sub) {
+                if ($total >= $totalMax) break;
+                foreach ($viewDirs as $dir) {
+                    $subPath = $dir . '/' . $sub;
+                    if (is_dir($subPath)) {
+                        $files = glob($subPath . '/*.twig');
+                        if ($files) {
+                            foreach ($files as $file) {
+                                if ($total >= $totalMax) break;
+                                $name = $sub . '/' . basename($file);
+                                if (isset($templates[$name])) continue;
+                                $content = file_get_contents($file);
+                                if (!empty(trim($content))) {
+                                    if (strlen($content) > $maxSize) {
+                                        $content = substr($content, 0, $maxSize)
+                                            . "\n{# ... truncated #}";
+                                    }
+                                    $templates[$name] = $content;
+                                    $total += strlen($content);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Templates not available - continue without
+        }
+
+        return $templates;
+    }
+
+    /**
      * Отправка JSON-ответа
      */
     private function jsonResponse($data, $statusCode = 200) {
@@ -179,7 +279,8 @@ class AIController extends BaseController {
                 "existing_content" => $existingContent,
                 "page_type" => $pageType,
                 "source_table" => $sourceTable,
-                "css" => $this->getCssContext()
+                "css" => $this->getCssContext(),
+                "templates" => $this->getTemplatesContext()
             ], $this->aiPrompts["template"] ?? "");
 
             $this->jsonResponse([
@@ -384,7 +485,8 @@ class AIController extends BaseController {
                 $this->jsonResponse(["error" => $this->lang->t("common.empty_request")], 400);
             }
 
-            $result = $this->ai->generateCSS($prompt, $existingContent, $this->aiPrompts["css"] ?? "");
+            $templatesCtx = $this->getTemplatesContext();
+            $result = $this->ai->generateCSS($prompt, $existingContent, $templatesCtx, $this->aiPrompts["css"] ?? "");
 
             $this->jsonResponse([
                 "response" => $result,

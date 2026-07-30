@@ -1,0 +1,15 @@
+{# form/fields/checkbox.html.twig #}
+<div class="form-field">
+    <label class="flex items-center space-x-3 cursor-pointer">
+        <input type="checkbox" name="{{ field_name }}" value="1"
+               {{ value ? 'checked' : '' }}
+               class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+        <span class="{{ label_class|default('text-sm font-medium text-gray-700') }}">
+            {{ field.label|default(field_name|capitalize) }}
+            {% if field.required %}<span class="text-red-500">*</span>{% endif %}
+        </span>
+    </label>
+    {% if field.help_text %}
+        <p class="mt-1 ml-7 text-sm text-gray-500">{{ field.help_text }}</p>
+    {% endif %}
+</div>

@@ -1,0 +1,15 @@
+{# form/fields/tel.html.twig #}
+<div class="form-field">
+    <label for="field_{{ field_name }}" class="{{ label_class|default('block text-sm font-medium text-gray-700 mb-1.5') }}">
+        {{ field.label|default(field_name|capitalize) }}
+        {% if field.required %}<span class="text-red-500">*</span>{% endif %}
+    </label>
+    <input type="tel" id="field_{{ field_name }}" name="{{ field_name }}"
+           value="{{ value|default('') }}"
+           placeholder="{{ field.placeholder|default('') }}"
+           {{ field.required ? 'required' : '' }}
+           class="{{ field_class|default('w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition') }}">
+    {% if field.help_text %}
+        <p class="mt-1 text-sm {{ help_text_class|default('text-gray-500') }}">{{ field.help_text }}</p>
+    {% endif %}
+</div>

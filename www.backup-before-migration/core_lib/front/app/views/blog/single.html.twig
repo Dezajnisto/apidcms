@@ -1,0 +1,48 @@
+{% extends "base.html.twig" %}
+
+{% block title %}{{ item.title ?? item.name ?? title }} | {{ site_title }}{% endblock %}
+
+{% block content %}
+<article class="single-item">
+    <header class="item-header">
+        <h1 class="item-title">{{ item.title ?? item.name ?? 'Запись' }}</h1>
+        
+        <div class="item-meta">
+            {% if item.created_at %}
+                <time datetime="{{ item.created_at|date('Y-m-d') }}">
+                    {{ item.created_at|date('d.m.Y H:i') }}
+                </time>
+            {% endif %}
+            {% if item.author_name %}
+                <span class="item-author">Автор: {{ item.author_name }}</span>
+            {% endif %}
+        </div>
+        
+        {% if item.featured_image %}
+            <div class="item-image">
+                <img src="{{ url('storage/uploads/' ~ item.featured_image) }}" alt="{{ item.title ?? item.name }}">
+            </div>
+        {% endif %}
+    </header>
+
+    <div class="item-content">
+        {{ item.content|raw }}
+    </div>
+
+    <footer class="item-footer">
+        <div class="item-navigation">
+            {% if prev_item %}
+                <a href="{{ url(nav_item.url ~ '/' ~ (prev_item.slug ?? prev_item.id)) }}" class="nav-prev">← {{ prev_item.title ?? prev_item.name }}</a>
+            {% endif %}
+            
+            {% if next_item %}
+                <a href="{{ url(nav_item.url ~ '/' ~ (next_item.slug ?? next_item.id)) }}" class="nav-next">{{ next_item.title ?? next_item.name }} →</a>
+            {% endif %}
+        </div>
+        
+        <div class="back-link">
+            <a href="{{ url(nav_item.url) }}">← Назад к списку</a>
+        </div>
+    </footer>
+</article>
+{% endblock %}

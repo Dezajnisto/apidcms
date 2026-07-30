@@ -1,0 +1,12 @@
+{# form/fields/consent.html.twig — согласие на обработку ПД #}
+<div class="form-field consent-field bg-gray-50 p-4 rounded-lg border border-gray-200">
+    <label class="flex items-start space-x-3 cursor-pointer">
+        <input type="checkbox" name="pd_consent" value="1" required
+               class="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+        <span class="text-sm text-gray-700 leading-relaxed">
+            Я даю согласие на обработку моих персональных данных в соответствии с
+            <a href="/confidential" target="_blank" class="text-blue-600 hover:text-blue-800 underline">Политикой конфиденциальности</a>
+            <span class="text-red-500">*</span>
+        </span>
+    </label>
+</div>

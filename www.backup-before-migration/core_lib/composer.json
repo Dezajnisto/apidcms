@@ -1,0 +1,11 @@
+{
+    "autoload": {
+        "psr-4": {
+            "Core\\": "core",
+            "Front\\": "front/app"
+        },
+        "classmap": [
+            "admin/app"
+        ]
+    }
+}

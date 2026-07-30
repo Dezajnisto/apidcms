@@ -1,0 +1,79 @@
+{% extends "base.html.twig" %}
+
+{% block content %}
+    {% if sections is defined and sections|length > 0 %}
+        {% for section in sections %}
+            {% if section.type == 'hero' %}
+            <section class="hero-section" style="background:#0c0a09;color:#fff;padding:4rem 1rem;text-align:center">
+                <div class="container" style="max-width:800px;margin:0 auto">
+                    <h1 style="font-size:2.5rem;margin-bottom:1rem">{{ section.title }}</h1>
+                    <div style="font-size:1.1rem;line-height:1.7;color:#ccc">{{ section.content|raw }}</div>
+                </div>
+            </section>
+            {% elseif section.type == 'article' %}
+            <section class="article-section" style="padding:3rem 1rem;background:#fafaf9">
+                <div class="container" style="max-width:1100px;margin:0 auto;display:flex;gap:2rem;align-items:center;flex-wrap:wrap">
+                    {% if section.settings.image is defined and section.settings.image %}
+                    <div style="flex:1;min-width:300px">
+                        <img src="{{ section.settings.image }}" alt="" style="width:100%;border-radius:1rem;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
+                    </div>
+                    {% endif %}
+                    <div style="flex:1;min-width:300px">
+                        <h2 style="margin-bottom:1rem">{{ section.title }}</h2>
+                        <div style="line-height:1.8;color:#292524">{{ section.content|raw }}</div>
+                    </div>
+                </div>
+            </section>
+            {% elseif section.type == 'gallery' %}
+            <section class="gallery-section" style="padding:3rem 1rem;background:#fff">
+                <div class="container" style="max-width:1100px;margin:0 auto;text-align:center">
+                    <h2 style="margin-bottom:2rem">{{ section.title }}</h2>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem">
+                        <img src="/static/img/placeholder.svg" alt="Gallery" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:0.75rem;background:#eee">
+                        <img src="/static/img/placeholder.svg" alt="Gallery" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:0.75rem;background:#eee">
+                        <img src="/static/img/placeholder.svg" alt="Gallery" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:0.75rem;background:#eee">
+                    </div>
+                </div>
+            </section>
+            {% elseif section.type == 'video' %}
+            <section class="video-section" style="padding:3rem 1rem;background:#fff">
+                <div class="container" style="max-width:800px;margin:0 auto;text-align:center">
+                    <h2 style="margin-bottom:1rem">{{ section.title }}</h2>
+                    <div style="line-height:1.7;margin-bottom:1.5rem">{{ section.content|raw }}</div>
+                    {% if section.settings.video_url is defined and section.settings.video_url %}
+                    <div style="aspect-ratio:16/9;border-radius:0.75rem;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+                        <iframe src="{{ section.settings.video_url }}" width="100%" height="100%" style="border:none" allow="autoplay;encrypted-media" allowfullscreen></iframe>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+            {% elseif section.type == 'cta' %}
+            <section class="cta-section" style="padding:3rem 1rem;background:#0c0a09;color:#fff">
+                <div class="container" style="max-width:800px;margin:0 auto;text-align:center">
+                    <h2 style="margin-bottom:1rem">{{ section.title }}</h2>
+                    <div style="line-height:1.7;color:#ccc">{{ section.content|raw }}</div>
+                </div>
+            </section>
+            {% elseif section.type == 'contacts' %}
+            <section class="contacts-section" style="padding:3rem 1rem;background:#fde047">
+                <div class="container" style="max-width:600px;margin:0 auto;text-align:center">
+                    <h2 style="margin-bottom:1rem">{{ section.title }}</h2>
+                    <div style="font-size:1.1rem">{{ section.content|raw }}</div>
+                </div>
+            </section>
+            {% else %}
+            <section class="section-{{ section.type }}" style="padding:2rem 1rem">
+                <div class="container" style="max-width:800px;margin:0 auto">
+                    <h2>{{ section.title }}</h2>
+                    <div>{{ section.content|raw }}</div>
+                </div>
+            </section>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <div style="max-width:800px;margin:2rem auto;padding:1rem;text-align:center">
+            <h1>{{ title }}</h1>
+            <p>Добро пожаловать! Настройте содержание через админ-панель.</p>
+        </div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,361 @@
+{# Context help panel - slides in from right #}
+
+
+<div id="help-overlay" class="help-overlay hidden" onclick="toggleHelp()"></div>
+<div id="help-panel" class="help-panel hidden">
+    <div class="help-panel-header">
+        <div class="help-header-links">
+            <a class="help-toc-link active" id="help-toc-link" onclick="showToc()">
+                <i class="fas fa-list"></i> {{ lang('common.contents') }}
+            </a>
+            <span style="color:#d1d5db;margin:0 2px">|</span>
+            <span id="help-title" style="font-size:14px;color:#6b7280;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ lang('common.help')|default('Справка') }}</span>
+        </div>
+        <button class="help-close" onclick="toggleHelp()" title="{{ lang('common.close_esc') }}">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="help-panel-body" id="help-content">
+        <div class="help-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>{{ lang('common.loading') }}</span>
+        </div>
+    </div>
+    <div class="help-panel-footer">
+        <a href="https://apidcms.dezajno.ru/docs" target="_blank" class="help-footer-link">
+            <i class="fas fa-external-link-alt"></i> {{ lang('common.all_docs')|default('Все документы') }}
+        </a>
+    </div>
+</div>
+
+<script>
+/** Current admin language for doc URL resolution */
+var ADMIN_LANG = '{{ admin_lang|default('ru') }}';
+
+/**
+ * Resolve {lang} placeholder in a URL to current language.
+ */
+function resolveLangUrl(url) {
+    return url.replace(/{lang}/g, ADMIN_LANG);
+}
+
+(function() {
+    var MANIFEST_URL = 'https://raw.githubusercontent.com/Dezajnisto/apidcms-docs/master/manifest.json';
+    var RAW_BASE = 'https://raw.githubusercontent.com/Dezajnisto/apidcms-docs/master/';
+    var CACHE_KEY = 'apidcms-manifest-v3';
+    var CACHE_TTL = 24 * 60 * 60 * 1000;
+    var manifestCache = null;
+    var currentDocFile = null;
+
+    function getCurrentRoute() {
+        var path = window.location.pathname;
+        path = path.replace(/^\/admin/, '') || '/';
+        path = path.replace(/\/$/, '') || '/';
+        return path;
+    }
+
+    function matchRoute(pattern, path) {
+        var pp = pattern.split('/'), pt = path.split('/');
+        if (pp.length !== pt.length) return false;
+        for (var i = 0; i < pp.length; i++) {
+            if (pp[i].charAt(0) === '{' && pp[i].slice(-1) === '}') continue;
+            if (pp[i] !== pt[i]) return false;
+        }
+        return true;
+    }
+
+    function findDoc(manifest, route) {
+        var routes = manifest.admin_routes || {};
+        if (routes[route]) return routes[route];
+        var patterns = Object.keys(routes).sort(function(a,b){return b.length-a.length;});
+        for (var i = 0; i < patterns.length; i++) {
+            if (matchRoute(patterns[i], route)) return routes[patterns[i]];
+        }
+        return null;
+    }
+
+    function renderMarkdown(md) {
+        if (!md) return '';
+        // Strip YAML frontmatter
+        md = md.replace(/^---[\s\S]*?---\n*/, '');
+
+        // Tables: | col1 | col2 |\n|-----|-----|\n| val | val |
+        var lines = md.split('\n');
+        var result = [];
+        var inTable = false;
+        var tableRows = [];
+        var inCodeBlock = false;
+        var codeLines = [];
+        var codeLang = '';
+
+        function flushTable() {
+            if (!tableRows.length) return;
+            var html = '<table>';
+            for (var r = 0; r < tableRows.length; r++) {
+                var cells = tableRows[r].replace(/^\||\|$/g, '').split('|');
+                var tag = (r === 1 && /^[\s\-:]+$/.test(cells.join(''))) ? null : (r === 0 ? 'th' : 'td');
+                if (!tag) continue; // skip separator row
+                html += '<tr>';
+                for (var c = 0; c < cells.length; c++) {
+                    html += '<' + tag + '>' + cells[c].trim() + '</' + tag + '>';
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            result.push(html);
+            tableRows = [];
+        }
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+
+            // Code blocks
+            if (line.match(/^```/)) {
+                if (inCodeBlock) {
+                    flushTable();
+                    var code = codeLines.join('\n').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    result.push('<pre><code>' + code + '</code></pre>');
+                    codeLines = [];
+                    inCodeBlock = false;
+                } else {
+                    flushTable();
+                    inCodeBlock = true;
+                    codeLang = line.replace(/^```/, '').trim();
+                }
+                continue;
+            }
+            if (inCodeBlock) { codeLines.push(line); continue; }
+
+            // Table rows
+            if (line.match(/^\|.*\|$/) && !line.match(/^\|[\s\-:]+\|$/)) {
+                if (!inTable) { flushTable(); inTable = true; }
+                tableRows.push(line);
+                continue;
+            }
+            if (line.match(/^\|[\s\-:]+\|$/)) {
+                tableRows.push(line); // separator row
+                continue;
+            }
+            if (inTable && !line.match(/^\|.*\|$/)) {
+                flushTable(); inTable = false;
+            }
+            flushTable();
+
+            // Process inline formatting
+            var l = line
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+            // Headers
+            if (l.match(/^#### (.+)$/)) { result.push('<h5>' + l.replace(/^#### /, '') + '</h5>'); continue; }
+            if (l.match(/^### (.+)$/)) { result.push('<h4>' + l.replace(/^### /, '') + '</h4>'); continue; }
+            if (l.match(/^## (.+)$/)) { result.push('<h3>' + l.replace(/^## /, '') + '</h3>'); continue; }
+            if (l.match(/^# (.+)$/)) { result.push('<h2>' + l.replace(/^# /, '') + '</h2>'); continue; }
+
+            // HR
+            if (l.match(/^---$/)) { result.push('<hr>'); continue; }
+
+            // Blockquote
+            if (l.match(/^> /)) { result.push('<blockquote>' + l.replace(/^> /, '') + '</blockquote>'); continue; }
+
+            // List items
+            if (l.match(/^[\-\*] /)) { result.push('<li>' + l.replace(/^[\-\*] /, '') + '</li>'); continue; }
+            if (l.match(/^\d+\. /)) { result.push('<li>' + l.replace(/^\d+\. /, '') + '</li>'); continue; }
+
+            // Empty line
+            if (l.trim() === '') { result.push(''); continue; }
+
+            // Regular paragraph
+            result.push(l);
+        }
+        flushTable();
+
+        // Post-process: wrap consecutive non-tag lines in <p>, wrap <li> sequences in <ul>
+        var final = [];
+        var para = [];
+        var listItems = [];
+
+        function flushPara() {
+            if (para.length) {
+                // Check if it's a mix of block elements
+                var html = para.join('<br>');
+                final.push('<p>' + html + '</p>');
+                para = [];
+            }
+        }
+        function flushList() {
+            if (listItems.length) {
+                final.push('<ul>' + listItems.join('') + '</ul>');
+                listItems = [];
+            }
+        }
+
+        for (var j = 0; j < result.length; j++) {
+            var r = result[j];
+            if (r === '') { flushPara(); flushList(); continue; }
+            if (r.startsWith('<h') || r.startsWith('<table') || r.startsWith('<pre') || r.startsWith('<hr') || r.startsWith('<blockquote')) {
+                flushPara(); flushList(); final.push(r); continue;
+            }
+            if (r.startsWith('<li>')) { flushPara(); listItems.push(r); continue; }
+            if (listItems.length) flushList();
+            para.push(r);
+        }
+        flushPara(); flushList();
+
+        return final.join('\n');
+    }
+
+    function loadManifest(cb) {
+        if (manifestCache && manifestCache.ts && (Date.now() - manifestCache.ts) < CACHE_TTL) return cb(null, manifestCache.data);
+        try {
+            var stored = localStorage.getItem(CACHE_KEY);
+            if (stored) {
+                var cached = JSON.parse(stored);
+                if (cached.data && cached.ts && (Date.now() - cached.ts) < CACHE_TTL) { manifestCache = cached; return cb(null, cached.data); }
+            }
+        } catch(e) {}
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', MANIFEST_URL, true);
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var data = JSON.parse(xhr.responseText);
+                manifestCache = {ts: Date.now(), data: data};
+                try { localStorage.setItem(CACHE_KEY, JSON.stringify(manifestCache)); } catch(e) {}
+                cb(null, data);
+            } else {
+                if (manifestCache && manifestCache.data) cb(null, manifestCache.data); else cb(new Error('HTTP ' + xhr.status));
+            }
+        };
+        xhr.onerror = function() {
+            if (manifestCache && manifestCache.data) cb(null, manifestCache.data); else cb(new Error('Network error'));
+        };
+        xhr.send();
+    }
+
+    function loadDoc(filePath, cb) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', RAW_BASE + filePath, true);
+        xhr.onload = function() { if (xhr.status === 200) cb(null, xhr.responseText); else cb(new Error('HTTP ' + xhr.status)); };
+        xhr.onerror = function() { cb(new Error('Network error')); };
+        xhr.send();
+    }
+
+    function resolveI18n(value, lang) {
+        if (typeof value === 'object' && value !== null) {
+            return value[lang] || value['ru'] || Object.values(value)[0] || '';
+        }
+        return String(value || '');
+    }
+
+    function showToc() {
+        document.getElementById('help-toc-link').classList.add('active');
+        document.getElementById('help-title').textContent = __t('common.contents');
+        var content = document.getElementById('help-content');
+        loadManifest(function(err, manifest) {
+            if (err) { content.innerHTML = '<div class="help-error">{{ lang('error.load_failed')|default('Не удалось загрузить') }}</div>'; return; }
+            var docs = (manifest && manifest.docs) ? manifest.docs : [];
+            var sections = (manifest && manifest.sections) ? manifest.sections : {};
+            // Group by section
+            var grouped = {};
+            for (var i = 0; i < docs.length; i++) {
+                var sec = docs[i].section || 'other';
+                if (!grouped[sec]) grouped[sec] = [];
+                grouped[sec].push(docs[i]);
+            }
+            // Order sections
+            var secOrder = [];
+            for (var sk in sections) secOrder.push({key: sk, order: sections[sk].order || 999});
+            secOrder.sort(function(a,b){return a.order-b.order;});
+
+            var html = '';
+            for (var s = 0; s < secOrder.length; s++) {
+                var sk = secOrder[s].key;
+                var items = grouped[sk];
+                if (!items || !items.length) continue;
+                var secTitle = resolveI18n((sections[sk] && sections[sk].title) ? sections[sk].title : sk, ADMIN_LANG);
+                html += '<div class="help-toc-section">';
+                html += '<div class="help-toc-section-title">' + secTitle + '</div>';
+                items.sort(function(a,b){return (a.order||999)-(b.order||999);});
+                for (var d = 0; d < items.length; d++) {
+                    var doc = items[d];
+                    html += '<a class="help-toc-item" onclick="loadHelpDoc(\'' + resolveLangUrl(doc.content_url).replace(/'/g, "\\'") + '\', \'' + resolveI18n(doc.title, ADMIN_LANG).replace(/'/g, "\\'") + '\')">' + resolveI18n(doc.title, ADMIN_LANG) + '</a>';
+                }
+                html += '</div>';
+            }
+            content.innerHTML = html;
+        });
+    }
+
+    window.loadHelpDoc = function(url, title) {
+        url = resolveLangUrl(url);
+        document.getElementById('help-toc-link').classList.remove('active');
+        document.getElementById('help-title').textContent = title || '{{ lang('common.help')|default('Справка') }}';
+        var content = document.getElementById('help-content');
+        content.innerHTML = '<div class="help-loading"><i class="fas fa-spinner fa-spin"></i><span>{{ lang('common.loading') }}</span></div>';
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var html = renderMarkdown(xhr.responseText);
+                content.innerHTML = '<div class="help-doc">' + html + '</div>';
+            } else {
+                content.innerHTML = '<div class="help-error">{{ lang('error.load_error')|default('Ошибка загрузки:') }} HTTP ' + xhr.status + '</div>';
+            }
+        };
+        xhr.onerror = function() { content.innerHTML = '<div class="help-error">{{ lang('error.network_error')|default('Ошибка сети') }}</div>'; };
+        xhr.send();
+    };
+
+    function showHelp() {
+        var panel = document.getElementById('help-panel');
+        var overlay = document.getElementById('help-overlay');
+        var content = document.getElementById('help-content');
+        var title = document.getElementById('help-title');
+        panel.classList.remove('hidden');
+        overlay.classList.remove('hidden');
+        content.innerHTML = '<div class="help-loading"><i class="fas fa-spinner fa-spin"></i><span>{{ lang('common.loading') }}</span></div>';
+
+        loadManifest(function(err, manifest) {
+            if (err) { content.innerHTML = '<div class="help-error">{{ lang('error.load_failed')|default('Не удалось загрузить') }} манифест</div>'; return; }
+            var route = getCurrentRoute();
+            var docFile = findDoc(manifest, route);
+            if (!docFile) {
+                // Show TOC if no specific doc found
+                showToc();
+                return;
+            }
+            currentDocFile = docFile;
+            docFile = resolveLangUrl(docFile);
+            loadDoc(docFile, function(err2, md) {
+                if (err2) { content.innerHTML = '<div class="help-error">{{ lang('error.load_error')|default('Ошибка загрузки:') }} ' + err2.message + '</div>'; return; }
+                var html = renderMarkdown(md);
+                var h1 = html.match(/<h2>(.+?)<\/h2>/);
+                title.textContent = h1 ? h1[1] : '{{ lang('common.help')|default('Справка') }}';
+                document.getElementById('help-toc-link').classList.remove('active');
+                content.innerHTML = '<div class="help-doc">' + html + '</div>';
+            });
+        });
+    }
+
+    window.showToc = showToc;
+
+    window.toggleHelp = function() {
+        var panel = document.getElementById('help-panel');
+        if (panel.classList.contains('hidden')) { showHelp(); }
+        else { panel.classList.add('hidden'); document.getElementById('help-overlay').classList.add('hidden'); }
+    };
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            var p = document.getElementById('help-panel');
+            if (p && !p.classList.contains('hidden')) {
+                p.classList.add('hidden');
+                document.getElementById('help-overlay').classList.add('hidden');
+            }
+        }
+    });
+})();
+</script>

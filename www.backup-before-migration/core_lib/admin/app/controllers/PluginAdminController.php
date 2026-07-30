@@ -1,0 +1,199 @@
+<?php
+/**
+ * PluginAdminController — управление плагинами в админке
+ */
+namespace Admin;
+
+class PluginAdminController extends BaseController
+{
+    public function index()
+    {
+        try {
+            $pm = \Core\PluginManager::getInstance();
+            $plugins = $pm->getPlugins();
+        } catch (\Throwable $e) {
+            $plugins = [];
+        }
+        $this->render('plugins/index', [
+            'title' => $this->lang->t('plugins.title'),
+            'plugins' => $plugins
+        ]);
+    }
+
+    public function toggle($name)
+    {
+        try {
+            $pm = \Core\PluginManager::getInstance();
+            $plugin = $pm->getPlugin($name);
+            if (!$plugin) {
+                $this->setFlash('error', $this->lang->t('plugins.not_found', ['name' => $name]));
+                $this->redirect('/plugins');
+                return;
+            }
+            if (!empty($plugin['enabled'])) {
+                $pm->deactivate($name);
+                $this->setFlash('success', $this->lang->t('plugins.deactivated', ['name' => $name]));
+            } else {
+                $pm->activate($name);
+                $this->setFlash('success', $this->lang->t('plugins.activated', ['name' => $name]));
+            }
+        } catch (\Throwable $e) {
+            $this->setFlash('error', $this->lang->t('common.error') . ': ' . $e->getMessage());
+        }
+        $this->redirect('/plugins');
+    }
+
+    public function view($name)
+    {
+        try {
+            $pm = \Core\PluginManager::getInstance();
+            $plugin = $pm->getPlugin($name);
+        } catch (\Throwable $e) {
+            $plugin = null;
+        }
+
+        if (!$plugin) {
+            $this->setFlash('error', $this->lang->t('plugins.not_found', ['name' => $name]));
+            $this->redirect('/plugins');
+            return;
+        }
+
+        $tab = $_GET['tab'] ?? 'info';
+
+        // Сохранение настроек
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['_action'] ?? '') === 'save_settings') {
+            $this->handleSaveSettings($plugin, $name);
+            $this->redirect("/plugins/{$name}?tab=settings&saved=1");
+            return;
+        }
+
+        $templates = $this->getPluginTemplates($plugin);
+        $settings = $plugin['settings'] ?? [];
+        $rawConfig = json_encode($plugin, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        $this->render('plugins/view', [
+            'title' => $this->lang->t('plugins.plugin_title', ['name' => $name]),
+            'plugin' => $plugin,
+            'plugin_name' => $name,
+            'tab' => $tab,
+            'templates' => $templates,
+            'settings' => $settings,
+            'raw_config' => $rawConfig
+        ]);
+    }
+
+    public function editTemplate($name, $file)
+    {
+        try {
+            $pm = \Core\PluginManager::getInstance();
+            $plugin = $pm->getPlugin($name);
+        } catch (\Throwable $e) {
+            $plugin = null;
+        }
+
+        if (!$plugin) {
+            $this->setFlash('error', $this->lang->t('plugins.not_found', ['name' => $name]));
+            $this->redirect('/plugins');
+            return;
+        }
+
+        $templatesDir = $plugin['path'] . '/views';
+        $filePath = $templatesDir . '/' . basename($file);
+
+        $realFilePath = realpath($filePath) ?: '';
+        $realTemplatesDir = realpath($templatesDir) ?: '___';
+        if (strpos($realFilePath, $realTemplatesDir) !== 0) {
+            $this->setFlash('error', $this->lang->t('plugins.edit_tpl.error_path'));
+            $this->redirect("/plugins/{$name}?tab=templates");
+            return;
+        }
+
+        if (!file_exists($filePath)) {
+            $this->setFlash('error', $this->lang->t('plugins.edit_tpl.error_notfound'));
+            $this->redirect("/plugins/{$name}?tab=templates");
+            return;
+        }
+
+        // Сохранение
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $newContent = $_POST['content'] ?? '';
+            if (file_put_contents($filePath, $newContent) !== false) {
+                $this->setFlash('success', $this->lang->t('plugins.edit_tpl.saved'));
+                $this->redirect("/plugins/{$name}?tab=templates");
+                return;
+            } else {
+                $this->setFlash('error', $this->lang->t('plugins.edit_tpl.error_save'));
+            }
+        }
+
+        $content = file_get_contents($filePath);
+        $this->render('plugins/edit_template', [
+            'title' => $this->lang->t('plugins.edit_template_title', ['file' => $file]),
+            'plugin' => $plugin,
+            'plugin_name' => $name,
+            'file_name' => $file,
+            'content' => $content,
+            'file_path' => $filePath
+        ]);
+    }
+
+    private function getPluginTemplates(array $plugin): array
+    {
+        $templatesDir = $plugin['path'] . '/views';
+        $templates = [];
+        if (!is_dir($templatesDir)) return $templates;
+        $files = scandir($templatesDir);
+        foreach ($files as $f) {
+            if ($f === '.' || $f === '..') continue;
+            if (preg_match('/\.twig$/', $f)) {
+                $fp = $templatesDir . '/' . $f;
+                $templates[] = [
+                    'name' => $f,
+                    'size' => filesize($fp),
+                    'modified' => filemtime($fp)
+                ];
+            }
+        }
+        usort($templates, fn($a, $b) => strcmp($a['name'], $b['name']));
+        return $templates;
+    }
+
+    private function handleSaveSettings(array $plugin, string $name): void
+    {
+        $pluginJsonPath = $plugin['path'] . '/plugin.json';
+        if (!empty($plugin['settings'])) {
+            foreach ($plugin['settings'] as &$setting) {
+                $key = $setting['key'];
+                if ($setting['type'] === 'checkbox') {
+                    // Checkbox: unchecked = not present in POST = false
+                    $setting['value'] = isset($_POST['setting_' . $key]);
+                } elseif (isset($_POST['setting_' . $key])) {
+                    $setting['value'] = $_POST['setting_' . $key];
+                }
+            }
+            unset($setting);
+        }
+        // Save only original plugin.json fields (exclude runtime fields like 'path')
+        $saveData = [
+            'name' => $plugin['name'],
+            'version' => $plugin['version'],
+            'description' => $plugin['description'] ?? '',
+            'enabled' => $plugin['enabled'] ?? false,
+        ];
+        if (!empty($plugin['dependencies'])) {
+            $saveData['dependencies'] = $plugin['dependencies'];
+        }
+        if (!empty($plugin['settings'])) {
+            $saveData['settings'] = $plugin['settings'];
+        }
+        $saved = file_put_contents(
+            $pluginJsonPath,
+            json_encode($saveData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
+        if ($saved !== false) {
+            $this->setFlash('success', $this->lang->t('plugins.settings_saved', ['name' => $name]));
+        } else {
+            $this->setFlash('error', $this->lang->t('plugins.settings_error'));
+        }
+    }
+}

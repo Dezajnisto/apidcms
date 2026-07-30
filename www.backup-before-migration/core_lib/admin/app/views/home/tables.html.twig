@@ -1,0 +1,96 @@
+{# twig #}
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Заголовок и кнопка -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900">{{ title }}</h1>
+        <a href="{{ admin_url('create-table') }}" 
+           class="inline-flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm">
+            <i class="fas fa-plus"></i>
+            <span>{{ lang('tables.create_button') }}</span>
+        </a>
+    </div>
+
+    <!-- Сообщения -->
+    {% if _GET.table_created %}
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 text-sm">{{ lang('tables.created_ok') }}</div>
+    {% endif %}
+    {% if _GET.table_deleted %}
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 text-sm">{{ lang('tables.deleted_ok') }}</div>
+    {% endif %}
+
+    <!-- Карточка с таблицами -->
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="px-4 md:px-6 py-3 md:py-4 border-b">
+            <h2 class="text-base md:text-lg font-semibold text-gray-900">{{ lang('tables.db_title') }}</h2>
+        </div>
+        
+        <div class="p-4 md:p-6">
+            {% if groups is empty %}
+                <div class="text-center py-8">
+                    <i class="fas fa-database text-gray-400 text-4xl mb-4"></i>
+                    <p class="text-gray-500">{{ lang('tables.empty') }}</p>
+                </div>
+            {% else %}
+                {% for group in groups %}
+                    {% if group.tables is not empty %}
+                    <div class="mb-6 last:mb-0">
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 pb-2 border-b border-gray-100">
+                            {{ group.label }} <span class="text-gray-400 font-normal normal-case">({{ group.tables|length }})</span>
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="data-table min-w-full divide-y divide-gray-200 table-fixed">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/2">{{ lang('tables.col_name') }}</th>
+                                        <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">{{ lang('tables.col_columns') }}</th>
+                                        <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">{{ lang('tables.col_actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for table in group.tables %}
+                                    <tr class="hover:bg-gray-50 transition">
+                                        <td class="px-4 md:px-6 py-4 font-medium text-gray-900" data-label="Name">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-table text-gray-400 mr-3"></i>
+                                                <span>{{ table.name }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 md:px-6 py-4" data-label="Columns">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                {{ table.columns }} {{ lang('tables.col_abbr') }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 md:px-6 py-4" data-label="Actions">
+                                            <div class="flex flex-wrap gap-2">
+                                                <a href="{{ admin_url('table/' ~ table.name) }}" 
+                                                   class="text-blue-600 hover:text-blue-900 text-sm font-medium flex items-center space-x-1">
+                                                    <i class="fas fa-eye"></i>
+                                                    <span>{{ lang('tables.action_view') }}</span>
+                                                </a>
+                                                <a href="{{ admin_url('table/' ~ table.name ~ '/structure') }}" 
+                                                   class="text-green-600 hover:text-green-900 text-sm font-medium flex items-center space-x-1">
+                                                    <i class="fas fa-cog"></i>
+                                                    <span>{{ lang('tables.action_structure') }}</span>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -49,16 +49,6 @@ class FrontController {
         // 📊 Встроенная статистика посещений
         $this->initStats();
     }
-
-    /**
-     * Get the database instance (for plugins).
-     *
-     * @return \Core\Database
-     */
-    public function getDatabase()
-    {
-        return $this->database;
-    }
     
     /**
      * Инициализация Twig
@@ -69,12 +59,12 @@ class FrontController {
             mkdir($this->config['twig']['cache'], 0755, true);
         }
         
-        // Template resolution: theme first, core fallback
-        $coreViewsPath = CORE_PATH . '/views/front';
-        $loader = new FilesystemLoader($coreViewsPath);
-        $themeViewsPath = THEMES_PATH . '/' . ($this->config['theme']['active'] ?? 'default') . '/front';
-        if (is_dir($themeViewsPath) && $themeViewsPath !== $coreViewsPath) {
-            $loader->prependPath($themeViewsPath);
+        // Настраиваем Twig
+        // Template resolution: project first, core fallback
+        $loader = new FilesystemLoader(CORE_PATH . '/front/app/views');
+        $projectViewsPath = $this->config['paths']['front_app'] . '/views';
+        if (is_dir($projectViewsPath) && $projectViewsPath !== CORE_PATH . '/front/app/views') {
+            $loader->prependPath($projectViewsPath);
         }
         $this->twig = new Environment($loader, [
             'cache' => $this->config['twig']['cache'],
@@ -398,23 +388,15 @@ class FrontController {
             return $firstSegment;
         }
 
-        // Explicit base-language switch via query param (?lang=ru)
-        if (isset($_GET['lang']) && $_GET['lang'] === $baseLang) {
-            if (isset($_COOKIE['site_lang'])) {
-                setcookie('site_lang', '', [
-                    'expires' => time() - 3600,
-                    'path' => '/',
-                    'httponly' => true,
-                    'samesite' => 'Lax',
-                    'secure' => !empty($_SERVER['HTTPS']),
-                ]);
-            }
-            return $baseLang;
-        }
-
-        // No URL prefix — check cookie for stored language preference
-        if (isset($_COOKIE['site_lang']) && in_array($_COOKIE['site_lang'], $extraLangs, true)) {
-            return $_COOKIE['site_lang'];
+        // Clear cookie when visiting base language (user explicitly chose base)
+        if (isset($_COOKIE['site_lang'])) {
+            setcookie('site_lang', '', [
+                'expires' => time() - 3600,
+                'path' => '/',
+                'httponly' => true,
+                'samesite' => 'Lax',
+                'secure' => !empty($_SERVER['HTTPS']),
+            ]);
         }
 
         return $baseLang;
@@ -1468,7 +1450,7 @@ private function handleFormSubmission() {
 
             // Автоочистка старых записей (~1% запросов)
             if (mt_rand(1, 100) === 1) {
-                $retentionDays = (int)($this->getSetting('stats_retention_days') ?: 30);
+                $retentionDays = (int)($this->getSetting('stats_retention_days') ?: 90);
                 \Core\VisitStats::cleanup($this->database, $retentionDays);
             }
         } catch (\Throwable $e) {

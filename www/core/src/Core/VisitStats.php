@@ -125,8 +125,7 @@ class VisitStats
     {
         try {
             $cutoff = date('Y-m-d', strtotime("-{$days} days"));
-            $db->exec("DELETE FROM visit_stats WHERE visit_date < '{$cutoff}'");
-            return $db->changes();
+            return $db->exec("DELETE FROM visit_stats WHERE visit_date < '{$cutoff}'");
         } catch (\Throwable $e) {
             error_log("VisitStats: cleanup error: " . $e->getMessage());
             return 0;

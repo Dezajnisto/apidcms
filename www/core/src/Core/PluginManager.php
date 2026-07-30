@@ -31,6 +31,9 @@ class PluginManager
     /** @var Database|null */
     private ?Database $db = null;
 
+    /** @var array<string, bool> */
+    private array $loadedPlugins = [];
+
     /** @var string */
     private string $pluginsDir;
 
@@ -111,18 +114,25 @@ class PluginManager
             // Загружаем init.php плагина
             $initFile = $pluginDir . '/init.php';
             if (file_exists($initFile)) {
-                try {
-                    $pm = $this; // плагин получает доступ через $pm
-                    require $initFile;
+                if (empty($this->loadedPlugins[$pluginName])) {
+                    try {
+                        $pm = $this; // plugin gets access via $pm
+                        require $initFile;
+                        $this->loadedPlugins[$pluginName] = true;
+                        $this->plugins[$pluginName] = $config;
+                    } catch (\Throwable $e) {
+                        error_log("PluginManager: plugin load error '{$pluginName}': " . $e->getMessage());
+                    }
+                } else {
                     $this->plugins[$pluginName] = $config;
-                } catch (\Throwable $e) {
-                    error_log("PluginManager: ошибка загрузки плагина '{$pluginName}': " . $e->getMessage());
                 }
             }
         }
 
-        // Выполняем миграции для активных плагинов
-        $this->doAction('db.migrate', $this->db);
+        // Выполняем миграции для активных плагинов (только если есть DB)
+        if ($this->db !== null) {
+            $this->doAction('db.migrate', $this->db);
+        }
     }
 
     /**
@@ -209,8 +219,10 @@ class PluginManager
 
         $this->plugins[$name] = $config;
 
-        // Запускаем миграции
-        $this->doAction('db.migrate', $this->db);
+        // Запускаем миграции (только если есть DB)
+        if ($this->db !== null) {
+            $this->doAction('db.migrate', $this->db);
+        }
 
         return true;
     }

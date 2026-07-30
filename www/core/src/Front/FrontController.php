@@ -49,6 +49,16 @@ class FrontController {
         // 📊 Встроенная статистика посещений
         $this->initStats();
     }
+
+    /**
+     * Get the database instance (for plugins).
+     *
+     * @return \Core\Database
+     */
+    public function getDatabase()
+    {
+        return $this->database;
+    }
     
     /**
      * Инициализация Twig

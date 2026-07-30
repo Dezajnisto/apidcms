@@ -1,0 +1,1165 @@
+<?php
+/**
+ * Table controller
+ *
+ * Displays data from arbitrary tables
+ */
+
+namespace Admin;
+
+use Core\Database;
+use Admin\Lang;
+use Exception;
+
+class TableController extends BaseController {
+    
+    /**
+     * Save many-to-many pivot entries for a record (create/update)
+     */
+    private function savePivotRelations($table, $entityId, $post, $relations) {
+        foreach ($relations as $colName => $rel) {
+            if (($rel['type'] ?? '') !== 'many-to-many') continue;
+            
+            // Delete old pivot entries for this relation
+            $this->db->query(
+                "DELETE FROM entity_relations WHERE source_table = ? AND source_id = ? AND relation_name = ?",
+                [$table, $entityId, $colName]
+            );
+            
+            // Insert new pivot entries
+            $values = $post[$colName] ?? [];
+            if (!is_array($values)) $values = [$values];
+            foreach ($values as $targetId) {
+                if ($targetId === '' || $targetId === null) continue;
+                $this->db->query(
+                    "INSERT INTO entity_relations (source_table, source_id, relation_name, target_id) VALUES (?, ?, ?, ?)",
+                    [$table, $entityId, $colName, $targetId]
+                );
+            }
+        }
+    }
+
+    /**
+     * Load relations from page_config for a table
+     * Returns [column_name => ['table', 'label', 'value', 'options' => [...]]]
+     */
+    /**
+     * Load relations from page_config for a table
+     * Returns [column_name => ['table', 'label', 'value', 'tree', 'search', 'options' => [...]]]
+     */
+    private function getRelations($table) {
+        $relations = [];
+        
+        try {
+            $navItems = $this->db->query(
+                "SELECT page_config FROM navigation WHERE source_table = ? AND page_type = 'dynamic' AND status = 'active'",
+                [$table]
+            )->fetchAll(\PDO::FETCH_ASSOC);
+            
+            foreach ($navItems as $nav) {
+                if (empty($nav['page_config'])) continue;
+                $config = json_decode($nav['page_config'], true);
+                if (empty($config['relations']) || !is_array($config['relations'])) continue;
+                
+                foreach ($config['relations'] as $columnName => $rel) {
+                    if (isset($relations[$columnName])) continue; // first wins
+                    
+                    $relTable = $rel['table'] ?? '';
+                    $relLabel = $rel['label'] ?? 'title';
+                    $relValue = $rel['value'] ?? 'id';
+                    $useTree = !empty($rel['tree']);
+                    $useSearch = !empty($rel['search']);
+                    
+                    if (empty($relTable)) continue;
+                    
+                    // Check if related table exists
+                    if (!in_array($relTable, $this->db->getTables())) continue;
+                    
+                    // Load options (flat or tree)
+                    try {
+                        if ($useTree && $this->tableHasColumn($relTable, 'parent_id')) {
+                            $options = $this->buildTreeOptions($relTable, $relValue, $relLabel);
+                        } else {
+                            $rows = $this->db->getAll($relTable);
+                            $options = [];
+                            foreach ($rows as $row) {
+                                $options[] = [
+                                    'value' => $row[$relValue] ?? '',
+                                    'label' => $row[$relLabel] ?? ($row[$relValue] ?? ''),
+                                    'level' => 0
+                                ];
+                            }
+                        }
+                        
+                        $relations[$columnName] = [
+                            'table' => $relTable,
+                            'label' => $relLabel,
+                            'value' => $relValue,
+                            'tree' => $useTree,
+                            'search' => $useSearch,
+                            'options' => $options,
+                            'type' => $rel['type'] ?? 'one-to-many'
+                        ];
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently ignore
+        }
+        
+        return $relations;
+    }
+    
+    /**
+     * Build hierarchical options for a tree-structured table
+     */
+    private function buildTreeOptions($table, $valueCol, $labelCol, $parentId = 0, $level = 0) {
+        $rows = $this->db->query(
+            "SELECT * FROM " . $this->db->quoteIdentifier($table) . " WHERE parent_id = ? ORDER BY " . $this->db->quoteIdentifier($labelCol) ,
+            [$parentId]
+        )->fetchAll(\PDO::FETCH_ASSOC);
+        
+        $options = [];
+        foreach ($rows as $row) {
+            $options[] = [
+                'value' => $row[$valueCol] ?? '',
+                'label' => $row[$labelCol] ?? '',
+                'level' => $level
+            ];
+            // Recursively add children
+            $children = $this->buildTreeOptions($table, $valueCol, $labelCol, $row[$valueCol], $level + 1);
+            $options = array_merge($options, $children);
+        }
+        return $options;
+    }
+    
+    /**
+     * Load currently selected pivot entries for many-to-many relations
+     * Returns [column_name => [target_id, ...]]
+     */
+    private function getPivotSelected($table, $entityId) {
+        $selected = [];
+        try {
+            $rows = $this->db->query(
+                "SELECT relation_name, target_id FROM entity_relations WHERE source_table = ? AND source_id = ?",
+                [$table, $entityId]
+            )->fetchAll(\PDO::FETCH_ASSOC);
+            foreach ($rows as $row) {
+                $selected[$row['relation_name']][] = $row['target_id'];
+            }
+        } catch (\Exception $e) {
+            // Table might not exist yet
+        }
+        return $selected;
+    }
+
+    /**
+     * Check if a table has a specific column
+     */
+    private function tableHasColumn($table, $columnName) {
+        $structure = $this->db->getTableStructure($table);
+        foreach ($structure as $col) {
+            if ($col['name'] === $columnName) return true;
+        }
+        return false;
+    }    /**
+     * View table contents with search and sort support
+     *
+     * @param string \$table Table name
+     */
+    public function view($table) {
+        // Verify table exists
+        $tables = $this->db->getTables();
+        
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
+            ]);
+            return;
+        }
+        
+        // Get parameters
+        $search = $_GET['search'] ?? '';
+        $sort = $_GET['sort'] ?? 'id';
+        $order = $_GET['order'] ?? 'ASC';
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $perPage = 10;
+
+        // Validate sort params
+        $structure = $this->db->getTableStructure($table);
+        $validColumns = array_map(function($col) { 
+            return $col['name']; 
+        }, $structure);
+        
+        if (!in_array($sort, $validColumns)) {
+            $sort = 'id';
+        }
+        $order = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
+
+        // Calculate pagination offset
+        $offset = ($page - 1) * $perPage;
+
+        // Fetch data
+        $data = $this->db->search($table, $search, $sort, $order, $perPage, $offset);
+        $totalCount = $this->db->getCount($table, $search);
+        $totalPages = ceil($totalCount / $perPage);
+
+        // Render template
+        $this->render('table/view', [
+            'tableName' => $table,
+            'data' => $data,
+            'structure' => $structure,
+            'title' => $this->lang->t('table.table_title', ['table' => $table]),
+            'search' => $search,
+            'sort' => $sort,
+            'order' => $order,
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'totalCount' => $totalCount,
+            'perPage' => $perPage,
+            '_GET' => $_GET
+        ]);
+    }
+    
+
+    /**
+     * Show create record form
+     *
+     * @param string \$table Table name
+     */
+    public function createForm($table) {
+        // Verify table exists
+        $tables = $this->db->getTables();
+        
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
+            ]);
+            return;
+        }
+        
+        // Get table structure
+        $structure = $this->db->getTableStructure($table);
+        
+        // Load relations from page_config
+        $relations = $this->getRelations($table);
+        
+        // Mark many-to-many relations with empty selected
+        foreach ($relations as $colName => &$rel) {
+            if (($rel['type'] ?? '') === 'many-to-many') {
+                $rel['selected'] = [];
+            }
+        }
+        unset($rel);
+        
+        // Render create form
+        $this->render('table/form', [
+            'tableName' => $table,
+            'structure' => $structure,
+            'title' => $this->lang->t('table.add_record_title', ['table' => $table]),
+            'action' => 'create',
+            'item' => null,
+            'relations' => $relations,
+            'currentPage' => $_GET['page'] ?? 1
+        ]);
+    }
+
+    /**
+     * Create new record
+     *
+     * @param string \$table Table name
+     */
+    public function create($table) {
+        // Verify table exists
+        $tables = $this->db->getTables();
+        
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
+            ]);
+            return;
+        }
+        
+        // Get table structure
+        $structure = $this->db->getTableStructure($table);
+        
+        // Prepare data
+        $data = [];
+        foreach ($structure as $column) {
+            $columnName = $column['name'];
+            
+            // Skip auto-increment fields
+            if ($column['pk'] == 1 && stripos($column['type'], 'INTEGER') !== false) {
+                continue;
+            }
+            
+            // Skip created_at (auto-filled)
+            if ($columnName === 'created_at') {
+                continue;
+            }
+            
+            // Get value from POST
+            if (isset($_POST[$columnName])) {
+                $data[$columnName] = $_POST[$columnName];
+            } elseif ($column['notnull'] == 1 && $column['pk'] == 0) {
+                // For required fields with no value, set empty string
+                $data[$columnName] = '';
+            }
+        }
+        
+        try {
+            // Insert data
+            $newId = $this->db->insert($table, $data);
+            
+            // Save many-to-many pivot entries
+            $this->savePivotRelations($table, $newId, $_POST, $this->getRelations($table));
+            
+            // Redirect to created record view
+                            $page = $_GET['page'] ?? 1;
+                $this->redirect("/table/{$table}/edit/{$newId}?created=1&page={$page}");
+            
+        } catch (Exception $e) {
+            // On error: show form again
+            $relations = $this->getRelations($table);
+            $this->render('table/form', [
+                'tableName' => $table,
+                'structure' => $structure,
+                'title' => $this->lang->t('table.add_record_title', ['table' => $table]),
+                'action' => 'create',
+                'item' => $_POST,
+                'relations' => $relations,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Show edit record form
+     *
+     * @param string \$table Table name
+     * @param int \$id Record ID
+     */
+    public function editForm($table, $id) {
+        // Verify table exists
+        $tables = $this->db->getTables();
+        
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
+            ]);
+            return;
+        }
+        
+        // Get record
+        $item = $this->db->getById($table, $id);
+        
+        if (!$item) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.record_not_found_in_table', ['id' => $id, 'table' => $table])
+            ]);
+            return;
+        }
+        
+        // Get table structure
+        $structure = $this->db->getTableStructure($table);
+        
+        // Load relations from page_config
+        $relations = $this->getRelations($table);
+        
+        // Load many-to-many pivot selections for edit
+        $pivotSelected = $this->getPivotSelected($table, $id);
+        foreach ($relations as $colName => &$rel) {
+            if (($rel['type'] ?? '') === 'many-to-many' && isset($pivotSelected[$colName])) {
+                $rel['selected'] = $pivotSelected[$colName];
+            }
+        }
+        unset($rel);
+        
+        // Render edit form
+        $this->render('table/form', [
+            'tableName' => $table,
+            'structure' => $structure,
+            'title' => $this->lang->t('table.edit_record_title', ['table' => $table]),
+            'action' => 'edit',
+            'item' => $item,
+            'itemId' => $id,
+            'relations' => $relations,
+            'currentPage' => $_GET['page'] ?? 1
+        ]);
+    }
+
+    /**
+     * Update record
+     *
+     * @param string \$table Table name
+     * @param int \$id Record ID
+     */
+    public function update($table, $id) {
+        // Verify table exists
+        $tables = $this->db->getTables();
+        
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
+            ]);
+            return;
+        }
+        
+        // Verify record exists
+        $existingItem = $this->db->getById($table, $id);
+        if (!$existingItem) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.record_not_found_in_table', ['id' => $id, 'table' => $table])
+            ]);
+            return;
+        }
+        
+        // Get table structure
+        $structure = $this->db->getTableStructure($table);
+        
+        // Prepare data
+        $data = [];
+        foreach ($structure as $column) {
+            $columnName = $column['name'];
+            
+            // Skip primary key
+            if ($column['pk'] == 1) {
+                continue;
+            }
+            
+            // Get value from POST
+            if (isset($_POST[$columnName])) {
+                $value = $_POST[$columnName];
+                
+                // Empty strings for nullable fields → null (otherwise '' becomes 0 for FK)
+                if ($value === '' && $column['notnull'] == 0) {
+                    $value = null;
+                }
+                
+                $data[$columnName] = $value;
+            }
+        }
+        
+        try {
+            // Update data
+            $success = $this->db->update($table, $id, $data);
+            
+            // Save many-to-many pivot entries
+            $this->savePivotRelations($table, $id, $_POST, $this->getRelations($table));
+            
+            if ($success) {
+                // Redirect to updated record
+                                $page = $_GET['page'] ?? 1;
+                $this->redirect("/table/{$table}/edit/{$id}?updated=1&page={$page}");
+            } else {
+                throw new Exception($this->lang->t('table.update_failed'));
+            }
+            
+        } catch (Exception $e) {
+            // On error: show form again
+            $relations = $this->getRelations($table);
+            $this->render('table/form', [
+                'tableName' => $table,
+                'structure' => $structure,
+                'title' => $this->lang->t('table.edit_record_title', ['table' => $table]),
+                'action' => 'edit',
+                'item' => array_merge($existingItem, $_POST),
+                'itemId' => $id,
+                'relations' => $relations,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Delete record
+     *
+     * @param string \$table Table name
+     * @param int \$id Record ID
+     */
+    public function delete($table, $id) {
+        // Verify table exists
+        $tables = $this->db->getTables();
+        
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
+            ]);
+            return;
+        }
+        
+        try {
+            // Clean up many-to-many pivot entries
+            if (in_array('entity_relations', $tables)) {
+                $this->db->query(
+                    "DELETE FROM entity_relations WHERE source_table = ? AND source_id = ?",
+                    [$table, $id]
+                );
+            }
+            
+            // Now delete the main record
+            $success = $this->db->delete($table, $id);
+            
+            if ($success) {
+                // Redirect to table with success message (preserve page)
+                $page = !empty($_GET['page']) ? (int)$_GET['page'] : 1;
+                $redirectUrl = "/table/{$table}?deleted=1";
+                if ($page > 1) {
+                    $redirectUrl .= "&page={$page}";
+                }
+                $this->redirect($redirectUrl);
+            } else {
+                throw new Exception($this->lang->t('table.delete_failed'));
+            }
+            
+        } catch (Exception $e) {
+            // On error: show error page
+            $errorMessage = $this->lang->t('table.delete_error') . ' ' . $e->getMessage();
+            
+            // Clearer message for FK constraint errors
+            if (strpos($e->getMessage(), 'FOREIGN KEY constraint failed') !== false) {
+                $errorMessage = $this->lang->t('table.delete_fk_error');
+            }
+            
+            $this->render('error/404', [
+                'message' => $errorMessage
+            ]);
+        }
+    }
+
+    /**
+     * Show table structure
+     *
+     * @param string \$table Table name
+     */
+    public function structure($table) {
+        // Verify table exists
+        $tables = $this->db->getTables();
+        
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
+            ]);
+            return;
+        }
+        
+        // Get table structure
+        $structure = $this->db->getTableStructure($table);
+        
+        $this->render('table/structure', [
+            'tableName' => $table,
+            'structure' => $structure,
+            'title' => $this->lang->t('table.structure_title', ['table' => $table]),
+            'get' => $_GET
+        ]);
+    }
+
+    /**
+     * Show add column form
+     *
+     * @param string \$table Table name
+     */
+    public function addColumnForm($table) {
+        // Verify table exists
+        $tables = $this->db->getTables();
+        
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
+            ]);
+            return;
+        }
+        
+        $this->render('table/add_column', [
+            'tableName' => $table,
+            'title' => $this->lang->t('table.add_column_title', ['table' => $table]),
+            'formData' => []
+        ]);
+    }
+
+    /**
+     * Add column to table
+     *
+     * @param string \$table Table name
+     */
+    public function addColumn($table) {
+        try {
+            // Verify table exists
+            $tables = $this->db->getTables();
+            
+            if (!in_array($table, $tables)) {
+                throw new Exception($this->lang->t('table.table_not_found_short', ['table' => $table]));
+            }
+            
+            $columnName = $_POST['column_name'] ?? '';
+            $columnType = $_POST['column_type'] ?? '';
+            $nullable = isset($_POST['nullable']);
+            $defaultValue = $_POST['default_value'] ?? null;
+            
+            if (empty($columnName) || empty($columnType)) {
+                throw new Exception($this->lang->t('table.column_name_type_required'));
+            }
+            
+            // Validate column name
+            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $columnName)) {
+                throw new Exception($this->lang->t('table.invalid_column_name'));
+            }
+            
+            // Check column doesn't exist
+            $structure = $this->db->getTableStructure($table);
+            foreach ($structure as $column) {
+                if ($column['name'] === $columnName) {
+                    throw new Exception($this->lang->t('table.column_exists', ['column' => $columnName]));
+                }
+            }
+            
+            // Add column
+            $this->db->addColumn($table, $columnName, $columnType, $nullable, $defaultValue);
+            
+            // Redirect to structure page
+            $this->redirect("/table/{$table}/structure?column_added=1");
+            
+        } catch (Exception $e) {
+            $this->render('table/add_column', [
+                'tableName' => $table,
+                'title' => $this->lang->t('table.add_column_title', ['table' => $table]),
+                'error' => $e->getMessage(),
+                'formData' => $_POST
+            ]);
+        }
+    }
+
+    /**
+     * Delete column from table
+     *
+     * @param string \$table Table name
+     * @param string \$column Column name
+     */
+    public function deleteColumn($table, $column) {
+        try {
+            // Verify table exists
+            $tables = $this->db->getTables();
+            
+            if (!in_array($table, $tables)) {
+                $this->render('error/404', [
+                    'message' => $this->lang->t('table.table_not_found', ['table' => $table])
+                ]);
+                return;
+            }
+            
+            // Check column exists
+            $structure = $this->db->getTableStructure($table);
+            $columnExists = false;
+            foreach ($structure as $col) {
+                if ($col['name'] === $column) {
+                    $columnExists = true;
+                    break;
+                }
+            }
+            
+            if (!$columnExists) {
+                $this->render('error/404', [
+                    'message' => $this->lang->t('table.column_not_found', ['column' => $column, 'table' => $table])
+                ]);
+                return;
+            }
+            
+            // Delete column
+            $this->db->deleteColumn($table, $column);
+            
+            // Redirect to structure page
+            $this->redirect("/table/{$table}/structure?column_deleted=1");
+            
+        } catch (Exception $e) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.delete_column_error') . ' ' . $e->getMessage()
+            ]);
+        }
+    }
+
+
+    /**
+     * Duplicate record
+     */
+    public function duplicate($table, $id) {
+        $tables = $this->db->getTables();
+        if (!in_array($table, $tables)) {
+            $this->setFlash('error', $this->lang->t('table.table_not_found_short', ['table' => $table]));
+            $this->redirect('/');
+            return;
+        }
+
+        $item = $this->db->getById($table, $id);
+        if (!$item) {
+            $this->setFlash("error", $this->lang->t('table.record_not_found', ['id' => $id]));
+            $this->redirect("/table/{$table}");
+            return;
+        }
+
+        $structure = $this->db->getTableStructure($table);
+        $data = [];
+        foreach ($structure as $column) {
+            $name = $column['name'];
+            if ($column['pk'] == 1 && stripos($column['type'], 'INTEGER') !== false) {
+                continue;
+            }
+            if (in_array($name, ['created_at', 'updated_at'])) {
+                continue;
+            }
+            if (isset($item[$name])) {
+                $data[$name] = $item[$name];
+            }
+        }
+
+        // Make slug unique on duplicate
+        if (isset($data['slug'])) {
+            $base = $data['slug'];
+            $testSlug = $base;
+            $i = 1;
+            while (true) {
+                $existingRow = $this->db->query(
+                    'SELECT id FROM "' . $table . '" WHERE slug = ? LIMIT 1',
+                    [$testSlug]
+                )->fetch();
+                if (!$existingRow) break;
+                $testSlug = $base . '-' . $i;
+                $i++;
+            }
+            $data['slug'] = $testSlug;
+        }
+
+        try {
+            $newId = $this->db->insert($table, $data);
+            $this->setFlash("success", $this->lang->t('table.record_copied', ['newId' => $newId]));
+            $page = $_GET['page'] ?? 1;
+            $this->redirect("/table/{$table}/edit/{$newId}?page={$page}");
+        } catch (Exception $e) {
+            $this->setFlash("error", $this->lang->t('table.copy_error') . ' ' . $e->getMessage());
+            $this->redirect("/table/{$table}/edit/{$id}");
+        }
+    }
+
+
+    /**
+     * Update a single cell via AJAX (inline editing)
+     *
+     * @param string $table Table name
+     * @param int $id Record ID
+     */
+    public function cellUpdate($table, $id) {
+        header('Content-Type: application/json');
+
+        // Verify table exists
+        $tables = $this->db->getTables();
+        if (!in_array($table, $tables)) {
+            echo json_encode(['success' => false, 'error' => "Table '{$table}' not found"]);
+            return;
+        }
+
+        // Read JSON body
+        $input = json_decode(file_get_contents('php://input'), true);
+        $column = $input['column'] ?? '';
+        $value = $input['value'] ?? '';
+
+        if (empty($column)) {
+            echo json_encode(['success' => false, 'error' => 'Column name is required']);
+            return;
+        }
+
+        // Verify column exists
+        $structure = $this->db->getTableStructure($table);
+        $validColumns = array_map(function($col) { return $col['name']; }, $structure);
+        if (!in_array($column, $validColumns)) {
+            echo json_encode(['success' => false, 'error' => "Column '{$column}' not found in table '{$table}'"]);
+            return;
+        }
+
+        // Verify record exists
+        $existing = $this->db->getById($table, $id);
+        if (!$existing) {
+            echo json_encode(['success' => false, 'error' => "Record #{$id} not found in table '{$table}'"]);
+            return;
+        }
+
+        // Update the cell
+        try {
+            $sql = "UPDATE " . $this->db->quoteIdentifier($table)
+                 . " SET " . $this->db->quoteIdentifier($column) . " = ?"
+                 . " WHERE id = ?";
+            $this->db->query($sql, [$value, $id]);
+
+            echo json_encode(['success' => true, 'value' => $value]);
+        } catch (\Exception $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+
+    /**
+     * Export table data as CSV file
+     *
+     * @param string $table Table name
+     */
+    public function exportCsv($table) {
+        $tables = $this->db->getTables();
+        if (!in_array($table, $tables)) {
+            die("Table '{$table}' not found");
+        }
+
+        $search = $_GET['search'] ?? '';
+        $sort = $_GET['sort'] ?? 'id';
+        $order = $_GET['order'] ?? 'ASC';
+
+        $structure = $this->db->getTableStructure($table);
+        $validColumns = array_map(function($col) { return $col['name']; }, $structure);
+        if (!in_array($sort, $validColumns)) $sort = 'id';
+        $order = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
+
+        // Fetch all data (respecting current search/sort)
+        $data = $this->db->search($table, $search, $sort, $order, null, null);
+
+        // Send CSV
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $table . '_' . date('Y-m-d') . '.csv"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        // BOM for Excel UTF-8 compatibility
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        // Headers
+        $headers = array_map(function($col) { return $col['name']; }, $structure);
+        fputcsv($output, $headers);
+
+        // Data rows
+        foreach ($data as $row) {
+            $csvRow = [];
+            foreach ($structure as $col) {
+                $val = $row[$col['name']] ?? '';
+                $csvRow[] = is_array($val) ? json_encode($val, JSON_UNESCAPED_UNICODE) : (string)$val;
+            }
+            fputcsv($output, $csvRow);
+        }
+
+        fclose($output);
+        exit;
+    }
+
+    /**
+     * Show CSV import form (upload + preview)
+     *
+     * @param string $table Table name
+     */
+    public function importCsvForm($table) {
+        $tables = $this->db->getTables();
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', ['message' => "Table '{$table}' not found"]);
+            return;
+        }
+
+        $structure = $this->db->getTableStructure($table);
+        $this->render('table/import_csv', [
+            'tableName' => $table,
+            'structure' => $structure,
+            'title' => "CSV Import: {$table}",
+            'preview' => null,
+            'mapping' => null,
+            'error' => $_GET['error'] ?? null,
+            'success' => null
+        ]);
+    }
+
+    /**
+     * Process CSV upload: parse + preview, or execute import
+     *
+     * @param string $table Table name
+     */
+    public function processCsv($table) {
+        $tables = $this->db->getTables();
+        if (!in_array($table, $tables)) {
+            $this->render('error/404', ['message' => "Table '{$table}' not found"]);
+            return;
+        }
+
+        $structure = $this->db->getTableStructure($table);
+        $tableColumns = array_map(function($col) { return $col['name']; }, $structure);
+
+        // Find primary key column
+        $pkCol = 'id';
+        foreach ($structure as $col) {
+            if ($col['pk'] == 1) { $pkCol = $col['name']; break; }
+        }
+
+        // Temp file for this import session
+        $tmpFile = sys_get_temp_dir() . '/apidcms_csv_' . md5($table . session_id()) . '.csv';
+
+        // === CONFIRMED IMPORT ===
+        if (isset($_POST['confirm']) && $_POST['confirm'] === '1' && file_exists($tmpFile)) {
+            $mapping = json_decode($_POST['mapping'] ?? '[]', true);
+            $skipFirst = ($_POST['skip_first'] ?? '0') === '1';
+
+            if (empty($mapping)) {
+                $this->redirect("/table/{$table}/import-csv?error=invalid_mapping");
+                return;
+            }
+
+            $handle = fopen($tmpFile, 'r');
+            if (!$handle) {
+                $this->redirect("/table/{$table}/import-csv?error=read_failed");
+                return;
+            }
+
+            if ($skipFirst) {
+                fgetcsv($handle); // skip header row
+            }
+
+            $imported = 0;
+            $skipped = 0;
+            $updated = 0;
+            $mode = $_POST['mode'] ?? 'add_all';
+            $keyColumn = $_POST['key_column'] ?? $pkCol;
+
+            // Validate: skip/update modes need key column in mapping
+            if ($mode === 'skip_duplicates' || $mode === 'update_existing') {
+                if (empty($keyColumn)) {
+                    fclose($handle);
+                    @unlink($tmpFile);
+                    $this->redirect("/table/{$table}/import-csv?error=" . urlencode("Select a key column for duplicate detection."));
+                    return;
+                }
+                $mappedColumns = array_filter(array_map(function($m) { return ($m['table_column'] ?? '__skip__') !== '__skip__' ? $m['table_column'] : null; }, $mapping));
+                if (!in_array($keyColumn, $mappedColumns)) {
+                    fclose($handle);
+                    @unlink($tmpFile);
+                    $this->redirect("/table/{$table}/import-csv?error=" . urlencode("Key column '{$keyColumn}' is not in the mapping. Add it to the column mapping first."));
+                    return;
+                }
+            }
+
+            // Validate key column for skip/update modes
+            if (($mode === 'skip_duplicates' || $mode === 'update_existing') && !empty($keyColumn)) {
+                $validKeyCols = array_filter($mapping, function($m) { return ($m['table_column'] ?? '__skip__') !== '__skip__'; });
+                $validKeyNames = array_map(function($m) { return $m['table_column']; }, $validKeyCols);
+                if (!in_array($keyColumn, $validKeyNames)) {
+                    $keyColumn = '';
+                }
+            }
+
+            try {
+                $this->db->query('BEGIN TRANSACTION');
+
+                $rowNum = 0;
+                while (($row = fgetcsv($handle)) !== false) {
+                    $rowNum++;
+                    $data = [];
+                    $keyValue = null;
+
+                    foreach ($mapping as $map) {
+                        $targetCol = $map['table_column'] ?? null;
+                        if (!$targetCol || $targetCol === '__skip__') continue;
+                        // Skip created_at (always auto-generated)
+                        if ($targetCol === 'created_at') continue;
+
+                        $csvIdx = (int)$map['csv_index'];
+                        $value = isset($row[$csvIdx]) ? trim($row[$csvIdx]) : '';
+
+                        // Empty string -> null for nullable columns
+                        if ($value === '') {
+                            foreach ($structure as $c) {
+                                if ($c['name'] === $targetCol && $c['notnull'] == 0) {
+                                    $value = null;
+                                    break;
+                                }
+                            }
+                        }
+
+                        $data[$targetCol] = $value;
+
+                        // Capture key column value
+                        if ($targetCol === $keyColumn) {
+                            $keyValue = $value;
+                        }
+                    }
+
+                    if (empty($data)) { $skipped++; continue; }
+
+                    // Mode: skip_duplicates
+                    if ($mode === 'skip_duplicates' && !empty($keyColumn) && $keyValue !== null) {
+                        $existing = $this->db->query(
+                            "SELECT id FROM " . $this->db->quoteIdentifier($table) . " WHERE " . $this->db->quoteIdentifier($keyColumn) . " = ? LIMIT 1",
+                            [$keyValue]
+                        )->fetch();
+                        if ($existing) { $skipped++; continue; }
+                    }
+
+                    // Mode: update_existing
+                    if ($mode === 'update_existing' && !empty($keyColumn) && $keyValue !== null) {
+                        $existing = $this->db->query(
+                            "SELECT id FROM " . $this->db->quoteIdentifier($table) . " WHERE " . $this->db->quoteIdentifier($keyColumn) . " = ? LIMIT 1",
+                            [$keyValue]
+                        )->fetch();
+                        if ($existing) {
+                            try {
+                                // Use raw PDO for update (Database::update calls query() which dies on error)
+                                $setParts = [];
+                                $updateValues = [];
+                                foreach ($data as $col => $val) {
+                                    $setParts[] = '"' . $col . '" = ?';
+                                    $updateValues[] = $val;
+                                }
+                                $updateValues[] = $existing['id'];
+                                $sql = 'UPDATE "' . $table . '" SET ' . implode(', ', $setParts) . ' WHERE id = ?';
+                                $stmt = $this->db->getConnection()->prepare($sql);
+                                $stmt->execute($updateValues);
+                                $updated++;
+                            } catch (\PDOException $e) {
+                                $skipped++;
+                            }
+                            continue;
+                        }
+                    }
+
+                    // Use raw PDO for inserts (Database::query() dies on error, can't catch)
+                    // Auto-generate unique slug on conflict
+                    $maxSlugRetries = 10;
+                    $slugRetry = 0;
+                    $inserted = false;
+
+                    while (!$inserted && $slugRetry <= $maxSlugRetries) {
+                        try {
+                            $columns = array_keys($data);
+                            $placeholders = implode(', ', array_fill(0, count($columns), '?'));
+                            $quotedCols = implode(', ', array_map(function($c) { return '"' . $c . '"'; }, $columns));
+                            $sql = 'INSERT INTO "' . $table . '" (' . $quotedCols . ') VALUES (' . $placeholders . ')';
+
+                            $stmt = $this->db->getConnection()->prepare($sql);
+                            $stmt->execute(array_values($data));
+                            $imported++;
+                            $inserted = true;
+                        } catch (\PDOException $e) {
+                            $errMsg = $e->getMessage();
+
+                            // Auto-fix slug conflict: append -1, -2, etc.
+                            if (stripos($errMsg, 'UNIQUE constraint failed') !== false && isset($data['slug']) && $slugRetry < $maxSlugRetries) {
+                                $baseSlug = preg_replace('/-\d+$/', '', $data['slug']);
+                                $slugRetry++;
+                                $data['slug'] = $baseSlug . '-' . $slugRetry;
+                            } else {
+                                $skipped++;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                $this->db->query('COMMIT');
+
+                // Cleanup temp file
+                @unlink($tmpFile);
+
+                $msg = "/table/{$table}?imported={$imported}";
+                if ($skipped > 0) $msg .= "&skipped={$skipped}";
+                if ($updated > 0) $msg .= "&updated={$updated}";
+                $this->redirect($msg);
+                return;
+            } catch (\Exception $e) {
+                $this->db->query('ROLLBACK');
+                fclose($handle);
+                @unlink($tmpFile);
+                $this->redirect("/table/{$table}/import-csv?error=" . urlencode('Import failed: ' . $e->getMessage()));
+                return;
+            }
+        }
+
+        // === UPLOAD + PREVIEW ===
+        if (empty($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
+            $this->redirect("/table/{$table}/import-csv?error=upload_failed");
+            return;
+        }
+
+        if (!move_uploaded_file($_FILES['csv_file']['tmp_name'], $tmpFile)) {
+            $this->redirect("/table/{$table}/import-csv?error=upload_failed");
+            return;
+        }
+
+        $handle = fopen($tmpFile, 'r');
+        if (!$handle) {
+            @unlink($tmpFile);
+            $this->redirect("/table/{$table}/import-csv?error=read_failed");
+            return;
+        }
+
+        // Read first row
+        $firstRow = fgetcsv($handle);
+        if (!$firstRow) {
+            fclose($handle);
+            @unlink($tmpFile);
+            $this->redirect("/table/{$table}/import-csv?error=empty_file");
+            return;
+        }
+
+        // Read up to 5 preview rows
+        $previewRows = [];
+        $rowCount = 0;
+        while (($row = fgetcsv($handle)) !== false && $rowCount < 5) {
+            $previewRows[] = $row;
+            $rowCount++;
+        }
+        fclose($handle);
+
+        // Auto-detect if first row is a header
+        $matchCount = 0;
+        foreach ($firstRow as $val) {
+            if (in_array(strtolower(trim((string)$val)), array_map('strtolower', $tableColumns))) {
+                $matchCount++;
+            }
+        }
+        $firstRowIsHeader = $matchCount >= min(2, max(1, count($firstRow)));
+
+        // Build CSV header labels
+        if ($firstRowIsHeader) {
+            $csvHeaders = array_map(function($v) { return trim((string)$v); }, $firstRow);
+        } else {
+            $csvHeaders = [];
+            foreach (range(1, count($firstRow)) as $i) {
+                $csvHeaders[] = "Column {$i}";
+            }
+        }
+
+        // Auto-map
+        $mapping = [];
+        foreach ($csvHeaders as $i => $csvCol) {
+            $cleanName = strtolower(trim((string)$csvCol));
+            $matched = null;
+            foreach ($tableColumns as $tCol) {
+                if ($cleanName === strtolower($tCol) && $tCol !== 'created_at') {
+                    $matched = $tCol;
+                    break;
+                }
+            }
+            $mapping[] = [
+                'csv_index' => $i,
+                'csv_name' => (string)$csvCol,
+                'table_column' => $matched
+            ];
+        }
+
+        $this->render('table/import_csv', [
+            'tableName' => $table,
+            'structure' => $structure,
+            'title' => "CSV Import: {$table}",
+            'preview' => $previewRows,
+            'mapping' => $mapping,
+            'csvHeaders' => $csvHeaders,
+            'firstRowIsHeader' => $firstRowIsHeader,
+            'tableColumns' => $tableColumns,
+            'pkCol' => $pkCol,
+            'error' => null,
+            'success' => null
+        ]);
+    }
+
+}

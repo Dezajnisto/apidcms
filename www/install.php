@@ -32,11 +32,11 @@ function find_composer(): ?string {
 
 function run_install(array $opts): bool {
     $root = realpath(__DIR__);
-    $core = getenv('APIDCMS_CORE') ?: (is_dir($root.'/core_lib') ? realpath($root.'/core_lib') : (is_dir(dirname($root).'/core_lib') ? realpath(dirname($root).'/core_lib') : $root));
+    $core = getenv('APIDCMS_CORE') ?: (is_dir($root.'/core') ? realpath($root.'/core') : (is_dir(dirname($root).'/core') ? realpath(dirname($root).'/core') : $root));
     $core = rtrim($core, '/');
     i_step("Environment"); if (!check_env()) return false;
     i_step("Structure");
-    foreach (['/admin/config','/admin/storage/database','/storage/cache/twig','/storage/css','/storage/uploads','/front/config','/storage/logs','/tmp/php/sessions'] as $d) {
+    foreach (['/config','/storage/database','/storage/cache/twig','/storage/css','/storage/uploads','/storage/logs','/tmp/php/sessions','/themes/default/front','/themes/default/admin'] as $d) {
         $p = $root.$d; if (!is_dir($p)) @mkdir($p, 0755, true);
     }
     @file_put_contents($root.'/storage/uploads/.gitkeep',''); @file_put_contents($root.'/storage/logs/.gitkeep','');
@@ -44,19 +44,13 @@ function run_install(array $opts): bool {
     // .htaccess — main routing (Apache)
     $htaccessPath = $root.'/.htaccess';
     if (!file_exists($htaccessPath)) {
-        $htaccess = base64_decode('UmV3cml0ZUVuZ2luZSBPbgoKIyBTMyBQcm94eQpSZXdyaXRlUnVsZSBeczMtcHJveHkvKC4qKSQgL2Zyb250L3MzLXByb3h5LnBocD9wYXRoPSQxIFtMLFFTQV0KCiMgQWRtaW4g4oCUIGFsd2F5cyByb3V0ZSB0aHJvdWdoIGluZGV4LnBocApSZXdyaXRlUnVsZSBeYWRtaW4oLiopJCBpbmRleC5waHAgW1FTQSxMXQoKIyBCbG9jayBkaXJlY3QgYWNjZXNzIHRvIHRtcC8gKHNlc3Npb25zLCBjYWNoZSkKUmV3cml0ZVJ1bGUgXnRtcC8gLSBbRixMXQoKIyBBbGwgb3RoZXIgcmVxdWVzdHMgdG8gaW5kZXgucGhwCiMgKGluaXQucGhwIHNlcnZlcyBzdGF0aWMgZmlsZXMgZnJvbSBjb3JlX2xpYi9zdGF0aWMvIOKAlCBubyBzeW1saW5rIG5lZWRlZCkKUmV3cml0ZUNvbmQgJXtSRVFVRVNUX0ZJTEVOQU1FfSAhLWYKUmV3cml0ZUNvbmQgJXtSRVFVRVNUX0ZJTEVOQU1FfSAhLWQKUmV3cml0ZVJ1bGUgXiguKikkIGluZGV4LnBocCBbUVNBLExdCgojIFByb3RlY3Qgc2Vuc2l0aXZlIGZpbGVzCjxGaWxlcyB+ICJcLihlbnZ8anNvbnxjb25maWdcLmpzfG1kfGdpdGlnbm9yZXxnaXRhdHRyaWJ1dGVzfGxvY2t8c3FsKSQiPgogICAgT3JkZXIgYWxsb3csZGVueQogICAgRGVueSBmcm9tIGFsbAo8L0ZpbGVzPgoKPEZpbGVzIH4gIihjb21wb3NlclwuanNvbnxjb21wb3NlclwubG9ja3xwYWNrYWdlXC5qc29ufHBhY2thZ2UtbG9ja1wuanNvbikiPgogICAgT3JkZXIgYWxsb3csZGVueQogICAgRGVueSBmcm9tIGFsbAo8L0ZpbGVzPgoKIyBEaXNhYmxlIGRpcmVjdG9yeSBsaXN0aW5nCk9wdGlvbnMgLUluZGV4ZXMKCiMgU3RhdGljIGZpbGUgY2FjaGluZwo8SWZNb2R1bGUgbW9kX2V4cGlyZXMuYz4KICAgIEV4cGlyZXNBY3RpdmUgT24KICAgIEV4cGlyZXNCeVR5cGUgdGV4dC9jc3MgImFjY2VzcyBwbHVzIDEgbW9udGgiCiAgICBFeHBpcmVzQnlUeXBlIGFwcGxpY2F0aW9uL2phdmFzY3JpcHQgImFjY2VzcyBwbHVzIDEgbW9udGgiCiAgICBFeHBpcmVzQnlUeXBlIGltYWdlL2pwZWcgImFjY2VzcyBwbHVzIDEgbW9udGgiCiAgICBFeHBpcmVzQnlUeXBlIGltYWdlL3BuZyAiYWNjZXNzIHBsdXMgMSBtb250aCIKICAgIEV4cGlyZXNCeVR5cGUgaW1hZ2UvZ2lmICJhY2Nlc3MgcGx1cyAxIG1vbnRoIgogICAgRXhwaXJlc0J5VHlwZSBpbWFnZS9zdmcreG1sICJhY2Nlc3MgcGx1cyAxIG1vbnRoIgo8L0lmTW9kdWxlPgo=');
+        $htaccess = base64_decode('UmV3cml0ZUVuZ2luZSBPbgoKIyBCbG9jayBkaXJlY3QgZGF0YWJhc2UgYWNjZXNzClJld3JpdGVSdWxlIFwuZGIkIC0gW0YsTF0KCiMgQWxsb3cgYXNzZXRzIChzeW1saW5rIHRvIGNvcmUvYXNzZXRzKQpSZXdyaXRlUnVsZSBeYXNzZXRzLyAtIFtMXQoKIyBTMyBQcm94eQpSZXdyaXRlUnVsZSBeczMtcHJveHkvKC4qKSQgL2Zyb250L3MzLXByb3h5LnBocD9wYXRoPSQxIFtMLFFTQV0KCiMgQWxsIHJlcXVlc3RzIGdvIHRocm91Z2ggaW5kZXgucGhwIChhZG1pbiArIGZyb250ZW5kKQpSZXdyaXRlQ29uZCAle1JFUVVFU1RfRklMRU5BTUV9ICEtZgpSZXdyaXRlQ29uZCAle1JFUVVFU1RfRklMRU5BTUV9ICEtZApSZXdyaXRlUnVsZSBeKC4qKSQgaW5kZXgucGhwIFtRU0EsTF0KCiMgUHJvdGVjdCBzZW5zaXRpdmUgZmlsZXMKPEZpbGVzIH4gIlwuKGVudnxqc29ufGNvbmZpZ1wuanN8bWR8Z2l0aWdub3JlfGdpdGF0dHJpYnV0ZXN8bG9ja3xzcWx8ZGIpJCI+CiAgICBPcmRlciBhbGxvdyxkZW55CiAgICBEZW55IGZyb20gYWxsCjwvRmlsZXM+Cgo8RmlsZXMgfiAiKGNvbXBvc2VyXC5qc29ufGNvbXBvc2VyXC5sb2NrfHBhY2thZ2VcLmpzb258cGFja2FnZS1sb2NrXC5qc29uKSI+CiAgICBPcmRlciBhbGxvdyxkZW55CiAgICBEZW55IGZyb20gYWxsCjwvRmlsZXM+CgojIERpc2FibGUgZGlyZWN0b3J5IGxpc3RpbmcKT3B0aW9ucyAtSW5kZXhlcwoKIyBTdGF0aWMgZmlsZSBjYWNoaW5nCjxJZk1vZHVsZSBtb2RfZXhwaXJlcy5jPgogICAgRXhwaXJlc0FjdGl2ZSBPbgogICAgRXhwaXJlc0J5VHlwZSB0ZXh0L2NzcyAiYWNjZXNzIHBsdXMgMSBtb250aCIKICAgIEV4cGlyZXNCeVR5cGUgYXBwbGljYXRpb24vamF2YXNjcmlwdCAiYWNjZXNzIHBsdXMgMSBtb250aCIKICAgIEV4cGlyZXNCeVR5cGUgaW1hZ2UvanBlZyAiYWNjZXNzIHBsdXMgMSBtb250aCIKICAgIEV4cGlyZXNCeVR5cGUgaW1hZ2UvcG5nICJhY2Nlc3MgcGx1cyAxIG1vbnRoIgogICAgRXhwaXJlc0J5VHlwZSBpbWFnZS9naWYgImFjY2VzcyBwbHVzIDEgbW9udGgiCiAgICBFeHBpcmVzQnlUeXBlIGltYWdlL3N2Zyt4bWwgImFjY2VzcyBwbHVzIDEgbW9udGgiCjwvSWZNb2R1bGU+');
         file_put_contents($htaccessPath, $htaccess);
         i_ok(".htaccess created");
     } else {
         i_ok(".htaccess exists");
     }
 
-    // admin/index.php — fallback entry point
-    $adminIndexPath = $root.'/admin/index.php';
-    if (!file_exists($adminIndexPath)) {
-        $adminIndex = base64_decode('PD9waHAKLyoqCiAqIGFwaWRjbXMgYWRtaW4gZW50cnkgcG9pbnQgKGZhbGxiYWNrKQogKgogKiBVc2VkIHdoZW4gd2ViIHNlcnZlciBkb2Vzbid0IHByb2Nlc3MgLmh0YWNjZXNzIHJld3JpdGVzLgogKiBSb3V0ZXMgYWxsIC9hZG1pbiByZXF1ZXN0cyB0aHJvdWdoIHRoZSBjb3JlLgogKi8KZGVmaW5lKCdQUk9KRUNUX1JPT1QnLCBfX0RJUl9fIC4gJy8uLicpOwpyZXF1aXJlIF9fRElSX18gLiAnLy4uL2NvcmVfbGliL2luaXQucGhwJzsK');
-        file_put_contents($adminIndexPath, $adminIndex);
-        i_ok("admin/index.php created");
     } else {
         i_ok("admin/index.php exists");
     }
@@ -73,8 +67,8 @@ function run_install(array $opts): bool {
     }
 
     // Copy default templates from core to project (editable by user)
-    $templatesSrc = $core . '/front/app/views';
-    $templatesDst = $root . '/front/app/views';
+    $templatesSrc = $core . '/views/front';
+    $templatesDst = $root . '/themes/default/front';
     if (is_dir($templatesSrc) && !is_dir($templatesDst)) {
         mkdir($templatesDst, 0755, true);
         $copied = 0;
@@ -99,7 +93,7 @@ function run_install(array $opts): bool {
     }
 
     i_step("Config");
-    $adminConfigPath = $root.'/admin/config/config.php';
+    $adminConfigPath = $root.'/config/admin.php';
     if (file_exists($adminConfigPath)) {
         $existing = include $adminConfigPath;
         if (!is_array($existing)) $existing = [];
@@ -113,16 +107,16 @@ function run_install(array $opts): bool {
             'model' => $opts['model'],
         ];
         file_put_contents($adminConfigPath, "<?php\nreturn ".var_export($existing, true).";\n");
-        i_ok("admin/config/config.php updated");
+        i_ok("config/admin.php updated");
     } else {
         file_put_contents($adminConfigPath, "<?php\nreturn ['security'=>['admin_username'=>'".addslashes($opts['username'])."','admin_password'=>'".addslashes($opts['password'])."','session_timeout'=>3600],'ai'=>['api_key'=>'".addslashes($opts['api_key'])."','model'=>'".addslashes($opts['model'])."']];\n");
-        i_ok("admin/config/config.php created");
+        i_ok("config/admin.php created");
     }
-    if (!file_exists($root.'/front/config/config.php')) {
-        $c="<?php\nif(!defined('ROOT_PATH')){define('ROOT_PATH',realpath(__DIR__.'/../..'));define('FRONT_PATH',ROOT_PATH.'/front');define('FRONT_APP_PATH',FRONT_PATH.'/app');define('PUBLIC_PATH',ROOT_PATH.'/public');define('STORAGE_PATH',ROOT_PATH.'/storage');define('ADMIN_PATH',ROOT_PATH.'/admin');}\nreturn ['database'=>['path'=>ROOT_PATH.'/admin/storage/database/','file'=>'cms.db','full_path'=>ROOT_PATH.'/admin/storage/database/cms.db'],'paths'=>['root'=>ROOT_PATH,'front'=>FRONT_PATH,'front_app'=>FRONT_APP_PATH,'public'=>PUBLIC_PATH,'storage'=>STORAGE_PATH,'admin'=>ADMIN_PATH],'twig'=>['cache'=>STORAGE_PATH.'/cache/twig','auto_reload'=>true]];\n";
-        file_put_contents($root.'/front/config/config.php',$c);
-        i_ok("front/config/config.php created");
-    } else i_ok("front/config/config.php exists");
+    if (!file_exists($root.'/config/front.php')) {
+        $c = "<?php\nreturn ['site_title' => 'My Site', 'site_description' => '', 'theme' => ['active' => 'default']];\n";
+        file_put_contents($root.'/config/front.php',$c);
+        i_ok("config/front.php created");
+    } else i_ok("config/front.php exists");
     i_step("Dependencies");
     if (!is_dir($core.'/vendor')) {
         $c = find_composer();
@@ -139,7 +133,7 @@ function run_install(array $opts): bool {
 
 function add_seed(string $root): void {
     i_step("Sample content");
-    $dbf = $root.'/admin/storage/database/cms.db';
+    $dbf = $root.'/storage/database/cms.db';
     try {
         $db = new PDO("sqlite:$dbf"); $db->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
         $db->exec("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000");

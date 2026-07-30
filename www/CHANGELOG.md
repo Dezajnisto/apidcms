@@ -28,6 +28,9 @@
 - Новые константы: `THEMES_PATH`, `CORE_VIEWS_ADMIN`, `CORE_VIEWS_FRONT`
 - TemplateController использует THEMES_PATH вместо FRONT_APP_PATH
 
+### Миграция проектов
+- ✅ Все 9 проектов мигрированы на v2 (8 на netangels + bajto.ru на отдельном сервере 62.113.103.68)
+
 ### Пути в шаблонах
 - `/static/` → `/assets/` (CSS, JS)
 - `/admin/storage/js/` → `/assets/js/` (CodeMirror, EasyMDE, filemanager-helper)

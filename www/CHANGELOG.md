@@ -458,6 +458,18 @@
 
 ### Новые возможности
 
+## v2.0.1 (2026-07-30)
+
+### Fixed
+- PluginManager: db.migrate null-guard (crash when loadPlugins() called without DB)
+- PluginManager: double-load prevention (loadedPlugins array)
+- FrontController: added public getDatabase() for plugin access
+- VisitStats: replaced Database::changes() with exec() return value
+
+### Plugins
+- Account v1.0.1, Subscription v1.4.1, Favorites v1.0.1, Credits v1.0.1
+- All plugins: config paths updated from v1 to v2 (config/front.php + core defaults)
+
 ## v1.5.2 — Multilingual Frontend (2026-07-29)
 
 ### New

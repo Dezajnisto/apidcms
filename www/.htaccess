@@ -4,6 +4,7 @@ RewriteEngine On
 RewriteRule ^s3-proxy/(.*)$ /front/s3-proxy.php?path=$1 [L,QSA]
 
 # Admin — always route through index.php
+RewriteRule ^admin(.*)$ index.php [QSA,L]
 # Block direct access to tmp/ (sessions, cache)
 RewriteRule ^tmp/ - [F,L]
 

@@ -486,12 +486,12 @@
                     </div>
                     <div class="flex-1 w-full">
                         <select name="settings[stats_retention_days]" class="w-48 px-3 py-2 border border-gray-300 rounded text-sm">
-                            {% set _ret = _statsRetention|default('90') %}
+                            {% set _ret = _statsRetention|default('30') %}
+                            <option value="7" {{ _ret == '7' ? 'selected' : '' }}>7 {{ lang('settings.days') }}</option>
+                            <option value="14" {{ _ret == '14' ? 'selected' : '' }}>14 {{ lang('settings.days') }}</option>
                             <option value="30" {{ _ret == '30' ? 'selected' : '' }}>30 {{ lang('settings.days') }}</option>
                             <option value="60" {{ _ret == '60' ? 'selected' : '' }}>60 {{ lang('settings.days') }}</option>
                             <option value="90" {{ _ret == '90' ? 'selected' : '' }}>90 {{ lang('settings.days') }}</option>
-                            <option value="180" {{ _ret == '180' ? 'selected' : '' }}>180 {{ lang('settings.days') }}</option>
-                            <option value="365" {{ _ret == '365' ? 'selected' : '' }}>365 {{ lang('settings.days') }}</option>
                         </select>
                         <input type="hidden" name="types[stats_retention_days]" value="string">
                     </div>

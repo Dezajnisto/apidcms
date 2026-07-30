@@ -1460,7 +1460,7 @@ private function handleFormSubmission() {
 
             // Автоочистка старых записей (~1% запросов)
             if (mt_rand(1, 100) === 1) {
-                $retentionDays = (int)($this->getSetting('stats_retention_days') ?: 90);
+                $retentionDays = (int)($this->getSetting('stats_retention_days') ?: 30);
                 \Core\VisitStats::cleanup($this->database, $retentionDays);
             }
         } catch (\Throwable $e) {

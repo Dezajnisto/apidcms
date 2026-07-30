@@ -9,7 +9,7 @@
     <div class="flex items-center justify-between">
         <h1 class="text-2xl font-bold text-gray-900">{{ lang('stats.title') }}</h1>
         <div class="flex items-center space-x-2 bg-gray-100 p-1 rounded-lg">
-            {% for d in [7, 30, 60, 90] %}
+            {% for d in [1, 7, 14, 30] %}
             <a href="?days={{ d }}" class="px-3 py-1.5 rounded-md text-sm font-medium transition {{ days == d ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-800' }}">
                 {{ d }} дн.
             </a>
@@ -204,9 +204,7 @@
             <div class="flex-1 flex flex-col items-center justify-end h-full group relative" title="{{ h }}:00 — {{ v }} хит.">
                 <span class="text-xs text-gray-400 mb-1 opacity-0 group-hover:opacity-100 transition">{{ v }}</span>
                 <div class="w-full bg-orange-400 rounded-t hover:bg-orange-500 transition cursor-pointer" style="height: {{ max(pct, 1) }}%"></div>
-                {% if h % 3 == 0 %}
                 <span class="text-xs text-gray-400 mt-1">{{ h }}</span>
-                {% endif %}
             </div>
             {% endfor %}
         </div>

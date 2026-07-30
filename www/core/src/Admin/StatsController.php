@@ -10,7 +10,7 @@ class StatsController extends BaseController
     public function index()
     {
         $days = (int)($_GET['days'] ?? 30);
-        $days = in_array($days, [7, 30, 60, 90]) ? $days : 30;
+        $days = in_array($days, [1, 7, 14, 30]) ? $days : 30;
 
         try {
             $summary = \Core\VisitStats::getSummary($this->db, $days);

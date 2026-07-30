@@ -161,7 +161,7 @@ $settings = [
     ['ai_public_tables', null, 'string'],
     ['ai_sample_limit', '50', 'string'],
     ['stats_enabled', '0', 'string'],
-    ['stats_retention_days', '90', 'string'],
+    ['stats_retention_days', '30', 'string'],
     
     // Основные настройки сайта
     ['site_title', 'Мой сайт', 'string'],

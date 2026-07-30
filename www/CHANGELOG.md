@@ -1,3 +1,69 @@
+## 2026-07-30 — v2.0.0 — Реструктуризация архитектуры
+
+**⚠️ BREAKING CHANGE: полная реструктуризация. Проекты должны быть мигрированы на v2.**
+
+### Архитектура
+- `core_lib/` переименован в `core/`
+- PHP-классы перенесены в `core/src/{Core,Admin,Front}/` (PSR-4 стиль)
+- Namespace `Admin\Core` слит с `Admin` (App, AuthMiddleware, BaseAdminController, Lang)
+- Автозагрузчик: единый PSR-4 вместо поиска по нескольким директориям
+- Шаблоны: `core/views/{admin,front}/` (отделены от кода)
+- Статика: `core/assets/{css,js}/` (было `static/` и `admin/storage/js/`)
+- `init.php` разделён на `bootstrap.php` (инициализация) + `router.php` (маршрутизация)
+- Единая точка входа `www/index.php` (вместо отдельных admin/index.php)
+
+### Конфигурация и данные
+- Конфиги проекта: `config/{admin,front}.php` (было `admin/config/` + `front/config/`)
+- Дефолтные конфиги ядра: `core/config/{admin,front}.php`
+- Runtime-данные: `storage/{database,uploads,cache}/` (вне www/ для безопасности)
+- БД: `storage/database/cms.db` (было `admin/storage/database/`)
+
+### Storage proxy
+- `/storage/uploads/*`, `/storage/images/*`, `/storage/css/*` обслуживаются через PHP-прокси
+- Без симлинков — безопасно, БД через веб недоступна (403)
+- `.htaccess` обновлён: убран RewriteRule для admin, добавлены правила storage
+
+### Темы
+- Темы проекта: `themes/{theme}/front/` и `themes/{theme}/admin/`
+- Новые константы: `THEMES_PATH`, `CORE_VIEWS_ADMIN`, `CORE_VIEWS_FRONT`
+- TemplateController использует THEMES_PATH вместо FRONT_APP_PATH
+
+### Пути в шаблонах
+- `/static/` → `/assets/` (CSS, JS)
+- `/admin/storage/js/` → `/assets/js/` (CodeMirror, EasyMDE, filemanager-helper)
+
+### Удалено
+- `www/admin/` — рудимент (конфиг → config/, БД → storage/, JS → assets/)
+- `www/front/` — рудимент (шаблоны → themes/)
+- `www/static` — рудимент (→ assets/)
+- `admin/index.php` — мёртвый код (всё через www/index.php)
+- `install.php` → `core_lib` в путях заменён на `core`
+
+### sync-core
+- Новый sync-core для v2 проектов (только `core/`)
+- v1 проекты пропускаются (используй sync-core-v1)
+- Больше не копирует form-шаблоны, filemanager-helper.js (всё в core/)
+
+### Nginx
+- `docs/nginx.conf.example` — готовый конфиг для Nginx
+
+### Файлы
+- `core/bootstrap.php` (новый)
+- `core/router.php` (новый, +storage proxy)
+- `core/config/admin.php` (новый, дефолты)
+- `core/config/front.php` (новый, дефолты)
+- `www/index.php` (переписан, heredoc)
+- `core/src/Admin/TemplateController.php` (FRONT_APP_PATH → THEMES_PATH)
+- `core/src/Admin/App.php` (admin_src вместо admin_app)
+- `core/src/Admin/BaseController.php` (admin_views вместо admin_app/views)
+- `core/src/Admin/FormsController.php` (THEMES_PATH вместо front/app)
+- `core/src/Front/FrontController.php` (THEMES_PATH для Twig)
+- `core/views/` (74 файла, добавлены в git)
+- `core/composer.json` (убран автозагрузчик Core/Admin/Front — используется свой)
+- `core/.gitignore` (убран legacy admin/front/static)
+- `.htaccess` (обновлён)
+- `docs/nginx.conf.example` (новый)
+
 ## 2026-07-29 — v1.5.1 — Фикс локализации на фронтенде и в хелп-панели
 
 - ExternalPageLoader::resolveLocale() — раскрытие i18n-объектов {"ru":"...","en":"..."} для docs/changelog

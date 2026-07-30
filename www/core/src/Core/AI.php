@@ -218,6 +218,13 @@ PROMPT;
             $contextInfo .= "Используй ТОЛЬКО поля из этой таблицы. Не выдумывай поля которых нет в списке.\n";
         }
 
+        // CSS context: available classes for styling
+        if (!empty($context["css"])) {
+            $contextInfo .= "\n\nДОСТУПНЫЕ CSS-КЛАССЫ (из custom.css сайта):\n";
+            $contextInfo .= $context["css"] . "\n";
+            $contextInfo .= "\nИспользуй эти классы в HTML-разметке где это уместно. Не выдумывай классы которых нет в CSS.\n";
+        }
+
         $messages = [
             ["role" => "user", "content" => $userPrompt . $contextInfo]
         ];
@@ -337,6 +344,11 @@ PROMPT;
             foreach ($context["tables"] as $table) {
                 $systemPrompt .= "- {$table["name"]}: " . implode(", ", $table["columns"]) . "\n";
             }
+        }
+
+        // CSS: available styles
+        if (!empty($context["css"])) {
+            $systemPrompt .= "\n\nДОСТУПНЫЕ CSS-КЛАССЫ (custom.css сайта):\n" . $context["css"] . "\n";
         }
 
         $messages = [

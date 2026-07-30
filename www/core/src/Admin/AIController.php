@@ -122,7 +122,8 @@ class AIController extends BaseController {
             $response = $this->ai->assistant($message, [
                 "tables" => $tablesContext,
                 "current_page" => $currentPage,
-                "docs" => $docsContext
+                "docs" => $docsContext,
+                "css" => $this->getCssContext()
             ], $this->aiPrompts["assistant"] ?? "");
 
             // Convert Markdown to HTML for chat UI rendering
@@ -177,7 +178,8 @@ class AIController extends BaseController {
                 "tables" => $tablesContext,
                 "existing_content" => $existingContent,
                 "page_type" => $pageType,
-                "source_table" => $sourceTable
+                "source_table" => $sourceTable,
+                "css" => $this->getCssContext()
             ], $this->aiPrompts["template"] ?? "");
 
             $this->jsonResponse([

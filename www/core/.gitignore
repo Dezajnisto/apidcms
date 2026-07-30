@@ -1,26 +1,12 @@
-# Database (runtime, should be in project storage/)
+# Database (runtime — in project storage/)
 *.db
 *.db-shm
 *.db-wal
 
-# Cache
-storage/cache/*
-
-# Uploads
-storage/uploads/*
-!storage/uploads/.gitkeep
-
-# OS
+# OS / IDE
 .DS_Store
 Thumbs.db
-
-# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# Legacy dirs (will be removed)
-admin/
-front/
-static/

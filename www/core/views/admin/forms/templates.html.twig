@@ -1,0 +1,118 @@
+{% extends "base.html.twig" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex items-center space-x-2 mb-6">
+        <a href="{{ admin_url('forms/edit/' ~ form_name) }}" class="text-gray-400 hover:text-gray-600 transition">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900">📄 {{ lang('forms.templates_title') }} {{ form.display_name }}</h1>
+        <span class="text-sm text-gray-400">({{ form_name }})</span>
+    </div>
+
+    {# Create template form #}
+    <div class="mb-4">
+        <button type="button" onclick="document.getElementById('create-template-form').classList.toggle('hidden')"
+                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm transition">
+            <i class="fas fa-plus mr-1"></i> New template
+        </button>
+        <div id="create-template-form" class="hidden mt-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <form method="post" action="{{ admin_url('forms/' ~ form_name ~ '/create-template') }}" class="flex flex-wrap items-end gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">File name</label>
+                    <input type="text" name="template_name" placeholder="my-form.html.twig" required
+                           class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                           style="width: 260px">
+                    <p class="text-xs text-gray-400 mt-1">Letters, numbers, hyphens, underscores + .html.twig</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select name="template_type" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                        <option value="form">Form template</option>
+                        <option value="field">Field template</option>
+                    </select>
+                </div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                    <i class="fas fa-check mr-1"></i>Create
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% if flash is defined and flash %}
+    <div class="mb-4 p-4 rounded-lg {{ flash.type == 'success' ? 'bg-green-100 border border-green-200 text-green-800' : 'bg-red-100 border border-red-200 text-red-800' }}">
+        {{ flash.message }}
+    </div>
+    {% endif %}
+
+    <div class="bg-white rounded-xl shadow-sm border p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">{{ lang('forms.form_templates_title') }}</h2>
+        {% if templates|length > 0 %}
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b text-left text-gray-500">
+                    <th class="py-2 pr-4">{{ lang('forms.templates_col_file') }}</th>
+                    <th class="py-2 pr-4">{{ lang('forms.templates_col_size') }}</th>
+                    <th class="py-2 pr-4">{{ lang('forms.col_modified') }}</th>
+                    <th class="py-2"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in templates %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-2 pr-4 font-mono text-sm">{{ t.name }}</td>
+                    <td class="py-2 pr-4 text-gray-500">{{ (t.size / 1024)|round(1) }} KB</td>
+                    <td class="py-2 pr-4 text-gray-500">{{ t.modified|date('d.m.Y H:i') }}</td>
+                    <td class="py-2 text-right">
+                        <a href="{{ admin_url('forms/' ~ form_name ~ '/templates/' ~ t.name) }}" class="text-blue-600 hover:text-blue-800 text-sm">
+                            <i class="fas fa-edit mr-1"></i>{{ lang('forms.templates_action_edit') }}
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-gray-400 text-center py-4">{{ lang('forms.no_form_templates') }}</p>
+        {% endif %}
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border p-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">{{ lang('forms.field_templates_title') }}</h2>
+        {% if field_templates|length > 0 %}
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b text-left text-gray-500">
+                    <th class="py-2 pr-4">{{ lang('forms.templates_col_file') }}</th>
+                    <th class="py-2 pr-4">{{ lang('forms.templates_col_size') }}</th>
+                    <th class="py-2 pr-4">{{ lang('forms.col_modified') }}</th>
+                    <th class="py-2"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in field_templates %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-2 pr-4 font-mono text-sm">{{ t.name }}</td>
+                    <td class="py-2 pr-4 text-gray-500">{{ (t.size / 1024)|round(1) }} KB</td>
+                    <td class="py-2 pr-4 text-gray-500">{{ t.modified|date('d.m.Y H:i') }}</td>
+                    <td class="py-2 text-right">
+                        <a href="{{ admin_url('forms/' ~ form_name ~ '/templates/' ~ t.name) }}" class="text-blue-600 hover:text-blue-800 text-sm">
+                            <i class="fas fa-edit mr-1"></i>{{ lang('forms.templates_action_edit') }}
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-gray-400 text-center py-4">{{ lang('forms.no_field_templates') }}</p>
+        {% endif %}
+    </div>
+
+    <div class="mt-6">
+        <a href="{{ admin_url('forms/edit/' ~ form_name) }}" class="text-gray-500 hover:text-gray-700 transition">
+            <i class="fas fa-arrow-left mr-1"></i>{{ lang('forms.back_to_form') }}
+        </a>
+    </div>
+</div>
+{% endblock %}

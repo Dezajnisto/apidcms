@@ -1,0 +1,11 @@
+{% extends "base.html.twig" %}
+
+{% block title %}Страница не найдена | {{ parent() }}{% endblock %}
+
+{% block content %}
+    <div class="error-page">
+        <h1 class="page-title">404 - Страница не найдена</h1>
+        <p>Запрашиваемая страница не существует.</p>
+        <p><a href="{{ url('/') }}">Вернуться на главную</a></p>
+    </div>
+{% endblock %}

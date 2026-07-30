@@ -1,0 +1,527 @@
+{# twig #}
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Навигация (responsive) -->
+    <div class="mb-4 md:mb-6 flex flex-wrap items-center gap-3">
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '?page=' ~ (currentPage|default(1))) }}" 
+           class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition text-sm">
+            <i class="fas fa-arrow-left"></i>
+            <span>{{ lang('table.form.back_to_table') }}</span>
+        </a>
+        <a href="{{ admin_url('') }}" 
+           class="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition text-sm">
+            <i class="fas fa-table"></i>
+            <span>{{ lang('table.form.table_list') }}</span>
+        </a>
+    </div>
+
+
+    <!-- Сообщения об успехе -->
+    {% if _GET.created == '1' %}
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-check-circle"></i>
+                <span>{{ lang('table.form.created_success') }}</span>
+            </div>
+        </div>
+    {% endif %}
+    {% if _GET.updated == '1' %}
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded-lg text-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-info-circle"></i>
+                <span>{{ lang('table.form.updated_success') }}</span>
+            </div>
+        </div>
+    {% endif %}
+    <!-- Заголовок -->
+    <div class="mb-4 md:mb-6">
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900">{{ title }}</h1>
+        <p class="text-sm text-gray-600 mt-1">{{ lang('table.prefix') }}<code class="bg-gray-100 px-2 py-1 rounded">{{ tableName }}</code></p>
+    </div>
+
+
+    <!-- Действия с записью (для режима редактирования) -->
+    {% if action == 'edit' and itemId is defined %}
+    <div class="mb-4 md:mb-6 flex flex-wrap gap-2 md:gap-3">
+        <button type="submit" form="table-edit-form"
+                class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm">
+            <i class="fas fa-save"></i>
+            <span>{{ lang('table.form.save') }}</span>
+        </button>
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/duplicate/' ~ (itemId ?? '')) }}"
+           class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition text-sm"
+           onclick="return confirm('{{ lang('table.form.confirm_duplicate') }}')">
+            <i class="fas fa-copy"></i>
+            <span>{{ lang('table.form.duplicate') }}</span>
+        </a>
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/delete/' ~ (itemId ?? '') ~ '?page=' ~ (currentPage|default(1))) }}"
+           class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition text-sm"
+           onclick="return confirm('{{ lang('table.form.confirm_delete') }}')">
+            <i class="fas fa-trash"></i>
+            <span>{{ lang('table.form.delete') }}</span>
+        </a>
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/create') }}"
+           class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition text-sm">
+            <i class="fas fa-plus"></i>
+            <span>{{ lang('table.form.create_new') }}</span>
+        </a>
+    </div>
+    {% endif %}
+    <!-- Ошибки -->
+    {% if error is defined %}
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong class="font-medium">{{ lang('table.form.error') }}:</strong>
+                    <span>{{ error }}</span>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+
+    <!-- Информация о записи -->
+    <div class="mb-4 md:mb-6 p-3 md:p-4 bg-gray-50 rounded-lg border text-sm">
+        <div class="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2 md:gap-4">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-table"></i>
+                <span>{{ lang('table.prefix') }}<code class="bg-gray-200 px-2 py-1 rounded">{{ tableName }}</code></span>
+            </div>
+            {% if itemId is defined %}
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-key"></i>
+                <span>ID: <code class="bg-gray-200 px-2 py-1 rounded cursor-pointer" title="Кликните для копирования" onclick="navigator.clipboard.writeText('{{ itemId|e('js') }}').then(function(){var n=document.createElement('div');n.className='fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';n.textContent='{{ lang('table.form.id_copied')|e('js') }}';document.body.appendChild(n);setTimeout(function(){n.remove()},2000)})">{{ itemId }}</code></span>
+            </div>
+            {% endif %}
+            {% if action == 'create' %}
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-plus-circle text-green-600"></i>
+                <span class="text-green-700">{{ lang('table.form.new_record') }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Подсказка -->
+    <div class="mb-4 md:mb-6 p-3 md:p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+        <div class="flex items-start space-x-3">
+            <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+            <div class="text-blue-700">
+                <strong class="font-medium">{{ lang('table.form.tip_title') }}:</strong>
+                <p>{{ lang('table.form.tip_text')|raw }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Форма -->
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="px-4 md:px-6 py-3 md:py-4 border-b">
+            <h2 class="text-base md:text-lg font-semibold text-gray-900">
+                {{ action == 'create' ? lang('table.form.creating') : lang('table.form.editing')|replace({'%id%': itemId}) }}
+            </h2>
+        </div>
+        
+        <div class="p-4 md:p-6">
+            <!-- AI: заполнение полей -->
+            <button type="button" onclick="AIAssistant.init({mode:'fill-form',tableName:'{{ tableName|e('js') }}',structure:JSON.parse(document.getElementById('ai-structure-data').textContent)});AIAssistant.open()" 
+                    class="inline-flex items-center space-x-2 px-3 md:px-4 py-2 border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-50 transition text-sm mb-4">
+                <i class="fas fa-magic"></i>
+                <span>{{ lang('table.form.ai_fill') }}</span>
+            </button>
+
+            <script id="ai-structure-data" type="application/json">
+            [{% for column in structure %}{"name":"{{ column.name|e('js') }}","type":"{{ column.type|e('js') }}","pk":{{ column.pk }},"notnull":{{ column.notnull }},"dflt_value":"{{ (column.dflt_value ?? '')|e('js') }}"}{% if not loop.last %},{% endif %}{% endfor %}]
+            </script>
+
+            <form id="table-edit-form" method="POST" action="{{ admin_url('table/' ~ tableName|url_encode ~ '/' ~ (action == 'create' ? 'store' : 'update/' ~ itemId) ~ '?page=' ~ (currentPage|default(1))) }}" class="space-y-4 md:space-y-6">
+                {% for column in structure %}
+                    {% if (action == 'create' and column.pk == 1) or (action == 'create' and column.name == 'created_at') %}
+                    {% else %}
+                        <div class="space-y-2">
+                            <!-- Заголовок поля -->
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <label for="{{ column.name }}" class="block text-sm font-medium text-gray-700">
+                                    {{ column.name }}
+                                    {% if column.notnull == 1 and column.pk == 0 %}
+                                        <span class="text-red-500">*</span>
+                                    {% endif %}
+                                </label>
+                                
+                                <!-- Бейджи -->
+                                <div class="flex items-center space-x-2">
+                                    {% if column.pk == 1 %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <i class="fas fa-key mr-1"></i>
+                                            {{ lang('table.form.primary_key') }}
+                                        </span>
+                                    {% endif %}
+                                    {% if column.notnull == 1 and column.pk == 0 %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            {{ lang('table.form.required_badge') }}
+                                        </span>
+                                    {% endif %}
+                                    {% if relations is defined and relations[column.name] is defined %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                            <i class="fas fa-link mr-1"></i>
+                                            {{ lang('table.form.relation') }}: {{ relations[column.name].table }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Поле ввода -->
+                            {% if column.pk == 1 and 'INTEGER' in column.type|upper %}
+                                <input type="text" id="{{ column.name }}" 
+                                       value="{{ item[column.name] ?? lang('common.auto') }}" readonly 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed text-sm">
+                                <p class="text-xs text-gray-500">
+                                    <i class="fas fa-info-circle mr-1"></i> {{ lang('table.form.auto_filled') }}
+                                </p>
+                            {% elseif relations is defined and relations[column.name] is defined and relations[column.name].search %}
+                                <!-- Searchable combobox -->
+                                {% set rel = relations[column.name] %}
+                                {% set currentValue = item[column.name] ?? '' %}
+                                {% set currentLabel = '' %}
+                                {% for opt in rel.options %}
+                                    {% if currentValue == opt.value %}{% set currentLabel = opt.label %}{% endif %}
+                                {% endfor %}
+                                <div class="relation-combobox relative" data-name="{{ column.name }}">
+                                    <input type="text" 
+                                           class="relation-search-input w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                           placeholder="{{ lang('table.form.search_placeholder') }}"
+                                           autocomplete="off"
+                                           value="{{ currentLabel|e('html_attr') }}">
+                                    <input type="hidden" name="{{ column.name }}" value="{{ currentValue|e('html_attr') }}">
+                                    <div class="relation-dropdown hidden absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
+                                        <div class="relation-option px-3 py-2 hover:bg-blue-50 cursor-pointer text-gray-400 text-sm" data-value="">{{ lang('table.form.select') }}</div>
+                                        {% for opt in rel.options %}
+                                            <div class="relation-option px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm {% if currentValue == opt.value %}bg-blue-100 font-medium{% endif %}"
+                                                 data-value="{{ opt.value|e('html_attr') }}"
+                                                 data-label="{{ opt.label|e('html_attr') }}">
+                                                {% if opt.level > 0 %}<span class="text-gray-400">{% for i in 1..opt.level %}&mdash;&nbsp;{% endfor %}</span>{% endif %}
+                                                {{ opt.label }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% elseif relations is defined and relations[column.name] is defined %}
+                                <!-- Native select (with tree indentation if applicable) -->
+                                {% set rel = relations[column.name] %}
+                                <select id="{{ column.name }}" name="{{ column.name }}"
+                                        {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white">
+                                    <option value="">{{ lang('table.form.select') }}</option>
+                                    {% for opt in rel.options %}
+                                        <option value="{{ opt.value }}" {% if item is not null and item[column.name] == opt.value %}selected{% endif %}>
+                                            {% for i in 1..opt.level %}&mdash;&nbsp;{% endfor %}{{ opt.label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            {% elseif 'TEXT' in column.type|upper %}
+                                <div id="cm-{{ column.name }}" class="w-full border border-gray-300 rounded-md shadow-sm overflow-hidden" style="min-height:150px"></div>
+                                        <textarea name="{{ column.name }}" id="cm-hidden-{{ column.name }}" class="hidden">{{ item[column.name] ?? '' }}</textarea>
+                            {% elseif 'INT' in column.type|upper or 'INTEGER' in column.type|upper %}
+                                <input type="number" id="{{ column.name }}" name="{{ column.name }}" 
+                                       value="{{ item[column.name] ?? '' }}"
+                                       {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                       placeholder="{{ lang('table.form.enter_number') }}">
+                            {% elseif 'DATE' in column.type|upper or 'TIME' in column.type|upper %}
+                                <input type="datetime-local" id="{{ column.name }}" name="{{ column.name }}" 
+                                       value="{{ item[column.name] ?? '' }}"
+                                       {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                            {% elseif 'BOOLEAN' in column.type|upper %}
+                                <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border">
+                                    <input type="checkbox" id="{{ column.name }}" name="{{ column.name }}" value="1"
+                                           {% if item[column.name] %}checked{% endif %}
+                                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <label for="{{ column.name }}" class="text-sm font-medium text-gray-700">{{ column.name }}</label>
+                                </div>
+                            {% else %}
+                                <input type="text" id="{{ column.name }}" name="{{ column.name }}" 
+                                       value="{{ item[column.name] ?? '' }}"
+                                       {% if column.notnull == 1 and column.pk == 0 %}required{% endif %}
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                       placeholder="{{ lang('table.form.enter_value') }}">
+                            {% endif %}
+
+                            <!-- Информация о поле -->
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-500 gap-1">
+                                <span>{{ lang('table.form.type') }}: <code class="bg-gray-100 px-1 rounded">{{ column.type }}</code></span>
+                                {% if column.dflt_value is not null %}
+                                    <span>{{ lang('table.form.default') }}: <code class="bg-gray-100 px-1 rounded">{{ column.dflt_value }}</code></span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+
+                <!-- Many-to-many relations (virtual fields) -->
+                {% if relations is defined %}
+                    {% for relName, rel in relations %}
+                        {% if rel.type is defined and rel.type == 'many-to-many' %}
+                            {% set sel = rel.selected ?? [] %}
+                            <div class="space-y-2">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        {{ relName }}
+                                    </label>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                        <i class="fas fa-link mr-1"></i>
+                                        {{ lang('table.form.relation_mm') }}: {{ rel.table }}
+                                    </span>
+                                </div>
+                                <div class="relation-multiselect border border-gray-300 rounded-md" data-name="{{ relName }}">
+                                    <input type="text" 
+                                           class="multiselect-search w-full px-3 py-2 border-b border-gray-200 text-sm focus:outline-none focus:ring-0 rounded-t-md"
+                                           placeholder="{{ lang('table.form.search_placeholder') }}"
+                                           autocomplete="off">
+                                    <div class="multiselect-options max-h-48 overflow-y-auto p-2 space-y-1">
+                                        {% for opt in rel.options %}
+                                            <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded multiselect-item" style="padding-left: {{ opt.level * 16 + 4 }}px">
+                                                <input type="checkbox" name="{{ relName }}[]" value="{{ opt.value }}"
+                                                    {% if opt.value in sel %}checked{% endif %}
+                                                    class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                                <span class="text-sm">{% for i in 1..opt.level %}&mdash;&nbsp;{% endfor %}{{ opt.label }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Кнопки действий -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 md:pt-6 border-t">
+                    <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '?page=' ~ (currentPage|default(1))) }}" 
+                       class="px-4 md:px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition text-sm text-center">
+                        {{ lang('common.cancel') }}
+                    </a>
+                    <button type="submit" 
+                            class="px-4 md:px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center justify-center space-x-2 text-sm">
+                        <i class="fas {{ action == 'create' ? 'fa-plus' : 'fa-save' }}"></i>
+                        <span>{{ action == 'create' ? lang('table.form.create_record') : lang('table.form.save_changes') }}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Статистика формы -->
+    <div class="mt-4 md:mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
+        <div class="bg-gray-50 p-3 md:p-4 rounded-lg border">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-list text-gray-500"></i>
+                <div>
+                    <p class="text-xs text-gray-700 font-medium">{{ lang('table.form.total_fields') }}</p>
+                    <p class="text-lg md:text-2xl font-bold text-gray-900">{{ structure|length }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-blue-50 p-3 md:p-4 rounded-lg border border-blue-200">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-edit text-blue-500"></i>
+                <div>
+                    <p class="text-xs text-blue-700 font-medium">{{ lang('table.form.editable') }}</p>
+                    <p class="text-lg md:text-2xl font-bold text-blue-700">
+                        {{ structure|filter(col => not (action == 'create' and (col.pk == 1 or col.name == 'created_at')))|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-red-50 p-3 md:p-4 rounded-lg border border-red-200">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-exclamation-circle text-red-500"></i>
+                <div>
+                    <p class="text-xs text-red-700 font-medium">{{ lang('table.form.required_fields') }}</p>
+                    <p class="text-lg md:text-2xl font-bold text-red-700">
+                        {{ structure|filter(col => col.notnull == 1 and col.pk == 0)|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const firstInput = document.querySelector('input:not([readonly]), textarea:not([readonly]), select:not([readonly])');
+    if (firstInput) firstInput.focus();
+
+    // Character counters are handled by CM6 editors below
+
+    const numberInputs = document.querySelectorAll('input[type="number"]');
+    numberInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            if (this.value && isNaN(this.value)) {
+                this.setCustomValidity('{{ lang('table.form.valid_number')|e('js') }}');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    });
+
+    const dateInputs = document.querySelectorAll('input[type="datetime-local"]');
+    dateInputs.forEach(input => {
+        if (!input.value) {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            input.value = now.toISOString().slice(0, 16);
+        }
+    });
+
+        // --- Many-to-many multiselect search ---
+    document.querySelectorAll('.relation-multiselect').forEach(function(box) {
+        var searchInput = box.querySelector('.multiselect-search');
+        var items = box.querySelectorAll('.multiselect-item');
+        
+        if (!searchInput || !items.length) return;
+        
+        searchInput.addEventListener('input', function() {
+            var q = this.value.toLowerCase().trim();
+            items.forEach(function(item) {
+                var label = (item.querySelector('span') || {}).textContent || '';
+                item.style.display = (!q || label.toLowerCase().indexOf(q) !== -1) ? '' : 'none';
+            });
+        });
+    });
+
+    // --- Relation combobox init ---
+    document.querySelectorAll('.relation-combobox').forEach(function(box) {
+        var searchInput = box.querySelector('.relation-search-input');
+        var hiddenInput = box.querySelector('input[type="hidden"]');
+        var dropdown = box.querySelector('.relation-dropdown');
+        var options = dropdown.querySelectorAll('.relation-option');
+        var isOpen = false;
+
+        function openDropdown() {
+            dropdown.classList.remove('hidden');
+            isOpen = true;
+            filterOptions(searchInput.value);
+        }
+
+        function closeDropdown() {
+            dropdown.classList.add('hidden');
+            isOpen = false;
+        }
+
+        function filterOptions(query) {
+            var q = query.toLowerCase().trim();
+            var hasVisible = false;
+            options.forEach(function(opt) {
+                if (!opt.dataset.value) return; // skip placeholder
+                var label = (opt.dataset.label || '').toLowerCase();
+                var match = !q || label.indexOf(q) !== -1;
+                opt.style.display = match ? '' : 'none';
+                if (match) hasVisible = true;
+            });
+            // Show/hide placeholder
+            var placeholder = dropdown.querySelector('.relation-option[data-value=""]');
+            if (placeholder) {
+                placeholder.style.display = q ? 'none' : '';
+            }
+        }
+
+        function selectOption(opt) {
+            var value = opt.dataset.value;
+            hiddenInput.value = value;
+            searchInput.value = value ? (opt.dataset.label || '') : '';
+            // Update selected state
+            options.forEach(function(o) {
+                o.classList.remove('bg-blue-100', 'font-medium');
+            });
+            if (value) {
+                opt.classList.add('bg-blue-100', 'font-medium');
+            }
+            closeDropdown();
+        }
+
+        searchInput.addEventListener('focus', function() {
+            openDropdown();
+        });
+
+        searchInput.addEventListener('input', function() {
+            if (!isOpen) openDropdown();
+            filterOptions(this.value);
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDropdown();
+                searchInput.blur();
+            }
+        });
+
+        // Click on option
+        dropdown.addEventListener('mousedown', function(e) {
+            var opt = e.target.closest('.relation-option');
+            if (opt) {
+                e.preventDefault();
+                selectOption(opt);
+            }
+        });
+
+        // Blur - close but not immediately (allow mousedown first)
+        searchInput.addEventListener('blur', function() {
+            setTimeout(function() {
+                if (!dropdown.contains(document.activeElement)) {
+                    closeDropdown();
+                }
+            }, 150);
+        });
+
+        // Close on outside click
+        document.addEventListener('click', function(e) {
+            if (!box.contains(e.target)) {
+                closeDropdown();
+            }
+        });
+    });
+
+    // --- CodeMirror 6 editors for TEXT columns ---
+    import('/assets/js/cm-editor.bundle.js?v=2').then(function(m) {
+        const initCM = m.initCodeMirror || window.initCodeMirror;
+        if (!initCM) return;
+
+        document.querySelectorAll('[id^="cm-"][id]').forEach(function(container) {
+            const colId = container.id.replace('cm-', '');
+            if (document.getElementById('cm-' + colId) === container) {
+                const hiddenId = 'cm-hidden-' + colId;
+                const hiddenEl = document.getElementById(hiddenId);
+                if (!hiddenEl) return;
+                const content = hiddenEl.value;
+                initCM('cm-' + colId, hiddenId, 'auto', content, 150, false, colId);
+            }
+        });
+    }).catch(function(e) { console.warn('CM6 load failed:', e); });
+});
+    // --- Keyboard shortcuts ---
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+Backspace or Ctrl+ArrowLeft -> Back to table
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'Backspace' || e.key === 'ArrowLeft')) {
+            // Don't navigate if focus is in an input/textarea (allow normal editing)
+            var tag = document.activeElement.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+            e.preventDefault();
+            window.location.href = "{{ admin_url('table/' ~ tableName|url_encode ~ '?page=' ~ (currentPage|default(1))) }}";
+        }
+        // Ctrl+S -> Save form
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            var form = document.getElementById('table-edit-form');
+            if (form) form.submit();
+        }
+    });
+
+</script>
+
+{% endblock %}

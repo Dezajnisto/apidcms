@@ -160,6 +160,9 @@ $settings = [
     ['ai_frontend_personality', null, 'string'],
     ['ai_public_tables', null, 'string'],
     ['ai_sample_limit', '50', 'string'],
+    ['ai_template_max_size', '0', 'string'],
+    ['ai_template_total_max', '0', 'string'],
+    ['ai_css_max_size', '0', 'string'],
     ['stats_enabled', '0', 'string'],
     ['stats_retention_days', '30', 'string'],
     

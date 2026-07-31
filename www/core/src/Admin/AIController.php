@@ -48,17 +48,27 @@ class AIController extends BaseController {
             "assistant" => $s->get("ai_prompt_assistant", ""),
             "css" => $s->get("ai_prompt_css", ""),
         ];
+
+        // AI context size limits (0 = unlimited)
+        $this->contextLimits = [
+            "template_max_size" => (int)($s->get("ai_template_max_size", "0")),
+            "template_total_max" => (int)($s->get("ai_template_total_max", "0")),
+            "css_max_size" => (int)($s->get("ai_css_max_size", "0")),
+        ];
     }
 
     private $aiPrompts = [];
+
+    private $contextLimits = [];
 
     /**
      * Get key Twig templates for AI context (HTML structure for CSS, style reference)
      */
     private function getTemplatesContext(): array {
         $templates = [];
-        $maxSize = 6000; // per template
-        $totalMax = 20000; // total for all templates
+        // Configurable limits (0 = unlimited)
+        $maxSize = $this->contextLimits["template_max_size"] ?? 0;
+        $totalMax = $this->contextLimits["template_total_max"] ?? 0;
         $total = 0;
 
         try {
@@ -98,14 +108,14 @@ class AIController extends BaseController {
             ];
 
             foreach ($keyTemplates as $name) {
-                if ($total >= $totalMax) break;
+                if ($totalMax > 0 && $total >= $totalMax) break;
 
                 foreach ($viewDirs as $dir) {
                     $file = $dir . '/' . $name;
                     if (file_exists($file)) {
                         $content = file_get_contents($file);
                         if (!empty(trim($content))) {
-                            if (strlen($content) > $maxSize) {
+                            if ($maxSize > 0 && strlen($content) > $maxSize) {
                                 $content = substr($content, 0, $maxSize)
                                     . "\n{# ... truncated for AI context #}";
                             }
@@ -120,19 +130,19 @@ class AIController extends BaseController {
             // Also include subdirectory templates (blog/, form/fields/)
             $subDirs = ['blog', 'form', 'form/fields'];
             foreach ($subDirs as $sub) {
-                if ($total >= $totalMax) break;
+                if ($totalMax > 0 && $total >= $totalMax) break;
                 foreach ($viewDirs as $dir) {
                     $subPath = $dir . '/' . $sub;
                     if (is_dir($subPath)) {
                         $files = glob($subPath . '/*.twig');
                         if ($files) {
                             foreach ($files as $file) {
-                                if ($total >= $totalMax) break;
+                                if ($totalMax > 0 && $total >= $totalMax) break;
                                 $name = $sub . '/' . basename($file);
                                 if (isset($templates[$name])) continue;
                                 $content = file_get_contents($file);
                                 if (!empty(trim($content))) {
-                                    if (strlen($content) > $maxSize) {
+                                    if ($maxSize > 0 && strlen($content) > $maxSize) {
                                         $content = substr($content, 0, $maxSize)
                                             . "\n{# ... truncated #}";
                                     }
@@ -150,6 +160,41 @@ class AIController extends BaseController {
         }
 
         return $templates;
+    }
+
+    /**
+     * Get custom CSS content for AI context
+     */
+    private function getCssContext(): string {
+        $maxSize = $this->contextLimits["css_max_size"] ?? 0;
+
+        try {
+            $rootPath = $this->app->getConfig()['paths']['root'];
+
+            // Try project CSS paths (themes first, then legacy)
+            $cssPaths = [
+                $rootPath . '/themes/default/assets/css/custom.css',
+                $rootPath . '/storage/css/custom.css',
+                $rootPath . '/assets/css/custom.css',
+            ];
+
+            foreach ($cssPaths as $path) {
+                if (file_exists($path)) {
+                    $content = file_get_contents($path);
+                    if (!empty(trim($content))) {
+                        if ($maxSize > 0 && strlen($content) > $maxSize) {
+                            $content = substr($content, 0, $maxSize)
+                                . "\n/* ... truncated for AI context */";
+                        }
+                        return $content;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // CSS not available - continue without
+        }
+
+        return "";
     }
 
     /**

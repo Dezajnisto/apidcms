@@ -1,3 +1,13 @@
+## 2026-07-31 — v2.2.1 — Пагинация для внешних страниц (external page type)
+
+### Исправлено
+- `handleExternalPage()` в list-режиме игнорировал `items_per_page` из `page_config` — все записи отдавались одной страницей
+- Добавлена нарезка через `array_slice()`, передача `current_page`, `total_pages`, `total_count` в шаблон
+- Параметр URL: `?page=N`, по умолчанию 10 записей на странице
+
+### Изменённые файлы
+- `core/src/Front/FrontController.php` — пагинация в handleExternalPage()
+
 ## 2026-07-31 — v2.2.0 — Настраиваемые лимиты контекста AI-помощника
 
 ### Добавлено

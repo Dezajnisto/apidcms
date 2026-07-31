@@ -51,7 +51,7 @@ Open http://localhost:8000. Admin: `/admin`, login `admin`, password `admin`.
 
 ## Documentation
 
-[apidcms.dezajno.ru/docs](https://apidcms.dezajno.ru/docs)
+[apidcms.dezajno.ru/en/docs](https://apidcms.dezajno.ru/en/docs)
 
 ## License
 

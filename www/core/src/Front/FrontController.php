@@ -1882,19 +1882,30 @@ private function handleFormSubmission() {
                 return;
             }
 
-            // List mode
+            // List mode with pagination
+            $items = $data['items'];
+            $perPage = max(1, (int)($config['items_per_page'] ?? 10));
+            $totalItems = count($items);
+            $totalPages = max(1, (int)ceil($totalItems / $perPage));
+            $currentPage = max(1, min($totalPages, (int)($_GET['page'] ?? 1)));
+            $offset = ($currentPage - 1) * $perPage;
+            $pagedItems = array_slice($items, $offset, $perPage);
+
             $template = ($config['template'] !== 'default')
                 ? $config['template'] . '.html.twig'
                 : 'external.html.twig';
 
             $this->render($template, [
-                'items' => $data['items'],
+                'items' => $pagedItems,
                 'raw' => $data['raw'],
                 'from_cache' => $data['from_cache'],
                 'page_config' => $config,
                 'source_url' => $sourceUrl,
                 'title' => $navItem->title,
                 'nav_item' => $navItem,
+                'current_page' => $currentPage,
+                'total_pages' => $totalPages,
+                'total_count' => $totalItems,
             ]);
         } catch (\RuntimeException $e) {
             // Log error and show a friendly page

@@ -1,3 +1,19 @@
+## 2026-07-31 — v2.1.2 — Мелкие правки редактора шаблонов
+
+### Исправлено
+- Путь к файлу на странице редактирования шаблона: плейсхолдер {{ templatePath }} заменён на {templatePath}, значение теперь отображается корректно
+- Убран избыточный label «Содержимое шаблона *» над редактором кода
+
+### Добавлено
+- Отображение размера файла на страницах редактирования шаблонов и CSS-стилей
+
+### Изменённые файлы
+- `core/lang/ru.json` — убран templates.content_req, исправлен templates.file_path, добавлен templates.file_size
+- `core/src/Admin/TemplateController.php` — formatFileSize(), передача templateSize в шаблон
+- `core/src/Admin/DesignController.php` — formatFileSize(), передача cssSize в шаблон
+- `core/views/admin/template/edit.html.twig` — убран label, добавлен размер файла
+- `core/views/admin/design/css.html.twig` — добавлен размер файла
+
 ## 2026-07-30 — v2.1.1 — Улучшение страницы статистики
 
 ### Изменено

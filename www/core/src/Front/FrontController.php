@@ -1884,8 +1884,12 @@ private function handleFormSubmission() {
 
             // List mode with pagination
             $items = $data['items'];
-            $perPage = max(1, (int)($config['items_per_page'] ?? 10));
             $totalItems = count($items);
+            $rawPerPage = $config['items_per_page'] ?? null;
+            // 0 means "show all items, no pagination"
+            $perPage = ($rawPerPage === 0 || $rawPerPage === '0')
+                ? $totalItems
+                : max(1, (int)($rawPerPage ?? 10));
             $totalPages = max(1, (int)ceil($totalItems / $perPage));
             $currentPage = max(1, min($totalPages, (int)($_GET['page'] ?? 1)));
             $offset = ($currentPage - 1) * $perPage;

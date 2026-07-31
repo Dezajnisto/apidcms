@@ -1,3 +1,20 @@
+## 2026-07-31 — v2.2.0 — Настраиваемые лимиты контекста AI-помощника
+
+### Добавлено
+- `ai_template_max_size`, `ai_template_total_max`, `ai_css_max_size` — настройки размера контекста AI (0 = без ограничений)
+- `getCssContext()` — метод получения custom.css в контекст AI (отсутствовал, вызывал фатальную ошибку в assistant/generateTemplate)
+- UI-секция «Размер контекста» во вкладке AI настроек админки
+- 9 новых ключей перевода в ru.json
+
+### Изменено
+- `getTemplatesContext()` — лимиты читаются из системных настроек, по умолчанию 0 (без ограничений)
+
+### Изменённые файлы
+- `core/init_system_tables.php` — 3 новые настройки
+- `core/src/Admin/AIController.php` — getCssContext(), configurable limits
+- `core/views/admin/settings/index.html.twig` — секция лимитов
+- `core/lang/ru.json` — переводы
+
 ## 2026-07-31 — v2.1.4 — Мелкие правки редактора шаблонов
 
 ## 2026-07-31 — v2.1.5 — Фикс счётчика уведомлений в сайдбаре

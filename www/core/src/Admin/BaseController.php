@@ -204,8 +204,9 @@ class BaseController {
         $count = 0;
         
         try {
+            // Use DISTINCT to avoid double-counting when multiple forms share the same table
             $forms = $this->db->query(
-                "SELECT source_table FROM forms WHERE status = 'active'"
+                "SELECT DISTINCT source_table FROM forms WHERE status = 'active'"
             )->fetchAll();
             
             foreach ($forms as $form) {

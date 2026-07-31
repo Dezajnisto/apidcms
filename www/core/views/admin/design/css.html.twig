@@ -25,6 +25,7 @@
 
         <form method="POST" action="{{ admin_url('design/css/save') }}" class="p-4 md:p-6">
             <div class="mb-4">
+                <div class="text-xs text-gray-400 mb-2">{{ lang('templates.file_size') }}: {{ cssSize }}</div>
                 <div id="cm-css-editor" class="w-full border border-gray-300 rounded-lg overflow-hidden" style="min-height:600px"></div>
                     <textarea name="css" id="cm-hidden-css" class="hidden">{{ css_content }}</textarea>
 

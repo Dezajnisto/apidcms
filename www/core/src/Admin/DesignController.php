@@ -60,10 +60,13 @@ class DesignController extends BaseController
             $cssUrl = $this->getCssUrl();
             $saved = isset($_GET['saved']);
 
+            $cssSize = $this->formatFileSize(filesize($cssPath));
+
             $this->render('design/css', [
                 'title' => $this->lang->t('design.css_title'),
                 'css_content' => $currentCss,
                 'css_url' => $cssUrl,
+                'cssSize' => $cssSize,
                 'saved' => $saved
             ]);
         } catch (Exception $e) {
@@ -149,6 +152,20 @@ class DesignController extends BaseController
             }
         } catch (\Exception $e) {
             // ignore
+        }
+    }
+
+    /**
+     * Format file size in human-readable form
+     */
+    private function formatFileSize($bytes)
+    {
+        if ($bytes < 1024) {
+            return $bytes . ' B';
+        } elseif ($bytes < 1048576) {
+            return round($bytes / 1024, 1) . ' KB';
+        } else {
+            return round($bytes / 1048576, 1) . ' MB';
         }
     }
 

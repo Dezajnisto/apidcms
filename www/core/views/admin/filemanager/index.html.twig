@@ -188,6 +188,11 @@
                     <table class="w-full">
                         <thead class="bg-gray-50 border-b">
                             <tr>
+                                <th class="w-10 py-3 px-3">
+                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"
+                                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                           title="{{ lang('filemanager.select_all') }}">
+                                </th>
                                 <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">{{ lang('filemanager.col_name') }}</th>
                                 <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{{ lang('filemanager.col_size') }}</th>
                                 <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">{{ lang('filemanager.col_modified') }}</th>
@@ -201,6 +206,13 @@
                                     data-path="{{ item.path }}"
                                     data-type="{{ item.is_dir ? 'folder' : 'file' }}">
                                     
+                                    <!-- checkbox -->
+                                    <td class="py-3 px-3" onclick="event.stopPropagation()">
+                                        <input type="checkbox" class="item-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                               data-path="{{ item.path }}"
+                                               data-type="{{ item.is_dir ? 'folder' : 'file' }}"
+                                               onchange="updateBatchBar()">
+                                    </td>
                                     <!-- {{ lang('filemanager.col_name') }} -->
                                     <td class="py-3 px-4">
                                         <div class="flex items-center space-x-3">
@@ -254,6 +266,18 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- Batch delete bar -->
+            <div id="batchDeleteBar" class="hidden sticky bottom-0 bg-white border-t shadow-lg rounded-b-lg px-4 py-3 flex items-center justify-between">
+                <span class="text-sm text-gray-700">
+                    <span id="selectedCount">0</span> {{ lang('filemanager.selected_items') }}
+                </span>
+                <button onclick="batchDelete()"
+                        class="inline-flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition text-sm">
+                    <i class="fas fa-trash"></i>
+                    <span>{{ lang('common.delete') }} (<span id="batchDeleteCount">0</span>)</span>
+                </button>
             </div>
         {% endif %}
     </div>
@@ -334,32 +358,47 @@
     {% endif %}
 </div>
 
-<!-- Модальное окно загрузки -->
+<!-- Модальное окно загрузки (multi-file + drag-drop) -->
 <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4">
         <div class="p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ lang('filemanager.upload_file') }}</h3>
-            <form id="uploadForm" enctype="multipart/form-data">
-                <input type="hidden" name="path" value="{{ currentPath }}">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ lang('filemanager.select_file') }}</label>
-                    <input type="file" name="file" 
-                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                           required>
-                    <p class="text-xs text-gray-500 mt-1">{{ lang('filemanager.max_size_hint') }}</p>
+
+            <div id="uploadDropZone" class="upload-area rounded-lg p-8 text-center mb-4 border-2 border-dashed border-gray-300 transition">
+                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+                <p class="text-gray-600 mb-2">{{ lang('filemanager.popup_drop_hint') }}</p>
+                <input type="file" id="fileInput" multiple class="hidden" accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.zip">
+                <button type="button" onclick="document.getElementById('fileInput').click()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                    {{ lang('filemanager.popup_select_files') }}
+                </button>
+                <p class="text-sm text-gray-500 mt-2">{{ lang('filemanager.max_size_hint') }}</p>
+            </div>
+
+            <div id="uploadProgress" class="hidden mb-4">
+                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>{{ lang('filemanager.uploading') }}</span>
+                    <span id="progressPercent">0%</span>
                 </div>
-                <div class="flex justify-end space-x-3">
-                    <button type="button" onclick="hideUploadModal()"
-                            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
-                        {{ lang('filemanager.cancel') }}
-                    </button>
-                    <button type="submit" 
-                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center space-x-2">
-                        <i class="fas fa-upload"></i>
-                        <span>{{ lang('filemanager.upload_btn') }}</span>
-                    </button>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="progressBar" class="progress-bar bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
                 </div>
-            </form>
+            </div>
+
+            <div id="fileList" class="mt-3 space-y-2 hidden max-h-48 overflow-y-auto"></div>
+
+            <div class="flex justify-end space-x-3 mt-4">
+                <button type="button" onclick="hideUploadModal()"
+                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
+                    {{ lang('filemanager.cancel') }}
+                </button>
+                <button type="button" onclick="startUpload()" id="uploadButton"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center space-x-2"
+                        disabled>
+                    <i class="fas fa-upload"></i>
+                    <span>{{ lang('filemanager.upload_btn') }}</span>
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -512,48 +551,102 @@ function showUploadModal() {
 function hideUploadModal() {
     document.getElementById('uploadModal').classList.add('hidden');
     document.getElementById('uploadModal').classList.remove('flex');
+    resetUploadForm();
 }
 
-// === Загрузка файла ===
-document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+// === Мультизагрузка файлов ===
+let selectedFiles = [];
+
+function resetUploadForm() {
+    document.getElementById('fileInput').value = '';
+    document.getElementById('fileList').classList.add('hidden');
+    document.getElementById('fileList').innerHTML = '';
+    document.getElementById('uploadButton').disabled = true;
+    document.getElementById('uploadProgress').classList.add('hidden');
+    selectedFiles = [];
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    handleFileSelection(e.target.files);
+});
+
+// Drag-and-drop
+const dropZone = document.getElementById('uploadDropZone');
+dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', function(e) { e.preventDefault(); dropZone.classList.remove('dragover'); });
+dropZone.addEventListener('drop', function(e) {
     e.preventDefault();
-    const fileInput = this.querySelector('input[type="file"]');
-    const originalFileName = fileInput.files[0]?.name;
-    if (originalFileName) {
-        const safeName = transliterate(originalFileName);
-        console.log('Original:', originalFileName, 'Safe:', safeName);
-    }
-    const formData = new FormData(this);
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>{{ lang('common.loading') }}</span>';
-    submitBtn.disabled = true;
+    dropZone.classList.remove('dragover');
+    handleFileSelection(e.dataTransfer.files);
+});
+
+function handleFileSelection(files) {
+    if (files.length === 0) return;
+    selectedFiles = Array.from(files);
+    const fileList = document.getElementById('fileList');
+    fileList.innerHTML = '';
+    selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'flex items-center justify-between p-2 bg-gray-50 rounded';
+        fileItem.innerHTML = `
+            <div class="flex items-center space-x-2 min-w-0">
+                <i class="fas fa-file text-gray-400 flex-shrink-0"></i>
+                <span class="text-sm truncate">${file.name}</span>
+                <span class="text-xs text-gray-500 flex-shrink-0">(${formatFileSize(file.size)})</span>
+            </div>
+            <button type="button" onclick="removeFile(${index})" class="text-red-500 hover:text-red-700 flex-shrink-0 ml-2">
+                <i class="fas fa-times"></i>
+            </button>`;
+        fileList.appendChild(fileItem);
+    });
+    fileList.classList.remove('hidden');
+    document.getElementById('uploadButton').disabled = false;
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    handleFileSelection(selectedFiles);
+    if (selectedFiles.length === 0) document.getElementById('uploadButton').disabled = true;
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+async function startUpload() {
+    if (selectedFiles.length === 0) return;
+    const uploadProgress = document.getElementById('uploadProgress');
+    const uploadButton = document.getElementById('uploadButton');
+    uploadProgress.classList.remove('hidden');
+    uploadButton.disabled = true;
+
+    const currentPath = '{{ currentPath }}';
+    const formData = new FormData();
+    selectedFiles.forEach(file => formData.append('files[]', file));
+    formData.append('path', currentPath);
+
     try {
-        const response = await fetch('/admin/filemanager/upload', { method: 'POST', body: formData });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const responseText = await response.text();
-        let data;
-        try { data = JSON.parse(responseText); }
-        catch (jsonError) {
-            console.error('JSON parse error:', jsonError);
-            console.error('Response text:', responseText);
-            throw new Error(__t('filemanager.error_invalid_response'));
-        }
-        if (data.success) {
+        const response = await fetch('/admin/filemanager/upload-multiple', { method: 'POST', body: formData });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const result = await response.json();
+        if (result.success) {
             hideUploadModal();
-            showNotification(data.message, 'success');
+            showNotification(result.message, 'success');
             setTimeout(() => location.reload(), 1000);
         } else {
-            showNotification(data.message, 'error');
+            showNotification(result.message, 'error');
+            resetUploadForm();
         }
     } catch (error) {
         console.error('Upload error:', error);
         showNotification(__t('filemanager.error_upload') + ': ' + error.message, 'error');
-    } finally {
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
+        resetUploadForm();
     }
-});
+}
 
 // === Копирование ссылки ===
 function copyFileUrl(filePath) {
@@ -744,6 +837,80 @@ async function renameItem(path, type, currentName) {
     }
 }
 
+// === Массовое выделение и удаление ===
+function toggleSelectAll(checkbox) {
+    document.querySelectorAll('#view-table .item-checkbox').forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateBatchBar();
+}
+
+function updateBatchBar() {
+    const checked = document.querySelectorAll('#view-table .item-checkbox:checked');
+    const count = checked.length;
+    const bar = document.getElementById('batchDeleteBar');
+    document.getElementById('selectedCount').textContent = count;
+    document.getElementById('batchDeleteCount').textContent = count;
+    if (count > 0) {
+        bar.classList.remove('hidden');
+    } else {
+        bar.classList.add('hidden');
+    }
+    // Update select-all checkbox state
+    const all = document.querySelectorAll('#view-table .item-checkbox');
+    const selectAll = document.getElementById('selectAllCheckbox');
+    if (selectAll) {
+        selectAll.checked = all.length > 0 && count === all.length;
+        selectAll.indeterminate = count > 0 && count < all.length;
+    }
+}
+
+async function batchDelete() {
+    const checked = document.querySelectorAll('#view-table .item-checkbox:checked');
+    if (checked.length === 0) return;
+    if (!confirm(__t('filemanager.confirm_delete_multiple').replace('{count}', checked.length))) return;
+
+    const formData = new URLSearchParams();
+    checked.forEach(cb => {
+        formData.append('paths[]', cb.dataset.path);
+        formData.append('type[]', cb.dataset.type);
+    });
+
+    const btn = document.querySelector('#batchDeleteBar button');
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/admin/filemanager/delete-multiple', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        });
+        const data = await response.json();
+        if (data.success) {
+            showNotification(data.message, 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification(data.message, 'error');
+            btn.innerHTML = origHtml;
+            btn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Batch delete error:', error);
+        showNotification(__t('filemanager.error_delete') + ': ' + error.message, 'error');
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+    }
+}
+
+// Update batch bar state after table clicks are bound (view mode switch)
+const origApplyViewMode = applyViewMode;
+applyViewMode = function(mode) {
+    origApplyViewMode(mode);
+    updateBatchBar();
+};
+
 // === Транслитерация (клиент) ===
 function transliterate(text) {
     const cyrillicMap = {
@@ -790,5 +957,8 @@ function transliterate(text) {
 .file-item:hover { transform: translateY(-2px); }
 .file-name { word-break: break-all; }
 .modal-backdrop { backdrop-filter: blur(4px); }
+.upload-area { transition: all 0.3s ease; }
+.upload-area.dragover { border-color: #3b82f6; background-color: #eff6ff; }
+.progress-bar { transition: width 0.3s ease; }
 </style>
 {% endblock %}

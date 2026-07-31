@@ -85,11 +85,14 @@ class TemplateController extends BaseController {
                 }
             }
             
+            $templateSize = $this->formatFileSize(filesize($templatePath));
+
             $this->render('template/edit', [
                 'title' => $this->lang->t('template.edit_title', ['name' => $templateName]),
                 'templateName' => $templateName,
                 'content' => $content,
-                'templatePath' => $templatePath
+                'templatePath' => $templatePath,
+                'templateSize' => $templateSize
             ]);
             
         } catch (Exception $e) {
@@ -273,6 +276,20 @@ class TemplateController extends BaseController {
         $result = file_put_contents($filePath, $content);
         
         return $result !== false;
+    }
+
+    /**
+     * Format file size in human-readable form
+     */
+    private function formatFileSize($bytes)
+    {
+        if ($bytes < 1024) {
+            return $bytes . ' B';
+        } elseif ($bytes < 1048576) {
+            return round($bytes / 1024, 1) . ' KB';
+        } else {
+            return round($bytes / 1048576, 1) . ' MB';
+        }
     }
 }
 ?>

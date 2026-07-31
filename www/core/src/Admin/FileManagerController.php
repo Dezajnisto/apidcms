@@ -529,4 +529,90 @@ class FileManagerController extends BaseController {
         }
     }    
 
+
+    /**
+     * Multi-file upload for the main filemanager (index)
+     * POST /admin/filemanager/upload-multiple
+     */
+    public function uploadMultiple() {
+        $startBufferLevel = ob_get_level();
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception($this->lang->t('filemanager.method_not_allowed'));
+            $currentPath = $_POST['path'] ?? '';
+            $fullPath = $this->getFullPath($currentPath);
+            if (!isset($_FILES['files']) || empty($_FILES['files']['name'][0])) throw new Exception($this->lang->t('filemanager.upload_no_files'));
+            $uploadedFiles = $_FILES['files'];
+            $results = [];
+            for ($i = 0; $i < count($uploadedFiles['name']); $i++) {
+                if ($uploadedFiles['error'][$i] !== UPLOAD_ERR_OK) {
+                    $results[] = ['name' => $uploadedFiles['name'][$i], 'success' => false, 'message' => $this->lang->t('filemanager.upload_single_error')];
+                    continue;
+                }
+                if ($uploadedFiles['size'][$i] > $this->maxFileSize) {
+                    $results[] = ['name' => $uploadedFiles['name'][$i], 'success' => false, 'message' => $this->lang->t('filemanager.upload_too_large_msg')];
+                    continue;
+                }
+                $extension = strtolower(pathinfo($uploadedFiles['name'][$i], PATHINFO_EXTENSION));
+                if (!$this->isAllowedExtension($extension)) {
+                    $results[] = ['name' => $uploadedFiles['name'][$i], 'success' => false, 'message' => $this->lang->t('filemanager.upload_type_denied')];
+                    continue;
+                }
+                $filename = $this->generateSafeFilename($uploadedFiles['name'][$i]);
+                $targetPath = $fullPath . '/' . $filename;
+                if (!move_uploaded_file($uploadedFiles['tmp_name'][$i], $targetPath)) {
+                    $results[] = ['name' => $uploadedFiles['name'][$i], 'success' => false, 'message' => $this->lang->t('filemanager.upload_save_failed')];
+                    continue;
+                }
+                chmod($targetPath, 0644);
+                $results[] = ['name' => $uploadedFiles['name'][$i], 'saved_as' => $filename, 'success' => true, 'message' => $this->lang->t('filemanager.upload_success')];
+            }
+            $hasSuccess = false;
+            foreach ($results as $result) { if ($result['success']) { $hasSuccess = true; break; } }
+            $this->jsonResponse(['success' => $hasSuccess, 'message' => $hasSuccess ? $this->lang->t('filemanager.upload_all_success') : $this->lang->t('filemanager.upload_all_failed'), 'results' => $results]);
+        } catch (\Throwable $e) {
+            while (ob_get_level() > $startBufferLevel) ob_end_clean();
+            $this->jsonResponse(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+
+    /**
+     * Batch delete files and folders
+     * POST /admin/filemanager/delete-multiple
+     * Body: paths[]=path1&paths[]=path2&type[]=file&type[]=folder
+     */
+    public function deleteMultiple() {
+        $startBufferLevel = ob_get_level();
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception($this->lang->t('filemanager.method_not_allowed'));
+            $paths = $_POST['paths'] ?? [];
+            $types = $_POST['type'] ?? [];
+            if (empty($paths)) throw new Exception($this->lang->t('filemanager.delete_no_items'));
+            $deleted = 0;
+            $errors = [];
+            foreach ($paths as $i => $path) {
+                try {
+                    $fullPath = $this->getFullPath($path);
+                    $type = isset($types[$i]) ? $types[$i] : 'file';
+                    if ($type === 'folder') {
+                        $this->deleteFolder($fullPath);
+                    } else {
+                        $this->deleteFile($fullPath);
+                    }
+                    $deleted++;
+                } catch (\Throwable $e) {
+                    $errors[] = basename($path) . ': ' . $e->getMessage();
+                }
+            }
+            $msg = $this->lang->t('filemanager.delete_multiple_success', ['count' => $deleted]);
+            if (!empty($errors)) {
+                $msg .= ' (' . count($errors) . ' ' . $this->lang->t('filemanager.delete_multiple_errors') . ': ' . implode(', ', $errors) . ')';
+            }
+            $this->jsonResponse(['success' => $deleted > 0, 'message' => $msg, 'deleted' => $deleted, 'errors' => $errors]);
+        } catch (\Throwable $e) {
+            while (ob_get_level() > $startBufferLevel) ob_end_clean();
+            $this->jsonResponse(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
 }

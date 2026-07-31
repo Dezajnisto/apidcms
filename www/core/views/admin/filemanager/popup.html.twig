@@ -122,7 +122,7 @@
                 <button onclick="toggleUploadForm()"
                         class="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
                     <i class="fas fa-upload"></i>
-                    <span>{{{ lang('filemanager.upload_first') }}}</span>
+                    <span>{{ lang('filemanager.upload_first') }}</span>
                 </button>
             </div>
         {% else %}
@@ -139,7 +139,7 @@
                              data-type="{{ item.is_dir ? 'folder' : 'file' }}">
 
                             {% if item.is_dir %}
-                                <div class="text-center" onclick="navigateToFolder(event, '{{ item.name|e('js') }}}')">
+                                <div class="text-center" onclick="navigateToFolder(event, '{{ item.name|e('js') }}')">
                                     <i class="fas fa-folder text-yellow-500 text-4xl mb-2"></i>
                                     <div class="file-name text-sm font-medium text-gray-900 truncate" title="{{ item.name }}">
                                         {{ item.name }}
@@ -147,7 +147,7 @@
                                     <div class="text-xs text-gray-500 mt-1">{{ lang('filemanager.folder_badge') }}</div>
                                 </div>
                             {% else %}
-                                <div class="text-center" onclick="selectFile(event, '{{ item.name|e('js') }}}', '{{ item.path|e('js') }}}')">
+                                <div class="text-center" onclick="selectFile(event, '{{ item.name|e('js') }}', '{{ item.path|e('js') }}')">
                                     {% if item.is_image %}
                                         <div class="relative mb-2">
                                             <img src="/admin/filemanager/thumb?path={{ item.path|url_encode }}&amp;w={{ thumb_size }}&amp;h={{ thumb_size }}&amp;v={{ item.modified }}"
@@ -175,6 +175,11 @@
                     <table class="w-full">
                         <thead class="bg-gray-50 border-b">
                             <tr>
+                                <th class="w-10 py-3 px-3">
+                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"
+                                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                           title="{{ lang('filemanager.select_all') }}">
+                                </th>
                                 <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">{{ lang('filemanager.col_name') }}</th>
                                 <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">{{ lang('filemanager.col_size') }}</th>
                                 <th class="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">{{ lang('filemanager.col_modified') }}</th>
@@ -188,6 +193,13 @@
                                     data-path="{{ item.path }}"
                                     data-type="{{ item.is_dir ? 'folder' : 'file' }}">
 
+                                    <!-- checkbox -->
+                                    <td class="py-3 px-3" onclick="event.stopPropagation()">
+                                        <input type="checkbox" class="item-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                               data-path="{{ item.path }}"
+                                               data-type="{{ item.is_dir ? 'folder' : 'file' }}"
+                                               onchange="updateBatchBar()">
+                                    </td>
                                     <td class="py-3 px-4">
                                         <div class="flex items-center space-x-3">
                                             {% if item.is_dir %}
@@ -213,9 +225,9 @@
 
                                     <td class="py-3 px-4 text-right">
                                         {% if not item.is_dir %}
-                                            <button onclick="event.stopPropagation(); selectFileTable('{{ item.name|e('js') }}}', '{{ item.path|e('js') }}}')"
+                                            <button onclick="event.stopPropagation(); selectFileTable('{{ item.name|e('js') }}', '{{ item.path|e('js') }}')"
                                                     class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm transition">
-                                                <i class="fas fa-check mr-1"></i>{{{ lang('filemanager.popup_select') }}}
+                                                <i class="fas fa-check mr-1"></i>{{ lang('filemanager.popup_select') }}
                                             </button>
                                         {% endif %}
                                     </td>
@@ -224,6 +236,18 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- Batch delete bar -->
+            <div id="batchDeleteBar" class="hidden sticky bottom-0 bg-white border-t shadow-lg rounded-b-lg px-4 py-3 flex items-center justify-between">
+                <span class="text-sm text-gray-700">
+                    <span id="selectedCount">0</span> {{ lang('filemanager.selected_items') }}
+                </span>
+                <button onclick="batchDelete()"
+                        class="inline-flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition text-sm">
+                    <i class="fas fa-trash"></i>
+                    <span>{{ lang('common.delete') }} (<span id="batchDeleteCount">0</span>)</span>
+                </button>
             </div>
         {% endif %}
     </div>
@@ -310,7 +334,7 @@
             <input type="file" id="fileInput" multiple class="hidden">
             <button onclick="document.getElementById('fileInput').click()"
                     class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                {{{ lang('filemanager.popup_select_files') }}}
+                {{ lang('filemanager.popup_select_files') }}
             </button>
             <p class="text-sm text-gray-500 mt-2">{{ lang('filemanager.max_size_hint') }}</p>
         </div>
@@ -329,7 +353,7 @@
 
         <div class="flex justify-end space-x-2 mt-4">
             <button onclick="hideUploadForm()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
-                {{{ lang('filemanager.popup_cancel') }}}
+                {{ lang('filemanager.popup_cancel') }}
             </button>
             <button onclick="startUpload()" id="uploadButton"
                     class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -351,7 +375,7 @@
                     <i class="fas fa-copy mr-1"></i>{{ lang('filemanager.copy_btn') }}
                 </button>
                 <button onclick="useSelectedFile()" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm transition">
-                    <i class="fas fa-check mr-1"></i>{{{ lang('filemanager.popup_select') }}}
+                    <i class="fas fa-check mr-1"></i>{{ lang('filemanager.popup_select') }}
                 </button>
             </div>
         </div>
@@ -611,6 +635,83 @@ document.addEventListener('keydown', function(e) {
         }
     }
 });
+
+// === Массовое выделение и удаление ===
+function toggleSelectAll(checkbox) {
+    document.querySelectorAll('#view-table .item-checkbox').forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    updateBatchBar();
+}
+
+function updateBatchBar() {
+    const checked = document.querySelectorAll('#view-table .item-checkbox:checked');
+    const count = checked.length;
+    const bar = document.getElementById('batchDeleteBar');
+    document.getElementById('selectedCount').textContent = count;
+    document.getElementById('batchDeleteCount').textContent = count;
+    if (count > 0) {
+        bar.classList.remove('hidden');
+    } else {
+        bar.classList.add('hidden');
+    }
+    const all = document.querySelectorAll('#view-table .item-checkbox');
+    const selectAll = document.getElementById('selectAllCheckbox');
+    if (selectAll) {
+        selectAll.checked = all.length > 0 && count === all.length;
+        selectAll.indeterminate = count > 0 && count < all.length;
+    }
+}
+
+async function batchDelete() {
+    const checked = document.querySelectorAll('#view-table .item-checkbox:checked');
+    if (checked.length === 0) return;
+    if (!confirm(__t('filemanager.confirm_delete_multiple').replace('{count}', checked.length))) return;
+
+    const formData = new URLSearchParams();
+    checked.forEach(cb => {
+        formData.append('paths[]', cb.dataset.path);
+        formData.append('type[]', cb.dataset.type);
+    });
+
+    const btn = document.querySelector('#batchDeleteBar button');
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/admin/filemanager/delete-multiple', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        });
+        const data = await response.json();
+        if (data.success) {
+            setTimeout(() => window.location.reload(), 800);
+        } else {
+            alert(__t('filemanager.error_delete') + ': ' + data.message);
+            btn.innerHTML = origHtml;
+            btn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Batch delete error:', error);
+        alert(__t('filemanager.error_delete') + ': ' + error.message);
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+    }
+}
+
+// Reset bar when switching to grid
+const origApplyViewMode = applyViewMode;
+applyViewMode = function(mode) {
+    origApplyViewMode(mode);
+    if (mode === 'grid') {
+        const bar = document.getElementById('batchDeleteBar');
+        if (bar) bar.classList.add('hidden');
+    } else {
+        updateBatchBar();
+    }
+};
 
 window.focus();
 </script>

@@ -122,6 +122,8 @@ class App {
         $this->addRoute('/filemanager/rename', 'FileManagerController', 'rename');
         $this->addRoute('/filemanager/popup', 'FileManagerController', 'popup');
         $this->addRoute('/filemanager/upload-popup', 'FileManagerController', 'uploadPopup');
+        $this->addRoute('/filemanager/upload-multiple', 'FileManagerController', 'uploadMultiple');
+        $this->addRoute('/filemanager/delete-multiple', 'FileManagerController', 'deleteMultiple');
 
         // Уведомления о заявках форм
         $this->addRoute('/notifications', 'NotificationsController', 'index');

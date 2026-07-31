@@ -1204,5 +1204,6 @@
   "table.view.bulk_delete": "Удалить выбранные",
   "table.view.confirm_bulk_delete": "Удалить выбранные записи (%count% шт.)?",
   "table.view.bulk_deleted": "Записи удалены (%count% шт.)",
-  "table.view.no_selected": "Не выбрано ни одной записи"
+  "table.view.no_selected": "Не выбрано ни одной записи",
+  "templates.file_size": "Размер файла"
 }

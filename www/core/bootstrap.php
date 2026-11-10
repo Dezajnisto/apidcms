@@ -23,6 +23,7 @@ spl_autoload_register(function ($class) {
         'Core\\'  => CORE_PATH . '/src/Core/',
         'Admin\\' => CORE_PATH . '/src/Admin/',
         'Front\\' => CORE_PATH . '/src/Front/',
+        'Api\\'   => CORE_PATH . '/src/Api/',
     ];
 
     foreach ($prefixes as $prefix => $dir) {

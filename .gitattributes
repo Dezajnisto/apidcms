@@ -1,0 +1,16 @@
+# Keep LF in the repository: the core is deployed to Linux servers.
+# CRLF in the working tree produces noisy diffs and breaks line-based tooling.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.zip binary
+*.phar binary

@@ -64,6 +64,24 @@ if (strpos($uri, 'storage/') === 0) {
     exit;
 }
 
+// ===== API =====
+if (strpos($uri, 'api') === 0) {
+    define('ADMIN_ACCESS', true);
+
+    try {
+        $config = load_config('admin');
+        $db = new \Core\Database($config['database']);
+        (new \Api\Router($db))->dispatch();
+    } catch (\Throwable $e) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'error' => ['code' => 'internal_error', 'message' => $e->getMessage()]
+        ], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
+
 // ===== ADMIN =====
 if (strpos($uri, 'admin') === 0 || $uri === 'admin') {
     define('ADMIN_ACCESS', true);

@@ -261,6 +261,17 @@ class ExternalPageLoader
      */
     public function fetchContent(string $url): ?string
     {
+        // Кэш содержимого по URL. Без него каждый запрос ходит в сеть с
+        // timeout=15, и недоступный источник превращается в 15 секунд ожидания.
+        $cacheFile = $this->contentCachePath($url);
+        $contentTtl = $this->cacheTtl > 0 ? $this->cacheTtl : 3600;
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $contentTtl) {
+            $cached = @file_get_contents($cacheFile);
+            if ($cached !== false && $cached !== '') {
+                return $cached;
+            }
+        }
+
         $headerStr = "Accept: text/plain,text/markdown,text/html\r\nUser-Agent: apidcms/ExternalPageLoader";
         if (!empty($this->headers['Authorization'])) {
             $headerStr .= "\r\nAuthorization: " . $this->headers['Authorization'];
@@ -279,6 +290,14 @@ class ExternalPageLoader
         $response = @file_get_contents($url, false, $context);
 
         if ($response === false) {
+            // Сеть недоступна — отдаём просроченный кэш, если он есть,
+            // вместо падения страницы.
+            if (file_exists($cacheFile)) {
+                $stale = @file_get_contents($cacheFile);
+                if ($stale !== false && $stale !== '') {
+                    return $stale;
+                }
+            }
             $error = error_get_last();
             throw new \RuntimeException(
                 'ExternalPageLoader::fetchContent failed: ' . $url .
@@ -305,7 +324,18 @@ class ExternalPageLoader
         if ($this->stripFrontmatter && $response !== null) {
             $response = $this->stripYamlFrontmatter($response);
         }
+        if ($response !== null && $response !== '') {
+            @file_put_contents($cacheFile, $response);
+        }
         return $response;
+    }
+
+    /**
+     * Путь кэша содержимого по URL.
+     */
+    private function contentCachePath(string $url): string
+    {
+        return $this->cacheDir . '/external_content_' . md5($url) . '.md';
     }
 
     /**

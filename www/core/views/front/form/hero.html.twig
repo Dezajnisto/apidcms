@@ -1,6 +1,6 @@
 {% extends "form/_base.html.twig" %}
 
-{# Герой-форма для главной prostostihi.ru — прозрачная, на градиентном фоне #}
+{# Hero form for the home page — transparent, on a gradient background #}
 {% block form_content %}
 <form method="post" action="{{ action|default('/form-handler') }}"
       id="form-{{ form_hash|default('main')|replace({'#': ''}) }}"

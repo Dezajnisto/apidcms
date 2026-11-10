@@ -142,9 +142,8 @@
 - `admin/index.php` — мёртвый код (всё через www/index.php)
 - `install.php` → `core_lib` в путях заменён на `core`
 
-### sync-core
-- Новый sync-core для v2 проектов (только `core/`)
-- v1 проекты пропускаются (используй sync-core-v1)
+### Обновление ядра на существующих сайтах
+- Копируется только `core/`, остальное (config, themes, plugins, storage) остаётся сайта
 - Больше не копирует form-шаблоны, filemanager-helper.js (всё в core/)
 
 ### Nginx
@@ -253,7 +252,7 @@
   - `admin/app/core/App.php` (+3 роута)
 
 ### Развёртывание
-- `sync-core all` — шаблон `import_csv.html.twig` копируется на все проекты
+- Шаблон `import_csv.html.twig` входит в поставку ядра
 - Проекты с кастомным front: не затрагиваются (изменения только в ядре админки)
 - Сбросить Twig-кэш и OPcache после деплоя
 

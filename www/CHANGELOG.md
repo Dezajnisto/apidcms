@@ -129,7 +129,7 @@
 - TemplateController использует THEMES_PATH вместо FRONT_APP_PATH
 
 ### Миграция проектов
-- ✅ Все 9 проектов мигрированы на v2 (8 на netangels + bajto.ru на отдельном сервере 62.113.103.68)
+- ✅ Все проекты мигрированы на v2
 
 ### Пути в шаблонах
 - `/static/` → `/assets/` (CSS, JS)
@@ -332,7 +332,7 @@
 
 - `core_lib/init.php` (порядок блоков: сессии → плагины)
 - `core_lib/front/app/models/NavigationItem.php` (+ = null)
-- Удалены `front/app/models/NavigationItem.php` на: wearefun, dezajno, apidcms.dezajno, izkino, prosto-stihi, my-project
+- Удалены `front/app/models/NavigationItem.php` на всех проектах (класс переехал в ядро)
 
 ## 2026-07-14 — Сортировка dynamic-страниц и синхронизация версионирования
 
@@ -372,11 +372,11 @@
 ### CSS-фиксы
 
 - **admin.css перекомпилирован:** после реструктуризации admin.css потерял критичные spacing-классы (px-1/2/3/6, py-0.5/1/1.5, mb-1, ml-1/2)
-- **Восстановлен:** рабочий admin.css (31KB) из wearefun, содержащий все spacing-утилиты
+- **Восстановлен:** рабочий admin.css (31KB) со всеми spacing-утилитами
 - **Cache-шаблон:** admin/app/views/cache/index.html.twig восстановлен после случайного удаления при реструктуризации
 - **.gitignore исправлен:** admin/app/views/cache/* ошибочно игнорировал исходники (это НЕ runtime-кэш)
 
-### UX-тестирование установки с нуля (3 раунда: izkino.ru, prosto-stihi.ru, daristihi.ru, nldb.ru)
+### UX-тестирование установки с нуля (3 раунда)
 
 #### Раунд 1 — базовые проблемы
 - **403 на /admin:** install.php не создавал .htaccess и admin/index.php — добавлена генерация обоих файлов

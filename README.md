@@ -31,6 +31,13 @@ php -S localhost:8000
 
 Open http://localhost:8000. Admin: `/admin`, login `admin`, password `admin`.
 
+## Updating an existing site
+
+Each site keeps its own copy of `www/core/`. To update a site, replace that copy
+with the `www/core` directory from the new release (or clone this repository and
+copy it over), then clear the Twig cache and OPcache. Keep `config/`, `themes/`,
+`plugins/` and `storage/` untouched — they belong to the site, not to the core.
+
 ## Requirements
 
 - PHP 8.1+

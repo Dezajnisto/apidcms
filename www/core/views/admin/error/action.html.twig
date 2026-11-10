@@ -1,0 +1,45 @@
+{# twig #}
+{#
+  Страница ошибки действия: «не удалось сохранить/создать/удалить».
+  Отдельно от error/404 — там заголовок «404 Страница не найдена», и при отказе
+  записи в шаблон админ видел «404», хотя страница существует, а файл не пишется.
+  Параметры: title (что не удалось), message (подробность), back_url, back_label.
+#}
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="text-center py-10">
+        <div class="mb-6">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full">
+                <i class="fas fa-exclamation-triangle text-red-500 text-3xl"></i>
+            </div>
+        </div>
+
+        <h1 class="text-2xl font-semibold text-red-600 mb-4">{{ title }}</h1>
+        <p class="text-lg text-gray-600 mb-6">{{ message }}</p>
+
+        {% if hint is defined and hint %}
+        <div class="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-left">
+            <p class="text-sm text-yellow-900">{{ hint }}</p>
+        </div>
+        {% endif %}
+
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{{ back_url ?? admin_url('') }}"
+               class="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                <i class="fas fa-arrow-left"></i>
+                <span>{{ back_label ?? lang('error.back') }}</span>
+            </a>
+            <a href="{{ admin_url('') }}"
+               class="inline-flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                <i class="fas fa-home"></i>
+                <span>{{ lang('error.main_panel') }}</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

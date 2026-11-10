@@ -225,9 +225,17 @@ class FormRenderer {
 
     /**
      * Логирование согласия на обработку ПД
+     *
+     * Лог — это данные, а не код: он живёт в storage проекта и никогда внутри
+     * core/ (копия ядра перезаписывается раскаткой, а сам каталог core в git
+     * не попадает). Раньше писалось в core/src/Admin/storage/logs — файл
+     * оставался только на одном сайте и терялся при следующей раскатке.
      */
     private function logPdConsent(string $tableName, int $recordId): void {
-        $logDir = dirname(dirname(__FILE__)) . '/admin/storage/logs';
+        $base = defined('STORAGE_PATH')
+            ? STORAGE_PATH
+            : (defined('PROJECT_ROOT') ? PROJECT_ROOT . '/storage' : dirname(__DIR__, 4) . '/storage');
+        $logDir = $base . '/logs';
         if (!is_dir($logDir)) {
             @mkdir($logDir, 0755, true);
         }

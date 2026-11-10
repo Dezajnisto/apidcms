@@ -96,9 +96,7 @@ class TemplateController extends BaseController {
             ]);
             
         } catch (Exception $e) {
-            $this->render('error/404', [
-                'message' => $e->getMessage()
-            ]);
+            $this->renderError($e, 'template', $templateName);
         }
     }
     
@@ -187,9 +185,7 @@ class TemplateController extends BaseController {
             }
             
         } catch (Exception $e) {
-            $this->render('error/404', [
-                'message' => $e->getMessage()
-            ]);
+            $this->renderError($e, 'template', $templateName);
         }
     }
     
@@ -269,13 +265,58 @@ class TemplateController extends BaseController {
         // Создаем резервную копию
         if (file_exists($filePath)) {
             $backupPath = $filePath . '.backup.' . date('Y-m-d-His');
-            copy($filePath, $backupPath);
+            if (!@copy($filePath, $backupPath)) {
+                // Не фатально: шаблон важнее бэкапа, но причину надо видеть в логе.
+                error_log('TemplateController: backup failed for ' . $filePath);
+            }
         }
-        
+
         // Сохраняем новый контент
-        $result = file_put_contents($filePath, $content);
-        
+        $result = @file_put_contents($filePath, $content);
+
+        if ($result === false) {
+            // Типичная причина на проде: themes принадлежит admin:www-data с правами
+            // без записи для группы, а php-fpm работает под www-data. Без этой записи
+            // в логе остаётся только «Не удалось сохранить шаблон» без причины.
+            error_log(
+                'TemplateController: cannot write ' . $filePath
+                . ' (owner ' . (@fileowner($filePath) ?: '?')
+                . ', writable ' . (is_writable($filePath) ? 'yes' : 'no')
+                . ', dir writable ' . (is_writable(dirname($filePath)) ? 'yes' : 'no') . ')'
+            );
+        }
+
         return $result !== false;
+    }
+
+    /**
+     * Страница ошибки действия вместо «404 Страница не найдена».
+     *
+     * Шаблон существует и страница существует — не удалось записать файл.
+     * Показывать 404 в этом случае значит уводить админа в ложную сторону.
+     */
+    private function renderError(Exception $e, string $templateName = ''): void
+    {
+        $message = $e->getMessage();
+
+        // «не найден» и «некорректное имя» — это настоящий 404
+        $isNotFound = strpos($message, 'не найден') !== false
+            || strpos($message, 'not found') !== false
+            || strpos($message, 'Некорректное имя') !== false
+            || strpos($message, 'Invalid template name') !== false;
+
+        if ($isNotFound) {
+            $this->render('error/404', ['message' => $message]);
+            return;
+        }
+
+        $this->render('error/action', [
+            'title'    => $message,
+            'message'  => $this->lang->t('template.write_error_detail', ['name' => $templateName]),
+            'hint'     => $this->lang->t('template.write_error_hint'),
+            'back_url' => $this->generateAdminUrl('templates'),
+            'back_label' => $this->lang->t('template.back_to_list'),
+        ]);
     }
 
     /**

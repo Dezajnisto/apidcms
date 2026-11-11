@@ -844,6 +844,11 @@ class TableController extends BaseController {
 
         // Update the cell
         try {
+            // Empty value for a nullable non-text column becomes NULL,
+            // otherwise '' would break INTEGER/FK columns.
+            $normalized = $this->db->normalizeEmptyValues($table, [$column => $value]);
+            $value = $normalized[$column];
+
             $sql = "UPDATE " . $this->db->quoteIdentifier($table)
                  . " SET " . $this->db->quoteIdentifier($column) . " = ?"
                  . " WHERE id = ?";

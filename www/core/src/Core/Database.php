@@ -263,6 +263,8 @@ class Database {
      * @return int ID новой записи
      */
     public function insert($tableName, $data) {
+        $data = $this->normalizeEmptyValues($tableName, $data);
+
         $columns = [];
         $placeholders = [];
         $values = [];
@@ -290,6 +292,8 @@ class Database {
      * @return bool Успешность операции
      */
     public function update($tableName, $id, $data) {
+        $data = $this->normalizeEmptyValues($tableName, $data);
+
         $setParts = [];
         $values = [];
         
@@ -306,6 +310,60 @@ class Database {
         
         $stmt = $this->query($sql, $values);
         return $stmt->rowCount() > 0;
+    }
+
+    /**
+     * Turn empty form values into NULL for non-text columns.
+     *
+     * Admin forms submit an empty string for every field the user left
+     * untouched. SQLite stores '' in an INTEGER column as TEXT, so an empty
+     * foreign key (navigation.page_id, menu_items.page_id, ...) makes the
+     * constraint check fail with "FOREIGN KEY constraint failed", and an empty
+     * numeric column silently holds text instead of NULL.
+     *
+     * Text columns keep '' — it is a meaningful value there.
+     *
+     * @param string $tableName Table name
+     * @param array $data Row data
+     * @return array Normalized row data
+     */
+    public function normalizeEmptyValues($tableName, $data) {
+        if (!is_array($data) || empty($data)) {
+            return $data;
+        }
+
+        $structure = $this->getTableStructure($tableName);
+        $columns = [];
+        foreach ($structure as $column) {
+            $columns[$column['name']] = $column;
+        }
+
+        foreach ($data as $name => $value) {
+            if ($value !== '' || !isset($columns[$name])) {
+                continue;
+            }
+
+            $column = $columns[$name];
+            $type = strtoupper($column['type']);
+
+            if (strpos($type, 'TEXT') !== false || strpos($type, 'CHAR') !== false ||
+                strpos($type, 'CLOB') !== false || strpos($type, 'BLOB') !== false) {
+                continue;
+            }
+
+            if (!empty($column['notnull'])) {
+                // NULL is not allowed here; '' is never valid for a number
+                // (e.g. an unchecked checkbox of a NOT NULL INTEGER column).
+                if (preg_match('/INT|REAL|NUM|DEC|DOUB|FLOA|BOOL/', $type)) {
+                    $data[$name] = 0;
+                }
+                continue;
+            }
+
+            $data[$name] = null;
+        }
+
+        return $data;
     }
 
     /**

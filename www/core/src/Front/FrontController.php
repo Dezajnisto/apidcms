@@ -619,6 +619,12 @@ class FrontController {
             case 'external':
                 $this->handleExternalPage($navItem);
                 break;
+
+            case 'raw':
+                // Machine-readable files (robots.txt, sitemap.xml): render a
+                // template as-is, without the site layout.
+                $this->handleRawPage($navItem);
+                break;
                 
             case 'search':
                 $this->handleSearch($navItem);
@@ -1787,6 +1793,64 @@ private function handleFormSubmission() {
             'results' => $results,
             'results_count' => count($results)
         ]);
+    }
+
+    /**
+     * Handle raw page type — a template rendered as-is, without the site layout
+     *
+     * Used for machine-readable files: robots.txt, sitemap.xml, verification
+     * files of search engines. Content-Type comes from page_config:
+     *   {"content_type": "text/plain; charset=utf-8"}
+     *
+     * Template: page_config.template or navigation.template. A value without
+     * the .twig extension gets it appended ("robots" → "robots.html.twig").
+     */
+    private function handleRawPage($navItem) {
+        $config = $navItem->getPageConfig();
+
+        $template = trim((string)($config['template'] ?? ''));
+        if ($template === '' || $template === 'default') {
+            // Nothing to render — a raw page without a template is a config error.
+            $this->show404();
+            return;
+        }
+        if (substr($template, -5) !== '.twig') {
+            $template .= '.html.twig';
+        }
+
+        $contentType = trim((string)($config['content_type'] ?? ''));
+        if ($contentType === '') {
+            $contentType = 'text/plain; charset=utf-8';
+        }
+
+        $data = [
+            'nav_item' => $navItem,
+            '_GET' => $_GET,
+            'site_lang' => $this->locale,
+            'site_title' => $this->getSetting('site_title') ?: '',
+            'site_description' => $this->getSetting('site_description') ?: '',
+            'current_path' => trim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/'),
+        ];
+
+        // Хук: фильтр данных перед рендером — как в render()
+        try {
+            $pm = \Core\PluginManager::getInstance();
+            $data = $pm->applyFilters('front.render', $data, $template);
+        } catch (\Throwable $e) {
+            // PluginManager не инициализирован — ok
+        }
+
+        try {
+            $output = $this->twig->render($template, $data);
+        } catch (\Throwable $e) {
+            // Missing template — 404 instead of a 500 with a stack trace
+            $this->show404();
+            return;
+        }
+
+        header('Content-Type: ' . $contentType);
+        echo $output;
+        exit;
     }
 
     /**

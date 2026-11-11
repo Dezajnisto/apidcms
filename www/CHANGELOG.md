@@ -1,3 +1,23 @@
+## 2026-11-11 — v2.3.0 — robots.txt и sitemap.xml, исправлен FOREIGN KEY при сохранении
+
+### Добавлено
+- Новый тип страницы `raw`: отдаёт шаблон темы как есть, без layout сайта, с `Content-Type` из `page_config` (`{"content_type": "text/plain; charset=utf-8"}`)
+- `FrontController::handleRawPage()` — рендер без `base.html.twig`, 404 при отсутствии шаблона
+- Шаблон по умолчанию `core/views/front/robots.html.twig` (`User-agent: *`, `Disallow:`)
+- Так заводятся `robots.txt` и `sitemap.xml` через запись в `navigation` (`location: none`)
+
+### Исправлено
+- `create()` (store) не приводил пустые строки к `NULL`, в отличие от `update()`: пустой внешний ключ (`navigation.page_id`, `menu_items.page_id`, `docs.section_id`, `sections.page_id`, `gallery.section_id`) падал с `SQLSTATE[23000]: FOREIGN KEY constraint failed` — запись не сохранялась
+- Числовые поля без внешнего ключа (`menu_order`, `parent_id`) сохранялись как текст `''` вместо `0`
+- `Database::normalizeEmptyValues()` — единая нормализация пустых значений в `insert()`, `update()` и inline-редактировании ячейки: `''` → `NULL` для nullable не-текстовых колонок, `''` → `0` для NOT NULL числовых, текстовые колонки не меняются
+
+### Изменённые файлы
+- `core/src/Front/FrontController.php` — `case 'raw'`, `handleRawPage()`
+- `core/src/Core/Database.php` — `normalizeEmptyValues()`, вызов из `insert()`/`update()`
+- `core/src/Admin/TableController.php` — нормализация в `cellUpdate()`
+- `core/views/front/robots.html.twig` — шаблон по умолчанию
+- `core/VERSION`
+
 ## 2026-07-31 — v2.2.2 — items_per_page=0 отключает пагинацию для external-страниц
 
 ### Исправлено

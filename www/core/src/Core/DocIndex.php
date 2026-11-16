@@ -22,6 +22,9 @@ class DocIndex {
     /** @var array|null cached manifest */
     private $manifest;
 
+    /** @var string current documentation language */
+    private $lang = 'ru';
+
     public function __construct(?DocsFetcher $fetcher = null) {
         $this->fetcher = $fetcher ?: new DocsFetcher();
     }
@@ -175,8 +178,55 @@ class DocIndex {
      * Language of the documentation (ru|en), follows the site language.
      */
     public function setLang(string $lang): void {
+        $this->lang = $lang;
         $this->fetcher->setLang($lang);
         $this->manifest = null;
+    }
+
+    /**
+     * State of the local documentation cache: is it there, when was it
+     * refreshed, does it need a refresh.
+     *
+     * @return array{cached: bool, updated_at: ?int, stale: bool, docs: int, lang: string}
+     */
+    public function status(): array {
+        $status = $this->fetcher->manifestStatus();
+        $status['docs'] = count($this->toc());
+        $status['lang'] = $this->lang;
+        return $status;
+    }
+
+    /**
+     * Refresh the cache from GitHub — the only operation that needs the
+     * network. Both languages are refreshed: ?lang= must not depend on who
+     * looked at the site last.
+     *
+     * The total time is budgeted so that an unreachable network cannot turn
+     * the call into a fatal timeout; the caller may simply call it again.
+     *
+     * @return array{manifest: bool, refreshed: int, skipped: int, failed: int, failed_urls: string[], stopped_early: bool}
+     */
+    public function refresh(bool $force = false, int $budgetSeconds = 20): array {
+        $started = microtime(true);
+        $original = $this->lang;
+        $total = ['manifest' => false, 'refreshed' => 0, 'skipped' => 0, 'failed' => 0,
+                  'failed_urls' => [], 'stopped_early' => false];
+        foreach (['ru', 'en'] as $lang) {
+            $left = (int) max(1, $budgetSeconds - (microtime(true) - $started));
+            $this->setLang($lang);
+            $stats = $this->fetcher->refreshAll($force, $left);
+            $total['manifest'] = $total['manifest'] || $stats['manifest'];
+            $total['refreshed'] += $stats['refreshed'];
+            $total['skipped'] += $stats['skipped'];
+            $total['failed'] += $stats['failed'];
+            $total['failed_urls'] = array_merge($total['failed_urls'], $stats['failed_urls'] ?? []);
+            if (!empty($stats['stopped_early'])) {
+                $total['stopped_early'] = true;
+                break;
+            }
+        }
+        $this->setLang($original);
+        return $total;
     }
 
     private function manifest(): array {
@@ -191,7 +241,9 @@ class DocIndex {
             return $value;
         }
         if (is_array($value)) {
-            return (string) ($value['ru'] ?? reset($value) ?? '');
+            // Manifest titles and descriptions are localised objects: honour
+            // the requested language, fall back to ru, then to the first key.
+            return (string) ($value[$this->lang] ?? $value['ru'] ?? reset($value) ?? '');
         }
         return '';
     }

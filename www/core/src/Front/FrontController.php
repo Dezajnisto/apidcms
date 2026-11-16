@@ -1496,7 +1496,7 @@ private function handleFormSubmission() {
         // 🔒 Чёрный список: таблицы, которые НИКОГДА не отдаются в AI
         // (внутренняя механика CMS: настройки, безопасность, метаданные, аудит)
         $blacklist = ['sqlite_sequence', 'system_settings', 'users', 'user_tokens',
-            'entity_relations', 'visit_stats', 'table_meta', 'field_meta', 'api_idempotency'];
+            'entity_relations', 'visit_stats', 'table_meta', 'field_meta', 'api_idempotency', 'api_tokens'];
 
         // ✅ Белый список: таблицы, явно разрешённые админом
         // null/пусто → ничего не разрешено (безопасность по умолчанию)

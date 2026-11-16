@@ -7,9 +7,96 @@
 namespace Admin;
 
 use Core\Settings;
+use Core\TokenStore;
 use Exception;
 
 class SettingsController extends BaseController {
+
+    /**
+     * Настройки → API: named tokens with a scope, created and revoked here.
+     *
+     * The plaintext token is shown once: it is kept in the session across the
+     * redirect (never in the URL, where it would end up in logs and history).
+     */
+    public function api() {
+        try {
+            $store = new TokenStore($this->db);
+            $tokens = $store->all();
+
+            $newToken = null;
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            if (!empty($_SESSION['new_api_token'])) {
+                $newToken = $_SESSION['new_api_token'];
+                unset($_SESSION['new_api_token']);
+            }
+
+            $legacyKey = '';
+            $row = $this->db->query(
+                "SELECT setting_value FROM system_settings WHERE setting_key = 'api_key'"
+            )->fetch();
+            if ($row) {
+                $legacyKey = (string) $row['setting_value'];
+            }
+
+            $this->render("settings/api", [
+                "title" => $this->lang->t('settings.api_title'),
+                "tokens" => $tokens,
+                "new_token" => $newToken,
+                "legacy_key_set" => $legacyKey !== '',
+                "api_enabled" => $legacyKey !== '' || count(array_filter($tokens, fn($t) => $t['active'])) > 0,
+                "scopes" => TokenStore::SCOPES,
+                "host" => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https://' : 'http://')
+                    . ($_SERVER['HTTP_HOST'] ?? 'example.com'),
+            ]);
+        } catch (Exception $e) {
+            $this->render("error/404", [
+                "message" => $this->lang->t('settings.api_load_error') . ' ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * POST /settings/api/create — create a token and show it exactly once.
+     */
+    public function createToken() {
+        try {
+            $name = trim((string) ($_POST['name'] ?? ''));
+            $scope = (string) ($_POST['scope'] ?? 'full');
+            if ($name === '') {
+                $name = $this->lang->t('settings.api_default_name');
+            }
+
+            $store = new TokenStore($this->db);
+            $created = $store->create($name, $scope);
+
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $_SESSION['new_api_token'] = $created;
+
+            $this->redirect('/settings/api?created=1');
+        } catch (Exception $e) {
+            $this->redirect('/settings/api?error=' . urlencode($e->getMessage()));
+        }
+    }
+
+    /**
+     * POST /settings/api/revoke — the token stops working, the row stays.
+     */
+    public function revokeToken() {
+        try {
+            $id = (int) ($_POST['id'] ?? 0);
+            if ($id <= 0) {
+                throw new Exception($this->lang->t('settings.api_token_not_found'));
+            }
+            (new TokenStore($this->db))->revoke($id);
+            $this->redirect('/settings/api?revoked=1');
+        } catch (Exception $e) {
+            $this->redirect('/settings/api?error=' . urlencode($e->getMessage()));
+        }
+    }
 
     /**
      * Главная страница настроек
@@ -21,7 +108,7 @@ class SettingsController extends BaseController {
             // Таблицы для выбора публичных (AI-контекст)
             $allTables = $this->db->getTables();
             $blacklistedTables = ["sqlite_sequence", "system_settings", "users", "user_tokens",
-                "entity_relations", "visit_stats", "table_meta", "field_meta", "api_idempotency"];
+                "entity_relations", "visit_stats", "table_meta", "field_meta", "api_idempotency", "api_tokens"];
             $selectableTables = [];
             foreach ($allTables as $t) {
                 if (!in_array($t, $blacklistedTables)) {

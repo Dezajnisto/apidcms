@@ -34,7 +34,7 @@ class HomeController extends BaseController {
         $tables = $this->db->getTables();
 
         // System tables (created by init_system_tables.php + VisitStats)
-        $systemTableNames = ['pages', 'forms', 'navigation', 'system_settings', 'entity_relations', 'visit_stats'];
+        $systemTableNames = ['pages', 'forms', 'navigation', 'system_settings', 'entity_relations', 'visit_stats', 'api_tokens'];
 
         // Plugin tables (declared in plugin.json)
         $pm = \Core\PluginManager::getInstance();

@@ -74,6 +74,7 @@ class Router {
             'schema'     => $this->schema(),
             'navigation' => $this->navigation(),
             'relations'  => $this->relations(),
+            'docs'       => $this->docs(),
             'articles'   => $this->articles(),
             'tables'     => $this->tables(),
             'audit'      => $this->audit(),
@@ -110,7 +111,10 @@ class Router {
             'notes'        => [
                 'status "preview" means the contract may change; responses are never complete by default.',
                 'start with GET /api/v1/schema for the whole project in one call.',
-                'POST /mcp speaks Model Context Protocol: the same data as agent tools (schema.get, records.*, docs.*).',
+                'auth: Authorization: Bearer <token> from the admin (Settings → API). Scope read = GET only, content = writes to user tables, full = everything. The response header X-apidcms-scope tells which scope was used.',
+                'relations are read with GET /api/v1/relations[/{table}/{id}] and written with POST/DELETE /api/v1/relations.',
+                'documentation is served from the local cache: GET /api/v1/docs, GET /api/v1/docs/{slug}?lang=ru|en.',
+                'POST /mcp speaks Model Context Protocol: the same data as agent tools (schema.get, records.*, relations.*, docs.*).',
                 'endpoints marked "planned" answer 501 not_implemented, not 404.',
             ],
         ]);
@@ -126,6 +130,7 @@ class Router {
             ['name' => 'schema',          'methods' => ['GET'], 'path' => '/api/v1/schema',        'status' => 'ready'],
             ['name' => 'navigation',      'methods' => ['GET'], 'path' => '/api/v1/navigation',    'status' => 'ready'],
             ['name' => 'relations',       'methods' => ['GET'], 'path' => '/api/v1/relations',     'status' => 'ready'],
+            ['name' => 'relations.write', 'methods' => ['GET', 'POST', 'DELETE'], 'path' => '/api/v1/relations[/{table}/{id}]', 'status' => 'ready'],
             ['name' => 'tables.list',     'methods' => ['GET'], 'path' => '/api/v1/tables',        'status' => 'ready'],
             ['name' => 'tables.records',  'methods' => ['GET', 'POST', 'PUT', 'DELETE'], 'path' => '/api/v1/tables/{table}[/{id}]', 'status' => 'ready'],
             ['name' => 'tables.schema',   'methods' => ['GET'], 'path' => '/api/v1/tables/{table}/schema', 'status' => 'ready'],
@@ -135,8 +140,9 @@ class Router {
             ['name' => 'write.dry_run',   'methods' => [], 'path' => null,                   'status' => 'ready'],
             ['name' => 'write.idempotency', 'methods' => [], 'path' => null,                 'status' => 'ready'],
             ['name' => 'audit',           'methods' => ['GET'], 'path' => '/api/v1/audit',       'status' => 'ready'],
+            ['name' => 'docs',            'methods' => ['GET', 'POST'], 'path' => '/api/v1/docs[/{slug}]', 'status' => 'ready'],
             ['name' => 'assistant.tools', 'methods' => [], 'path' => null,                   'status' => 'ready'],
-            ['name' => 'tokens.scopes',   'methods' => [], 'path' => null,                   'status' => 'planned'],
+            ['name' => 'tokens.scopes',   'methods' => [], 'path' => null,                   'status' => 'ready'],
             ['name' => 'templates',       'methods' => ['GET', 'PUT'], 'path' => '/api/v1/templates/{name}', 'status' => 'planned'],
             ['name' => 'mcp',             'methods' => ['POST'], 'path' => '/mcp',                'status' => 'ready'],
         ];
@@ -168,16 +174,59 @@ class Router {
     }
 
     private function relations(): void {
-        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-            $this->err(405, 'method_not_allowed', 'Relations are read-only');
-        }
+        $method = $_SERVER['REQUEST_METHOD'];
         $table = $this->segments[1];
-        $inspector = new \Core\SchemaInspector($this->db);
-        if ($table !== null && !\Core\SchemaInspector::isSystemTable($table) && !$this->db->tableExists($table)) {
-            $this->err(404, 'not_found', "Таблица \"$table\" не существует");
+        $rowId = $this->segments[2];
+
+        if ($method === 'GET') {
+            if ($table !== null && $rowId !== null) {
+                (new RelationsController($this->db))->forRow($table, $rowId);
+            }
+            $inspector = new \Core\SchemaInspector($this->db);
+            if ($table !== null && !\Core\SchemaInspector::isSystemTable($table) && !$this->db->tableExists($table)) {
+                $this->err(404, 'not_found', "Таблица \"$table\" не существует");
+            }
+            $rows = $inspector->relations($table);
+            $this->ok([
+                'relations' => $rows,
+                'total'     => count($rows),
+                'notes'     => [
+                    'Read links of one row: GET /api/v1/relations/{table}/{id}.',
+                    'Write them: POST /api/v1/relations {source_table, source_id, relation_name, target_ids[]}; DELETE removes them.',
+                ],
+            ]);
         }
-        $rows = $inspector->relations($table);
-        $this->ok(['relations' => $rows, 'total' => count($rows)]);
+
+        if ($method === 'POST') {
+            (new RelationsController($this->db))->add();
+        }
+        if ($method === 'DELETE') {
+            (new RelationsController($this->db))->remove();
+        }
+
+        $this->err(405, 'method_not_allowed', 'Разрешены GET, POST и DELETE');
+    }
+
+    // ── /api/v1/docs ───────────────────────────────────
+
+    /**
+     * Documentation: local cache, network only for an explicit refresh.
+     */
+    private function docs(): void {
+        $ctrl = new DocsController($this->db);
+        $slug = $this->segments[1];
+        $method = $_SERVER['REQUEST_METHOD'];
+
+        if ($method === 'GET') {
+            if ($slug === null || $slug === '') {
+                $ctrl->list();
+            }
+            $ctrl->get($slug);
+        }
+        if ($method === 'POST' && $slug === 'refresh') {
+            $ctrl->refresh();
+        }
+        $this->err(405, 'method_not_allowed', 'Разрешены GET и POST /api/v1/docs/refresh');
     }
 
     // ── /api/v1/audit ──────────────────────────────────

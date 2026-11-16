@@ -30,6 +30,21 @@ class AgentTools {
     /** @var DocIndex|null */
     private $docs;
 
+    /** @var string token scope: read blocks every write tool */
+    private $scope = 'full';
+
+    /** Tools that change data: refused for a read-only token. */
+    private const WRITE_TOOLS = [
+        'records.create', 'records.update', 'records.delete',
+        'relations.add', 'relations.remove',
+    ];
+
+    /**
+     * Operator-only tools: they expose client IPs and diffs of writes, which a
+     * read token must not see (a published demo token would leak them).
+     */
+    private const OPERATOR_TOOLS = ['audit.list'];
+
     public function __construct(Database $db) {
         $this->db = $db;
     }
@@ -146,6 +161,36 @@ class AgentTools {
                 ],
             ],
             [
+                'name'        => 'relations.add',
+                'description' => 'Link a record to related records (many-to-many): for example put a product into categories. Relation names come from schema.get (relations[].relation_name). Existing links are reported, not duplicated.',
+                'inputSchema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'source_table'  => ['type' => 'string'],
+                        'source_id'     => ['type' => 'integer'],
+                        'relation_name' => ['type' => 'string'],
+                        'target_ids'    => ['type' => 'array', 'items' => ['type' => 'integer']],
+                        'dry_run'       => ['type' => 'boolean'],
+                    ],
+                    'required' => ['source_table', 'source_id', 'relation_name', 'target_ids'],
+                ],
+            ],
+            [
+                'name'        => 'relations.remove',
+                'description' => 'Unlink a record from related records. Empty target_ids unlinks them all.',
+                'inputSchema' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'source_table'  => ['type' => 'string'],
+                        'source_id'     => ['type' => 'integer'],
+                        'relation_name' => ['type' => 'string'],
+                        'target_ids'    => ['type' => 'array', 'items' => ['type' => 'integer']],
+                        'dry_run'       => ['type' => 'boolean'],
+                    ],
+                    'required' => ['source_table', 'source_id', 'relation_name'],
+                ],
+            ],
+            [
                 'name'        => 'audit.list',
                 'description' => 'Recent writes: method, path, table, row, IP and the diff. Use it to check what has already been done.',
                 'inputSchema' => [
@@ -210,8 +255,25 @@ class AgentTools {
      * @param string $name dot name ("schema.get") or function name ("schema_get")
      * @return array{ok: bool, data?: mixed, error?: array}
      */
-    public function call(string $name, array $args = [], string $actor = 'agent'): array {
+    public function call(string $name, array $args = [], string $actor = 'agent', ?string $scope = null): array {
+        if ($scope !== null) {
+            $this->scope = $scope;
+        }
         $name = $this->canonicalName($name);
+        if ($this->scope === 'read' && in_array($name, self::WRITE_TOOLS, true)) {
+            return $this->failResult(
+                'insufficient_scope',
+                "Tool \"$name\" changes data, but this token is read-only. Create a token with the content or full scope.",
+                ['scope' => $this->scope, 'tool' => $name]
+            );
+        }
+        if ($this->scope === 'read' && in_array($name, self::OPERATOR_TOOLS, true)) {
+            return $this->failResult(
+                'insufficient_scope',
+                "Tool \"$name\" exposes operator data (client IPs, write diffs); a read token cannot use it.",
+                ['scope' => $this->scope, 'tool' => $name]
+            );
+        }
         try {
             switch ($name) {
                 case 'schema.get':
@@ -230,6 +292,10 @@ class AgentTools {
                     return $this->okResult($this->inspector()->navigationGraph());
                 case 'relations.list':
                     return $this->okResult($this->inspector()->relations($args['table'] ?? null));
+                case 'relations.add':
+                    return $this->toolRelationAdd($args, $actor);
+                case 'relations.remove':
+                    return $this->toolRelationRemove($args, $actor);
                 case 'audit.list':
                     return $this->okResult($this->toolAudit($args));
                 case 'docs.list':
@@ -470,6 +536,88 @@ class AgentTools {
 
         $this->audit()->record('DELETE', $table, $id, ['before' => $row], $actor);
         return $this->okResult(['deleted' => true, 'table' => $table, 'id' => $id]);
+    }
+
+    private function toolRelationAdd(array $args, string $actor): array {
+        return $this->toolRelationWrite($args, $actor, true);
+    }
+
+    private function toolRelationRemove(array $args, string $actor): array {
+        return $this->toolRelationWrite($args, $actor, false);
+    }
+
+    /**
+     * Link or unlink targets, with the same validation as /api/v1/relations.
+     */
+    private function toolRelationWrite(array $args, string $actor, bool $link): array {
+        $relations = new Relations($this->db);
+        $checked = $relations->check([
+            'source_table'  => $args['source_table'] ?? '',
+            'source_id'     => $args['source_id'] ?? 0,
+            'relation_name' => $args['relation_name'] ?? '',
+            'target_ids'    => $args['target_ids'] ?? [],
+        ]);
+        if ($checked['errors']) {
+            return $this->failResult('validation_failed', 'Проверьте поля', [
+                'action' => $link ? 'link' : 'unlink',
+                'fields' => $checked['errors'],
+            ]);
+        }
+
+        $table = (string) $checked['source_table'];
+        $rowId = (int) $checked['source_id'];
+        $relationName = (string) $checked['relation_name'];
+        $targetIds = (array) $checked['target_ids'];
+        $before = $relations->links($table, $rowId, $relationName);
+
+        if (!empty($args['dry_run'])) {
+            $after = $link
+                ? array_values(array_unique(array_merge($before, $targetIds)))
+                : array_values(array_diff($before, $targetIds));
+            sort($after);
+            return $this->okResult([
+                'dry_run'       => true,
+                'action'        => $link ? 'link' : 'unlink',
+                'source_table'  => $table,
+                'source_id'     => $rowId,
+                'relation_name' => $relationName,
+                'target_table'  => $checked['target_table'],
+                'would_change'  => $after !== $before,
+                'before'        => $before,
+                'after'         => $after,
+                'affected_urls' => $this->affectedUrls($table),
+            ]);
+        }
+
+        if ($link) {
+            $result = $relations->add($table, $rowId, $relationName, $targetIds);
+            $changes = ['added' => $result['added'], 'already' => $result['already']];
+            $action = 'link';
+        } else {
+            $result = $relations->remove($table, $rowId, $relationName, $targetIds);
+            $changes = ['removed' => $result['removed'], 'missing' => $result['missing']];
+            $action = 'unlink';
+        }
+        $after = $relations->links($table, $rowId, $relationName);
+
+        $this->audit()->record($link ? 'POST' : 'DELETE', $table, $rowId, [
+            'relation_name' => $relationName,
+            'target_table'  => $checked['target_table'],
+            'before'        => $before,
+            'after'         => $after,
+            'changed'       => $changes,
+        ], $actor);
+
+        return $this->okResult([
+            'action'        => $action,
+            'source_table'  => $table,
+            'source_id'     => $rowId,
+            'relation_name' => $relationName,
+            'target_table'  => $checked['target_table'],
+            'target_ids'    => $after,
+            'count'         => count($after),
+            'changes'       => $changes,
+        ]);
     }
 
     private function toolAudit(array $args): array {

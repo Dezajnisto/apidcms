@@ -39,7 +39,7 @@ class SchemaInspector {
     private const SYSTEM_TABLES = [
         'users', 'user_tokens',
         'entity_relations', 'visit_stats', 'table_meta', 'field_meta',
-        'api_idempotency',
+        'api_idempotency', 'api_tokens',
         'sqlite_master', 'sqlite_sequence',
     ];
 
@@ -238,12 +238,17 @@ class SchemaInspector {
         }
 
         $tables = $this->userTables();
+        // The target table is not stored on the pivot. Prefer the project's own
+        // declaration (navigation.page_config.relations), fall back to "the
+        // relation is named after its table", and keep null when we cannot know.
+        $declared = (new Relations($this->db))->map();
         $result = [];
         foreach ($rows as $r) {
+            $target = $declared[$r['relation_name']] ?? (in_array($r['relation_name'], $tables, true) ? $r['relation_name'] : null);
             $result[] = [
                 'relation_name' => $r['relation_name'],
                 'source_table'  => $r['source_table'],
-                'target_table'  => in_array($r['relation_name'], $tables, true) ? $r['relation_name'] : null,
+                'target_table'  => $target,
                 'count'         => (int) $r['c'],
             ];
         }

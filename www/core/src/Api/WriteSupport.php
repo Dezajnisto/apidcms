@@ -121,7 +121,9 @@ trait WriteSupport {
 
     /** Write one audit entry; never fails the write it describes. */
     private function auditWrite(string $method, string $table, ?int $rowId, array $diff): void {
-        (new \Core\Audit($this->db))->record($method, $table, $rowId, $diff);
+        // The token that made the change is part of the trail: two agents may
+        // share one site, and "who did it" must not be a guess.
+        (new \Core\Audit($this->db))->record($method, $table, $rowId, $diff, 'api', Auth::currentTokenId());
     }
 
     /**

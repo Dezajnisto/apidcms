@@ -165,6 +165,9 @@ class App {
 
                 $this->addRoute('/stats', 'StatsController', 'index');
         $this->addRoute('/settings', 'SettingsController', 'index');
+        $this->addRoute('/settings/api', 'SettingsController', 'api');
+        $this->addRoute('/settings/api/create', 'SettingsController', 'createToken');
+        $this->addRoute('/settings/api/revoke', 'SettingsController', 'revokeToken');
         $this->addRoute('/settings/save', 'SettingsController', 'saveSetting');
         $this->addRoute('/settings/save-site', 'SettingsController', 'saveSiteSetting');
         $this->addRoute('/settings/save-multiple', 'SettingsController', 'saveSettings');

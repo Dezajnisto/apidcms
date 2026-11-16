@@ -201,6 +201,23 @@ $pdo->exec('
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_idem_created ON api_idempotency(created_at)");
 echo "[OK] api_idempotency\n";
 
+// 13. API tokens: named keys with a scope, revocable in the admin.
+// Also created lazily by Core\TokenStore. Not to be confused with the older
+// user_tokens table (remember-me logins) that some sites still carry.
+$pdo->exec('
+    CREATE TABLE IF NOT EXISTS api_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL DEFAULT \'\',
+        token_hash TEXT NOT NULL UNIQUE,
+        scope TEXT NOT NULL DEFAULT \'full\',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_used_at DATETIME,
+        revoked_at DATETIME
+    )
+');
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_api_tokens_hash ON api_tokens(token_hash)");
+echo "[OK] api_tokens\n";
+
 
 echo "\n=== Базовые настройки ===\n";
 

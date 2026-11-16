@@ -1,0 +1,206 @@
+{# admin/views/settings/api.html.twig — API tokens: create, see, revoke #}
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
+        <div>
+            <h1 class="text-xl md:text-2xl font-bold text-gray-900">{{ lang('settings.api_title') }}</h1>
+            <p class="text-sm text-gray-500 mt-1">{{ lang('settings.api_subtitle') }}</p>
+        </div>
+        <a href="{{ admin_url('settings') }}" class="text-sm text-blue-600 hover:text-blue-800 whitespace-nowrap">
+            <i class="fas fa-arrow-left"></i> {{ lang('settings.api_back') }}
+        </a>
+    </div>
+
+    {% if _GET.created is defined %}
+    <div class="mb-4 p-3 md:p-4 bg-green-100 border border-green-400 text-green-800 rounded-lg text-sm">
+        <i class="fas fa-check-circle"></i> {{ lang('settings.api_created') }}
+    </div>
+    {% endif %}
+    {% if _GET.revoked is defined %}
+    <div class="mb-4 p-3 md:p-4 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded-lg text-sm">
+        <i class="fas fa-ban"></i> {{ lang('settings.api_revoked') }}
+    </div>
+    {% endif %}
+    {% if _GET.error is defined %}
+    <div class="mb-4 p-3 md:p-4 bg-red-100 border border-red-400 text-red-800 rounded-lg text-sm">
+        <i class="fas fa-exclamation-circle"></i> {{ _GET.error }}
+    </div>
+    {% endif %}
+
+    {# The only moment the token itself is visible: after this page it is a hash. #}
+    {% if new_token %}
+    <div class="mb-6 bg-gray-900 text-gray-100 rounded-lg p-4 md:p-5">
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="text-base font-semibold text-white">
+                <i class="fas fa-key"></i> {{ lang('settings.api_new_token_title') }}
+            </h2>
+            <span class="text-xs text-yellow-300">{{ lang('settings.api_new_token_once') }}</span>
+        </div>
+        <div class="flex flex-col sm:flex-row items-stretch gap-2">
+            <input id="newApiToken" type="text" readonly value="{{ new_token.token }}"
+                   class="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded font-mono text-sm text-green-300 select-all">
+            <button type="button" onclick="copyApiToken()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm whitespace-nowrap">
+                <i class="fas fa-copy"></i> <span id="copyApiTokenLabel">{{ lang('settings.api_copy') }}</span>
+            </button>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">
+            {{ lang('settings.api_new_token_scope') }} <span class="font-mono text-gray-200">{{ new_token.scope }}</span>
+            — {{ lang('settings.api_new_token_name') }} <span class="font-mono text-gray-200">{{ new_token.name }}</span>
+        </p>
+    </div>
+    {% endif %}
+
+    {# ── State ─────────────────────────────────────── #}
+    <div class="bg-white rounded-lg shadow-sm border p-4 md:p-6 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span class="text-sm text-gray-600">{{ lang('settings.api_state') }}</span>
+            {% if api_enabled %}
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <i class="fas fa-check mr-1"></i> {{ lang('settings.api_enabled') }}
+            </span>
+            {% else %}
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                <i class="fas fa-times mr-1"></i> {{ lang('settings.api_disabled') }}
+            </span>
+            {% endif %}
+        </div>
+        <p class="text-xs text-gray-500 mt-2">{{ lang('settings.api_state_hint') }}</p>
+
+        {% if legacy_key_set %}
+        <div class="mt-3 p-3 bg-yellow-50 border border-yellow-300 rounded text-xs text-yellow-800">
+            <i class="fas fa-exclamation-triangle"></i> {{ lang('settings.api_legacy_key') }}
+        </div>
+        {% endif %}
+    </div>
+
+    {# ── Create ────────────────────────────────────── #}
+    <div class="bg-white rounded-lg shadow-sm border mb-6">
+        <div class="px-4 md:px-6 py-3 md:py-4 border-b">
+            <h2 class="text-base md:text-lg font-semibold text-gray-900">{{ lang('settings.api_create_title') }}</h2>
+            <p class="text-xs text-gray-500 mt-1">{{ lang('settings.api_create_hint') }}</p>
+        </div>
+        <form method="POST" action="{{ admin_url('settings/api/create') }}" class="p-4 md:p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ lang('settings.api_name') }}</label>
+                    <input type="text" name="name" required maxlength="100"
+                           placeholder="{{ lang('settings.api_name_placeholder') }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                    <p class="text-xs text-gray-400 mt-1">{{ lang('settings.api_name_hint') }}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ lang('settings.api_scope') }}</label>
+                    <select name="scope" class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                        {% for scope in scopes %}
+                        <option value="{{ scope }}" {{ scope == 'read' ? 'selected' : '' }}>{{ lang('settings.api_scope_' ~ scope) }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">{{ lang('settings.api_scope_hint') }}</p>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                        <i class="fas fa-plus"></i> {{ lang('settings.api_create_btn') }}
+                    </button>
+                </div>
+            </div>
+            <div class="mt-3 text-xs text-gray-500 space-y-1">
+                <div><span class="font-mono text-gray-700">read</span> — {{ lang('settings.api_scope_read_hint') }}</div>
+                <div><span class="font-mono text-gray-700">content</span> — {{ lang('settings.api_scope_content_hint') }}</div>
+                <div><span class="font-mono text-gray-700">full</span> — {{ lang('settings.api_scope_full_hint') }}</div>
+            </div>
+        </form>
+    </div>
+
+    {# ── List ──────────────────────────────────────── #}
+    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div class="px-4 md:px-6 py-3 md:py-4 border-b">
+            <h2 class="text-base md:text-lg font-semibold text-gray-900">{{ lang('settings.api_list_title') }}</h2>
+        </div>
+        {% if tokens is empty %}
+        <div class="p-4 md:p-6 text-sm text-gray-500">{{ lang('settings.api_empty') }}</div>
+        {% else %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b text-left text-gray-500 bg-gray-50">
+                        <th class="px-4 py-3">{{ lang('settings.api_col_name') }}</th>
+                        <th class="px-4 py-3">{{ lang('settings.api_col_scope') }}</th>
+                        <th class="px-4 py-3 hidden md:table-cell">{{ lang('settings.api_col_created') }}</th>
+                        <th class="px-4 py-3 hidden sm:table-cell">{{ lang('settings.api_col_last_used') }}</th>
+                        <th class="px-4 py-3">{{ lang('settings.api_col_status') }}</th>
+                        <th class="px-4 py-3 text-right">{{ lang('settings.api_col_actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for token in tokens %}
+                    <tr class="border-b hover:bg-gray-50 {{ token.active ? '' : 'opacity-60' }}">
+                        <td class="px-4 py-3 font-medium text-gray-900">{{ token.name }}</td>
+                        <td class="px-4 py-3">
+                            <span class="font-mono text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">{{ token.scope }}</span>
+                        </td>
+                        <td class="px-4 py-3 text-xs text-gray-500 hidden md:table-cell">{{ token.created_at }}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500 hidden sm:table-cell">
+                            {{ token.last_used_at ? token.last_used_at : lang('settings.api_never_used') }}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if token.active %}
+                            <span class="text-xs px-2 py-0.5 rounded bg-green-100 text-green-800">{{ lang('settings.api_status_active') }}</span>
+                            {% else %}
+                            <span class="text-xs px-2 py-0.5 rounded bg-gray-200 text-gray-600">{{ lang('settings.api_status_revoked') }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            {% if token.active %}
+                            <form method="POST" action="{{ admin_url('settings/api/revoke') }}" class="inline"
+                                  onsubmit="return confirm('{{ lang('settings.api_revoke_confirm')|e('js') }}');">
+                                <input type="hidden" name="id" value="{{ token.id }}">
+                                <button type="submit" class="text-red-600 hover:text-red-800 text-xs">
+                                    <i class="fas fa-ban"></i> {{ lang('settings.api_revoke') }}
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="text-xs text-gray-400">{{ token.revoked_at }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    {# ── How to use ────────────────────────────────── #}
+    <div class="mt-6 bg-white rounded-lg shadow-sm border p-4 md:p-6">
+        <h2 class="text-base font-semibold text-gray-900 mb-2">{{ lang('settings.api_how_title') }}</h2>
+        <pre class="bg-gray-900 text-gray-100 rounded p-3 text-xs overflow-x-auto">curl -H "Authorization: Bearer apc_..." {{ host }}/api/v1/schema</pre>
+        <p class="text-xs text-gray-500 mt-2">{{ lang('settings.api_how_mcp') }}</p>
+    </div>
+</div>
+
+<script>
+function copyApiToken() {
+    var input = document.getElementById('newApiToken');
+    if (!input) return;
+    input.select();
+    input.setSelectionRange(0, 99999);
+    var done = function () {
+        var label = document.getElementById('copyApiTokenLabel');
+        if (label) label.textContent = __t('settings.api_copied');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(input.value).then(done, done);
+    } else {
+        try { document.execCommand('copy'); } catch (e) {}
+        done();
+    }
+}
+</script>
+{% endblock %}

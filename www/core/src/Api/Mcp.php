@@ -31,6 +31,9 @@ class Mcp {
     /** @var AgentTools */
     private $tools;
 
+    /** @var string scope of the authenticated token */
+    private $scope = 'full';
+
     public function __construct(\Core\Database $db) {
         $this->db = $db;
         $this->tools = new AgentTools($db);
@@ -64,7 +67,9 @@ class Mcp {
             exit;
         }
 
-        (new Auth($this->db))->require();
+        $auth = new Auth($this->db);
+        $auth->require();
+        $this->scope = $auth->scope();
 
         $raw = file_get_contents('php://input');
         $payload = json_decode($raw, true);
@@ -153,6 +158,7 @@ class Mcp {
             'This server exposes one website built on apidcms: its data tables, the page map and the documentation.',
             'Start with schema.get — it returns every table, column, allowed value, relation and page in one call.',
             'Records can be written: records.create / records.update / records.delete. Every write is validated against the table (types, NOT NULL, enums, foreign keys) and leaves an audit entry.',
+            'Many-to-many links are written with relations.add / relations.remove — entity_relations is never touched as a table.',
             'Pass dry_run=true to see what would change — including which URLs would be affected — without writing.',
             'If a write is rejected, the error lists column, rule, got and expected: fix those fields and retry.',
             'Docs live as resources (apidcms://docs/{slug}); read apidcms://docs/toc first instead of fetching everything.',
@@ -187,7 +193,7 @@ class Mcp {
         $name = (string) ($params['name'] ?? '');
         $args = is_array($params['arguments'] ?? null) ? $params['arguments'] : [];
 
-        $result = $this->tools->call($name, $args, 'mcp');
+        $result = $this->tools->call($name, $args, 'mcp', $this->scope);
         $payload = $result['ok'] ? $result['data'] : $result['error'];
 
         return [

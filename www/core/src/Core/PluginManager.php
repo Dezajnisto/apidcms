@@ -68,7 +68,16 @@ class PluginManager
     }
 
     /**
-     * Загрузить все активные плагины
+     * Загрузить все активные плагины.
+     *
+     * Порядок загрузки — по зависимостям, а не по алфавиту. Раньше плагины
+     * перебирались в том порядке, в каком их отдаёт glob(), то есть по имени
+     * каталога, а зависимости проверялись по уже загруженным. Плагин, чья
+     * зависимость сортируется позже по алфавиту, не грузился НИКОГДА:
+     * например enfesto-license зависит от subscription, а «e» раньше «s».
+     *
+     * Теперь три шага: прочитать все plugin.json, вычислить порядок
+     * (зависимости первыми), загрузить init.php в этом порядке.
      */
     public function loadPlugins(?Database $db = null): void
     {
@@ -78,55 +87,28 @@ class PluginManager
             return;
         }
 
-        // Сканируем директории плагинов
-        $dirs = glob($this->pluginsDir . '/*', GLOB_ONLYDIR);
-        if (!$dirs) {
+        $registry = $this->scanPlugins();
+        if (!$registry) {
             return;
         }
 
-        foreach ($dirs as $pluginDir) {
-            $pluginJson = $pluginDir . '/plugin.json';
-            if (!file_exists($pluginJson)) {
-                continue;
-            }
+        // Регистрируем все плагины сразу: админке нужен полный список, а
+        // проверка зависимостей больше не зависит от того, что успело
+        // загрузиться до текущего момента.
+        foreach ($registry as $name => $config) {
+            $this->plugins[$name] = $config;
+        }
 
-            $config = json_decode(file_get_contents($pluginJson), true);
-            if (!$config || empty($config['name'])) {
-                continue;
-            }
+        [$order, $problems] = $this->resolveLoadOrder($registry);
 
-            $pluginName = $config['name'];
-            $config['path'] = $pluginDir;
+        foreach ($order as $name) {
+            $this->loadPlugin($registry[$name]);
+        }
 
-            // Проверяем enabled
-            if (empty($config['enabled'])) {
-                $this->plugins[$pluginName] = $config;
-                continue; // плагин зарегистрирован, но не загружен
-            }
-
-            // Проверяем зависимости
-            if (!$this->checkDependencies($config)) {
-                error_log("PluginManager: плагин '{$pluginName}' не загружен — не удовлетворены зависимости");
-                $this->plugins[$pluginName] = $config;
-                continue;
-            }
-
-            // Загружаем init.php плагина
-            $initFile = $pluginDir . '/init.php';
-            if (file_exists($initFile)) {
-                if (empty($this->loadedPlugins[$pluginName])) {
-                    try {
-                        $pm = $this; // plugin gets access via $pm
-                        require $initFile;
-                        $this->loadedPlugins[$pluginName] = true;
-                        $this->plugins[$pluginName] = $config;
-                    } catch (\Throwable $e) {
-                        error_log("PluginManager: plugin load error '{$pluginName}': " . $e->getMessage());
-                    }
-                } else {
-                    $this->plugins[$pluginName] = $config;
-                }
-            }
+        // Причина отказа — конкретная, а не «не удовлетворены зависимости»:
+        // иначе владелец сайта ищет проблему в своих plugin.json наугад.
+        foreach ($problems as $name => $reason) {
+            error_log("PluginManager: плагин '" . $name . "' не загружен — " . $reason);
         }
 
         // Выполняем миграции для активных плагинов (только если есть DB)
@@ -136,21 +118,153 @@ class PluginManager
     }
 
     /**
-     * Проверить зависимости плагина
+     * Прочитать все plugin.json из plugins/ (без загрузки кода).
+     *
+     * @return array<string, array> [имя плагина => конфиг с добавленным path]
      */
-    private function checkDependencies(array $config): bool
+    private function scanPlugins(): array
     {
-        if (empty($config['dependencies'])) {
-            return true;
+        $dirs = glob($this->pluginsDir . '/*', GLOB_ONLYDIR) ?: [];
+        sort($dirs); // одинаковая выборка при одинаковых данных
+
+        $registry = [];
+        foreach ($dirs as $pluginDir) {
+            $pluginJson = $pluginDir . '/plugin.json';
+            if (!file_exists($pluginJson)) {
+                continue;
+            }
+
+            $config = json_decode((string) file_get_contents($pluginJson), true);
+            if (!$config || empty($config['name'])) {
+                continue;
+            }
+
+            $config['path'] = $pluginDir;
+            $registry[$config['name']] = $config;
         }
 
-        foreach ($config['dependencies'] as $dep) {
-            if (!isset($this->plugins[$dep]) || empty($this->plugins[$dep]['enabled'])) {
-                return false;
+        return $registry;
+    }
+
+    /**
+     * Порядок загрузки: сначала зависимости, потом зависимые.
+     *
+     * @param array<string, array> $registry
+     * @return array{0: string[], 1: array<string, string>} [порядок, причины отказа]
+     */
+    private function resolveLoadOrder(array $registry): array
+    {
+        $order = [];
+        $problems = [];
+        $state = [];
+
+        foreach (array_keys($registry) as $name) {
+            $this->visitPlugin($name, $registry, $state, $order, $problems);
+        }
+
+        return [$order, $problems];
+    }
+
+    /**
+     * Обход в глубину: плагин попадает в очередь после своих зависимостей.
+     *
+     * @param array<string, int>    $state    1 — в процессе (значит цикл), 2 — разобран
+     * @param string[]              $order    очередь загрузки
+     * @param array<string, string> $problems имя => причина, почему не грузим
+     */
+    private function visitPlugin(string $name, array $registry, array &$state, array &$order, array &$problems): void
+    {
+        $current = $state[$name] ?? 0;
+        if ($current === 2) {
+            return;
+        }
+        if ($current === 1) {
+            $problems[$name] = 'циклическая зависимость';
+            return;
+        }
+
+        $state[$name] = 1;
+
+        // Выключенные плагины регистрируем, но не грузим: они нужны списку в
+        // админке и не должны тянуть за собой ничего.
+        if (empty($registry[$name]['enabled'])) {
+            $state[$name] = 2;
+            return;
+        }
+
+        foreach ($registry[$name]['dependencies'] ?? [] as $dep) {
+            $dep = (string) $dep;
+
+            if (!isset($registry[$dep])) {
+                $problems[$name] = "нужен плагин '" . $dep . "', а его нет в plugins/";
+                continue;
+            }
+            if (empty($registry[$dep]['enabled'])) {
+                $problems[$name] = "нужен плагин '" . $dep . "', но он выключен";
+                continue;
+            }
+
+            $this->visitPlugin($dep, $registry, $state, $order, $problems);
+
+            if (isset($problems[$dep])) {
+                // Причину передаём дальше: иначе вся цепочка жалуется на
+                // «не загружается» и настоящая поломка теряется в конце.
+                $problems[$name] = "нужен плагин '" . $dep . "', а он не загружается"
+                    . ($problems[$dep] === 'циклическая зависимость' ? ' (циклическая зависимость)' : '');
             }
         }
 
-        return true;
+        $state[$name] = 2;
+        if (!isset($problems[$name])) {
+            $order[] = $name;
+        }
+    }
+
+    /**
+     * Загрузить init.php одного плагина — ровно один раз за запрос.
+     */
+    private function loadPlugin(array $config): void
+    {
+        $name = $config['name'];
+
+        if (!empty($this->loadedPlugins[$name])) {
+            $this->plugins[$name] = $config;
+            return;
+        }
+
+        $initFile = $config['path'] . '/init.php';
+        if (!file_exists($initFile)) {
+            // Плагин без init.php — это тоже нормально (только метаданные):
+            // считаем его активным, иначе от него нельзя будет включить зависимый.
+            $this->loadedPlugins[$name] = true;
+            return;
+        }
+
+        try {
+            $pm = $this; // плагин получает доступ к менеджеру через $pm
+            require $initFile;
+            $this->loadedPlugins[$name] = true;
+        } catch (\Throwable $e) {
+            error_log("PluginManager: plugin load error '" . $name . "': " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Сохранить plugin.json, не записывая в него служебные поля.
+     *
+     * Раньше activate()/deactivate() писали в файл весь конфиг вместе с
+     * абсолютным путём к каталогу плагина на ЭТОМ сервере. Путь уезжал в git
+     * проекта (на bajto.ru так и лежит /home/c91469/... от старого хостинга)
+     * и ничего не значил при следующем деплое.
+     */
+    private function saveConfig(array $config): void
+    {
+        $path = $config['path'];
+        unset($config['path']);
+        file_put_contents(
+            $path . '/plugin.json',
+            json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
     }
 
     /**
@@ -198,24 +312,31 @@ class PluginManager
             return false;
         }
 
+        // Включать плагин без включённых зависимостей нельзя: его init.php
+        // рассчитывает на классы и хуки зависимости, падение будет непонятным.
+        // Причина уходит в админку исключением — её показывают во flash.
+        foreach ($this->plugins[$name]['dependencies'] ?? [] as $dep) {
+            if (!isset($this->plugins[$dep])) {
+                throw new \RuntimeException("плагин '" . $name . "' требует '" . $dep . "', а его нет в plugins/");
+            }
+            if (empty($this->plugins[$dep]['enabled'])) {
+                throw new \RuntimeException("плагин '" . $name . "' требует '" . $dep . "' — сначала включите его");
+            }
+            if (empty($this->loadedPlugins[$dep])) {
+                // Зависимость включена, но не загрузилась (её саму отсеяли по
+                // цепочке) — иначе получим фатал в init.php.
+                throw new \RuntimeException("плагин '" . $name . "' требует '" . $dep . "', а он не загружен");
+            }
+        }
+
         $config = $this->plugins[$name];
         $config['enabled'] = true;
 
-        // Сохраняем в plugin.json
-        $pluginJson = $config['path'] . '/plugin.json';
-        file_put_contents($pluginJson, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        // Сохраняем в plugin.json (без служебного path — см. saveConfig)
+        $this->saveConfig($config);
 
         // Загружаем init.php
-        $initFile = $config['path'] . '/init.php';
-        if (file_exists($initFile)) {
-            try {
-                $pm = $this;
-                require $initFile;
-            } catch (\Throwable $e) {
-                error_log("PluginManager: ошибка активации '{$name}': " . $e->getMessage());
-                return false;
-            }
-        }
+        $this->loadPlugin($config);
 
         $this->plugins[$name] = $config;
 
@@ -236,12 +357,22 @@ class PluginManager
             return false;
         }
 
+        // Выключить плагин, от которого зависят включённые, нельзя: они
+        // останутся в состоянии «включён, но его init.php не выполнялся».
+        foreach ($this->plugins as $otherName => $other) {
+            if ($otherName === $name || empty($other['enabled'])) {
+                continue;
+            }
+            if (in_array($name, $other['dependencies'] ?? [], true)) {
+                throw new \RuntimeException("от '" . $name . "' зависит плагин '" . $otherName . "' — сначала выключите его");
+            }
+        }
+
         $config = $this->plugins[$name];
         $config['enabled'] = false;
 
-        // Сохраняем в plugin.json
-        $pluginJson = $config['path'] . '/plugin.json';
-        file_put_contents($pluginJson, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        // Сохраняем в plugin.json (без служебного path — см. saveConfig)
+        $this->saveConfig($config);
 
         // Удаляем зарегистрированные хуки этого плагина
         $this->removePluginHooks($name);

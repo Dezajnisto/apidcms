@@ -28,6 +28,21 @@ class AI {
     }
 
     /**
+     * Override the chat completions endpoint.
+     *
+     * Every [OI]-compatible provider (DeepSeek, plus local or proxied
+     * gateways) speaks the same shape, so the endpoint is a setting, not a
+     * constant. Also the seam integration tests use.
+     *
+     * @param string $url Full URL of the chat completions endpoint
+     */
+    public function setApiUrl($url) {
+        if (!empty($url)) {
+            $this->apiUrl = $url;
+        }
+    }
+
+    /**
      * Отправить запрос к DeepSeek API
      *
      * @param array  $messages     Массив сообщений [["role" => "user", "content" => "..."]]
@@ -97,6 +112,96 @@ class AI {
         }
 
         return $data["choices"][0]["message"]["content"] ?? "";
+    }
+
+    /**
+     * Send a request with tools (function calling) and return the raw message.
+     *
+     * Used by the assistant: instead of carrying the whole documentation in the
+     * prompt, the model asks for one document or one table when it needs it.
+     *
+     * @param array  $messages    Full conversation, including tool results
+     * @param array  $tools       Tool definitions (OpenAI/DeepSeek shape)
+     * @param string $systemPrompt Compact system prompt
+     * @param float  $temperature
+     * @param int    $maxTokens
+     * @return array{content: ?string, tool_calls: array, finish_reason: ?string}
+     * @throws \Exception
+     */
+    public function chatWithTools($messages, $tools = [], $systemPrompt = '', $temperature = 0.5, $maxTokens = 4096) {
+        if (empty($this->apiKey)) {
+            throw new \Exception("API ключ DeepSeek не настроен. Укажите его в config.php");
+        }
+
+        $fullMessages = [];
+        if (!empty($systemPrompt)) {
+            $fullMessages[] = ["role" => "system", "content" => $systemPrompt];
+        }
+        foreach ($messages as $msg) {
+            $fullMessages[] = $msg;
+        }
+
+        $payload = [
+            "model"       => $this->model,
+            "messages"    => $fullMessages,
+            "temperature" => $temperature,
+            "max_tokens"  => $maxTokens,
+            "stream"      => false,
+        ];
+        if (!empty($tools)) {
+            $payload["tools"] = $tools;
+            $payload["tool_choice"] = "auto";
+        }
+
+        $data = $this->request($payload);
+        $message = $data["choices"][0]["message"] ?? [];
+
+        return [
+            "content"       => $message["content"] ?? null,
+            "tool_calls"    => $message["tool_calls"] ?? [],
+            "finish_reason" => $data["choices"][0]["finish_reason"] ?? null,
+        ];
+    }
+
+    /**
+     * POST to the chat completions endpoint and decode the response.
+     *
+     * @param array $payload Request body
+     * @return array Decoded response
+     * @throws \Exception
+     */
+    private function request(array $payload) {
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $this->apiUrl,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            CURLOPT_HTTPHEADER     => [
+                "Content-Type: application/json",
+                "Authorization: Bearer " . $this->apiKey,
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 120,
+            CURLOPT_CONNECTTIMEOUT => 10,
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            throw new \Exception("Ошибка соединения с DeepSeek API: " . $curlError);
+        }
+
+        $data = json_decode($response, true);
+
+        if ($httpCode !== 200) {
+            $errorMsg = $data["error"]["message"] ?? "HTTP " . $httpCode;
+            throw new \Exception("Ошибка DeepSeek API: " . $errorMsg);
+        }
+
+        return is_array($data) ? $data : [];
     }
 
     /**

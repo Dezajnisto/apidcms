@@ -64,6 +64,28 @@ if (strpos($uri, 'storage/') === 0) {
     exit;
 }
 
+// ===== MCP (Model Context Protocol) =====
+// POST /mcp — JSON-RPC 2.0 over Streamable HTTP, same Bearer token as /api/v1.
+// Stateless: one request in, one response out, nothing kept between calls.
+if ($uri === 'mcp' || strpos($uri, 'mcp/') === 0) {
+    define('ADMIN_ACCESS', true);
+
+    try {
+        $config = load_config('admin');
+        $db = new \Core\Database($config['database']);
+        (new \Api\Mcp($db))->run();
+    } catch (\Throwable $e) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'jsonrpc' => '2.0',
+            'id'      => null,
+            'error'   => ['code' => -32603, 'message' => $e->getMessage()],
+        ], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
+
 // ===== API =====
 if (strpos($uri, 'api') === 0) {
     define('ADMIN_ACCESS', true);

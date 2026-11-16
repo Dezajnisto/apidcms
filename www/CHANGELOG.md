@@ -1,3 +1,38 @@
+## 2026-11-16 — v2.5.0 — MCP-сервер и ассистент на инструментах вместо 58k токенов доков
+
+### Добавлено
+- `/mcp` — сервер Model Context Protocol (JSON-RPC 2.0, Streamable HTTP, stateless, тот же Bearer-токен, что у API): `initialize`, `ping`, `tools/list`, `tools/call`, `resources/list`, `resources/read`, `prompts/list`, batch-запросы
+- `Core\AgentTools` — единый каталог инструментов (12): `schema.get`, `records.list`, `records.get`, `records.create`, `records.update`, `records.delete`, `navigation.get`, `relations.list`, `audit.list`, `docs.list`, `docs.get`, `docs.search`; используются и MCP, и встроенным ассистентом
+- MCP-ресурсы: `apidcms://schema`, `apidcms://navigation`, `apidcms://docs/toc` и `apidcms://docs/{slug}` (все статьи документации, Markdown)
+- `Core\DocIndex` — документация как индекс: оглавление (~10 КБ) + одна статья по запросу, поиск по заголовкам с откатом на полнотекстовый
+- Встроенный ассистент переведён на function calling: в промпте только описание инструментов и правил, данные и документация подтягиваются по запросу модели
+- `Core\AI::chatWithTools()` — вызов [OI]-совместимого API с `tools`/`tool_choice` и разбор `tool_calls`; `AI::setApiUrl()` — переопределение эндпоинта (прокси, локальный шлюз, тесты)
+- Настройки `ai_assistant_tools` (по умолчанию `1`) и `ai_assistant_max_steps` (по умолчанию `6`): выключатель tools-режима и предел шагов вызова инструментов
+- Кэш документации переехал в `storage/cache/docs/` и чистится кнопкой «Очистить кэш» в админке (раньше писался внутрь ядра и жил там обновлениями)
+
+### Изменено
+- `Api\Mcp` — тонкий JSON-RPC-адаптер над `Core\AgentTools`; описания инструментов и логика их выполнения больше не дублируются
+- Ответы инструментов на ошибках возвращают `isError: true` и машинночитаемый список полей — модель исправляется сама
+- `GET /api/v1` в `capabilities` показывает `mcp` и `assistant.tools` как `ready`
+- Старый режим ассистента (полный дамп документации и таблиц в промпт) остался как `ai_assistant_tools=0`
+
+### Исправлено
+- `init_system_tables.php` не запускался напрямую (`Class "Core\Database" not found`): автозагрузчик искал классы в `core/core/` вместо `core/src/Core/`
+- Прямой запуск `init_system_tables.php` создавал второй `cms.db` внутри `www/storage/`: `PROJECT_ROOT` вычислялся как каталог ядра, а не корень проекта
+
+### Изменённые файлы
+- `core/src/Api/Mcp.php` — сервер MCP
+- `core/src/Core/AgentTools.php` — каталог инструментов
+- `core/src/Core/DocIndex.php` — документация как индекс
+- `core/src/Core/AI.php` — `chatWithTools()`, `setApiUrl()`, общий `request()`
+- `core/src/Admin/AIController.php` — ассистент через tools, компактный промпт, обрезка результатов, legacy-режим
+- `core/src/Admin/CacheController.php` — кэш документации в списке очистки
+- `core/src/Core/DocsFetcher.php` — кэш в `storage/cache/docs/`
+- `core/router.php` — ветка `/mcp`
+- `core/src/Api/Router.php` — `mcp` и `assistant.tools` в capabilities
+- `core/init_system_tables.php` — настройки `ai_assistant_*`, исправлен запуск и путь к БД
+- `core/VERSION`
+
 ## 2026-11-16 — v2.4.0 — API для агента: preview, /schema, семантика таблиц, проверка записи
 
 ### Добавлено

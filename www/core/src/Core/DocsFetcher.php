@@ -28,7 +28,11 @@ class DocsFetcher
     public function __construct($cacheDir = null)
     {
         if ($cacheDir === null) {
-            $this->cacheDir = dirname(__DIR__) . '/admin/storage/docs_cache';
+            // Site data must live outside the core: STORAGE_PATH/cache/docs.
+            // Historically this was core/admin/storage/docs_cache, which made
+            // the core write into itself and survive core updates as junk.
+            $storage = defined('STORAGE_PATH') ? STORAGE_PATH : dirname(__DIR__, 3) . '/storage';
+            $this->cacheDir = $storage . '/cache/docs';
         } else {
             $this->cacheDir = rtrim($cacheDir, '/');
         }

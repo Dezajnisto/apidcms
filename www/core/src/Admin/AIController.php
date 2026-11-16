@@ -228,7 +228,12 @@ class AIController extends BaseController {
 
     /**
      * POST /ai/assistant
-     * Универсальный AI-ассистент
+     * Универсальный AI-ассистент.
+     *
+     * По умолчанию работает через tools (Core\AgentTools): в промпте только
+     * компактное описание возможностей, документация и данные подтягиваются
+     * по запросу модели. Раньше весь корпус документации (~58k токенов) и
+     * дамп таблиц уходили в каждый запрос — это стоило денег и мешало думать.
      */
     public function assistant() {
         try {
@@ -240,48 +245,194 @@ class AIController extends BaseController {
                 $this->jsonResponse(["error" => $this->lang->t("common.empty_request")], 400);
             }
 
-            $tablesContext = $this->getTablesContext();
+            $useTools = $this->setting("ai_assistant_tools", "1") === "1";
 
-            // Load apidcms documentation as AI knowledge base
-            $docsContext = "";
-            try {
-                $docsFetcher = new \Core\DocsFetcher();
-                // Use current admin language for docs
-                $adminLang = 'ru';
-                try {
-                    $row = $this->db->query("SELECT setting_value FROM system_settings WHERE setting_key = 'admin_language'")->fetch(\PDO::FETCH_ASSOC);
-                    if ($row && !empty($row['setting_value'])) {
-                        $adminLang = $row['setting_value'];
-                    }
-                } catch (\Throwable $e) {}
-                $docsFetcher->setLang($adminLang);
-                $docsKb = $docsFetcher->getKnowledgeBase();
-                if (!empty($docsKb)) {
-                    $docsContext = $docsKb;
-                }
-            } catch (\Throwable $e) {
-                // Docs loading is optional - fallback to no documentation
-                // AI will still work with DB context and its own knowledge
+            if ($useTools) {
+                $response = $this->assistantWithTools($message, $currentPage);
+            } else {
+                $response = $this->assistantWithDocs($message, $currentPage);
             }
-
-            $response = $this->ai->assistant($message, [
-                "tables" => $tablesContext,
-                "current_page" => $currentPage,
-                "docs" => $docsContext,
-                "css" => $this->getCssContext()
-            ], $this->aiPrompts["assistant"] ?? "");
 
             // Convert Markdown to HTML for chat UI rendering
             if (!class_exists('\\Parsedown')) {
-                require_once __DIR__ . '/../../../core/Parsedown.php';
+                require_once CORE_PATH . '/src/Core/Parsedown.php';
             }
             $parsedown = new \Parsedown();
             $responseHtml = $parsedown->text($response);
 
-            $this->jsonResponse(["response" => $response, "response_html" => $responseHtml]);
+            $this->jsonResponse([
+                "response" => $response,
+                "response_html" => $responseHtml,
+                "mode" => $useTools ? "tools" : "docs",
+            ]);
         } catch (Exception $e) {
             $this->jsonResponse(["error" => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Assistant over tools: the model asks for schema or docs when it needs them.
+     *
+     * Bounded loop: at most ai_assistant_max_steps rounds of tool calls, and
+     * each tool result is truncated so one big table cannot flood the context.
+     */
+    private function assistantWithTools($message, $currentPage) {
+        $tools = new \Core\AgentTools($this->db);
+
+        // Documentation follows the admin language, same as the site.
+        try {
+            $tools->setLang($this->setting("admin_language", "ru") ?: "ru");
+        } catch (\Throwable $e) {
+            // ignore: docs fall back to ru
+        }
+
+        $systemPrompt = $this->assistantToolPrompt($currentPage);
+        $definitions = $tools->functionDefinitions();
+
+        $messages = [
+            ["role" => "user", "content" => $message],
+        ];
+
+        $maxSteps = max(1, min(10, (int) $this->setting("ai_assistant_max_steps", "6")));
+        $lastText = "";
+
+        for ($step = 0; $step < $maxSteps; $step++) {
+            $result = $this->ai->chatWithTools($messages, $definitions, $systemPrompt, 0.3, 3000);
+
+            if (empty($result["tool_calls"])) {
+                return (string) ($result["content"] ?? "");
+            }
+
+            if (!empty($result["content"])) {
+                $lastText = $result["content"];
+            }
+
+            // The assistant turn that requested tools must be echoed back
+            // verbatim, otherwise the next request has no matching tool ids.
+            $messages[] = [
+                "role"       => "assistant",
+                "content"    => $result["content"] ?? "",
+                "tool_calls" => $result["tool_calls"],
+            ];
+
+            foreach ($result["tool_calls"] as $call) {
+                $name = $call["function"]["name"] ?? "";
+                $argsRaw = $call["function"]["arguments"] ?? "{}";
+                $args = json_decode((string) $argsRaw, true);
+                if (!is_array($args)) {
+                    $args = [];
+                }
+
+                $outcome = $tools->call($name, $args, "assistant");
+                $payload = $outcome["ok"] ? $outcome["data"] : $outcome["error"];
+                $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+                $messages[] = [
+                    "role"         => "tool",
+                    "tool_call_id" => $call["id"] ?? "",
+                    "content"      => $this->truncateToolResult((string) $json),
+                ];
+            }
+        }
+
+        // Ran out of steps: still return something usable instead of an error.
+        if ($lastText !== "") {
+            return $lastText;
+        }
+        return "Не удалось завершить ответ за {$maxSteps} шагов. Уточните вопрос.";
+    }
+
+    /**
+     * Compact system prompt for the tools mode. No documentation dump: the
+     * model is told WHAT it can ask for, not given the whole library.
+     */
+    private function assistantToolPrompt($currentPage) {
+        $siteTitle = $this->setting("site_title", "");
+        $prompt = "Ты — AI-ассистент панели управления CMS apidcms (PHP + SQLite + Twig).\n"
+            . "Отвечай по-русски, кратко и по делу, код — в markdown-блоках.\n\n"
+            . "У тебя есть инструменты — используй их вместо догадок:\n"
+            . "- schema.get — таблицы, колонки, допустимые значения, связи и карта страниц;\n"
+            . "- records.list / records.get — реальные записи (не выдумывай данные);\n"
+            . "- records.create / records.update / records.delete — изменения данных, с проверкой полей;\n"
+            . "- navigation.get — какая таблица питает какой URL каким шаблоном;\n"
+            . "- docs.search / docs.list / docs.get — документация apidcms.\n\n"
+            . "Правила:\n"
+            . "1. Вопрос про устройство сайта или данные — сначала посмотри инструментом, потом отвечай.\n"
+            . "2. Вопрос про возможности CMS, настройки, типы страниц — docs.search, затем docs.get по нужной статье.\n"
+            . "3. Никогда не выдумывай имена таблиц и колонок: проверяй через schema.get.\n"
+            . "4. Перед изменением данных, если не уверен в результате, вызывай инструмент с dry_run=true.\n"
+            . "5. Если данных не хватает — скажи, чего именно не хватает, и какой инструмент нужен.\n"
+            . "6. Ссылки на документацию давай по slug статьи, а не выдуманным URL.";
+
+        if ($siteTitle !== "") {
+            $prompt .= "\n\nСайт: " . $siteTitle;
+        }
+        if ($currentPage !== "") {
+            $prompt .= "\nПользователь сейчас в админке на странице: " . $currentPage;
+        }
+
+        $custom = $this->aiPrompts["assistant"] ?? "";
+        if (!empty($custom)) {
+            $prompt .= "\n\nДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ:\n" . $custom;
+        }
+        return $prompt;
+    }
+
+    /** Keep one tool result from swallowing the whole context window. */
+    private function truncateToolResult($json) {
+        $limit = 16000;
+        if (strlen($json) <= $limit) {
+            return $json;
+        }
+        return substr($json, 0, $limit)
+            . "\n… [результат обрезан: " . strlen($json) . " байт. Запросите меньше данных: "
+            . "укажите tables, limit или конкретный slug.]";
+    }
+
+    /**
+     * Legacy mode: full documentation and a table dump in the system prompt.
+     * Kept for ai_assistant_tools=0 and as a fallback when tools are unavailable.
+     */
+    private function assistantWithDocs($message, $currentPage) {
+        $tablesContext = $this->getTablesContext();
+
+        // Load apidcms documentation as AI knowledge base
+        $docsContext = "";
+        try {
+            $docsFetcher = new \Core\DocsFetcher();
+            $docsFetcher->setLang($this->setting("admin_language", "ru") ?: "ru");
+            $docsKb = $docsFetcher->getKnowledgeBase();
+            if (!empty($docsKb)) {
+                $docsContext = $docsKb;
+            }
+        } catch (\Throwable $e) {
+            // Docs loading is optional - fallback to no documentation
+        }
+
+        return $this->ai->assistant($message, [
+            "tables" => $tablesContext,
+            "current_page" => $currentPage,
+            "docs" => $docsContext,
+            "css" => $this->getCssContext()
+        ], $this->aiPrompts["assistant"] ?? "");
+    }
+
+    /**
+     * Read one system setting, '' when unset.
+     */
+    private function setting($key, $default = "") {
+        try {
+            $row = $this->db->query(
+                "SELECT setting_value FROM system_settings WHERE setting_key = ?",
+                [$key]
+            )->fetch(\PDO::FETCH_ASSOC);
+            if ($row && $row["setting_value"] !== null) {
+                return (string) $row["setting_value"];
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+        return $default;
     }
 
     /**

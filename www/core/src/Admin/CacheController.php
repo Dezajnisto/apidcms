@@ -17,7 +17,10 @@ class CacheController extends BaseController {
     private $cachePaths = [
         'twig_admin' => ROOT_PATH . '/storage/cache/twig_admin/',
         'twig_front' => ROOT_PATH . '/storage/cache/twig/',
-        'external' => ROOT_PATH . '/admin/views/cache/'
+        'external' => ROOT_PATH . '/admin/views/cache/',
+        // Documentation fetched for the AI assistant and MCP resources
+        // (STORAGE_PATH is ROOT_PATH . '/storage', see bootstrap.php)
+        'docs' => ROOT_PATH . '/storage/cache/docs/'
     ];
     
     /**
@@ -61,10 +64,15 @@ class CacheController extends BaseController {
                     $cleared[] = $count >= 0;
                     break;
 
+                case 'docs':
+                    $cleared[] = $this->clearTwigCache($this->cachePaths['docs']);
+                    break;
+
                 case 'all':
                 default:
                     $cleared[] = $this->clearTwigCache($this->cachePaths['twig_admin']);
                     $cleared[] = $this->clearTwigCache($this->cachePaths['twig_front']);
+                    $cleared[] = $this->clearTwigCache($this->cachePaths['docs']);
                     $cleared[] = \Core\ExternalPageLoader::clearAllCache() >= 0;
                     break;
             }

@@ -8,10 +8,17 @@
  */
 
 if (!defined('PROJECT_ROOT')) {
-    define('PROJECT_ROOT', __DIR__);
+    // Layout: <project>/storage, <project>/www/index.php, <project>/www/core.
+    // So the project root is two levels above this file (www/core). Getting
+    // this wrong creates a second cms.db inside www/storage that nothing uses.
+    define('PROJECT_ROOT', dirname(__DIR__, 2));
 }
 define('ROOT_PATH', PROJECT_ROOT);
-define('CORE_PATH', __DIR__);
+// When the project-level wrapper (www/init_system_tables.php) included this
+// file, CORE_PATH is already defined by it; keep that value.
+if (!defined('CORE_PATH')) {
+    define('CORE_PATH', __DIR__);
+}
 define('ADMIN_PATH', ROOT_PATH . '/admin');
 define('ADMIN_ACCESS', true);
 define('FRONT_ACCESS', true);
@@ -22,13 +29,13 @@ require CORE_PATH . '/vendor/autoload.php';
 spl_autoload_register(function ($class_name) {
     if (strpos($class_name, 'Core\\') === 0) {
         $relative = str_replace('Core\\', '', $class_name);
-        $f = CORE_PATH . '/core/' . $relative . '.php';
+        $f = CORE_PATH . '/src/Core/' . $relative . '.php';
         if (file_exists($f)) { require_once $f; return; }
     }
 });
 
 // Определяем пути
-$dbPath = ADMIN_PATH . '/storage/database/';
+$dbPath = STORAGE_PATH . '/database/';
 $dbFile = 'cms.db';
 if (!is_dir($dbPath)) mkdir($dbPath, 0755, true);
 
@@ -216,6 +223,11 @@ $settings = [
     ['ai_prompt_content', 'Ты — генератор контента для сайта. Создавай реалистичные записи. Отвечай ТОЛЬКО JSON-массивом.', 'string'],
     ['ai_prompt_fill_form', 'Ты — помощник по заполнению форм. Генерируй JSON с подходящими значениями для полей.', 'string'],
     ['ai_prompt_assistant', 'Ты — AI-ассистент панели управления CMS на PHP+SQLite. Помогай с шаблонами, таблицами, кодом. Отвечай на русском.', 'string'],
+    // Assistant works through tools (schema.get, records.*, docs.*) instead of
+    // carrying the whole documentation and a table dump in every prompt.
+    // Set to 0 to fall back to the old behaviour.
+    ['ai_assistant_tools', '1', 'string'],
+    ['ai_assistant_max_steps', '6', 'string'],
     ['ai_prompt_css', 'Ты — CSS-эксперт. Создавай современный CSS (flexbox, grid, custom properties). Отвечай ТОЛЬКО CSS-кодом без пояснений.', 'string'],
 
     // AI — настройки фронтенда (для ai-страниц)

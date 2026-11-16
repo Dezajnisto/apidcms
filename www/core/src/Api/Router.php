@@ -110,6 +110,7 @@ class Router {
             'notes'        => [
                 'status "preview" means the contract may change; responses are never complete by default.',
                 'start with GET /api/v1/schema for the whole project in one call.',
+                'POST /mcp speaks Model Context Protocol: the same data as agent tools (schema.get, records.*, docs.*).',
                 'endpoints marked "planned" answer 501 not_implemented, not 404.',
             ],
         ]);
@@ -134,9 +135,10 @@ class Router {
             ['name' => 'write.dry_run',   'methods' => [], 'path' => null,                   'status' => 'ready'],
             ['name' => 'write.idempotency', 'methods' => [], 'path' => null,                 'status' => 'ready'],
             ['name' => 'audit',           'methods' => ['GET'], 'path' => '/api/v1/audit',       'status' => 'ready'],
+            ['name' => 'assistant.tools', 'methods' => [], 'path' => null,                   'status' => 'ready'],
             ['name' => 'tokens.scopes',   'methods' => [], 'path' => null,                   'status' => 'planned'],
             ['name' => 'templates',       'methods' => ['GET', 'PUT'], 'path' => '/api/v1/templates/{name}', 'status' => 'planned'],
-            ['name' => 'mcp',             'methods' => [], 'path' => '/mcp',                  'status' => 'planned'],
+            ['name' => 'mcp',             'methods' => ['POST'], 'path' => '/mcp',                'status' => 'ready'],
         ];
     }
 

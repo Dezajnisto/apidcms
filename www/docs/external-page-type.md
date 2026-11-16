@@ -110,6 +110,19 @@ If the external API is unreachable or returns an error:
 }
 ```
 
+Item pages are then served at `/<url>/<slug>` — e.g. `/plugins/yookassa`. **A page
+URL that looks like a source directory needs an exception in nginx.** The deny
+rule `location ~ ^/(core|config|storage|themes|plugins|tmp)/ { deny all; }`
+matches by URL prefix, so a live page at `/plugins/<slug>` answers 403 while the
+rest of the site works. Put this above the deny rule (regex locations are checked
+in order):
+
+```nginx
+location ~ ^/plugins/[A-Za-z0-9_-]+/?$ {
+    rewrite ^ /index.php?$query_string last;
+}
+```
+
 ### Changelog from GitHub Releases (cached)
 ```json
 {

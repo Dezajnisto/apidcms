@@ -7,6 +7,22 @@ server {
     root /var/www/example.com/www;   # document root = www/
     index index.php;
 
+    # CMS page routes that LOOK like source directories.
+    #
+    # The document root is www/, while core/, config/, storage/, themes/ and
+    # plugins/ live one level above it — so a request for /plugins/foo can never
+    # reach a real file. But the deny rule below matches by URL prefix, and a
+    # site may have a page at /plugins (external page type: plugin catalog) with
+    # item pages at /plugins/<slug>. Without this exception those live pages
+    # answer 403 while everything else on the site works.
+    #
+    # Regex locations are checked in the order they appear, so the exception
+    # must come first. There is no dot in the character class: a request for
+    # /plugins/name/plugin.json still falls through to the deny rule.
+    location ~ ^/plugins/[A-Za-z0-9_-]+/?$ {
+        rewrite ^ /index.php?$query_string last;
+    }
+
     # Security: block access to sensitive directories
     location ~ ^/(core|config|storage|themes|plugins|tmp)/ {
         deny all;

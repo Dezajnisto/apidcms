@@ -69,7 +69,10 @@ class PluginAdminController extends BaseController
 
         $templates = $this->getPluginTemplates($plugin);
         $settings = $plugin['settings'] ?? [];
-        $rawConfig = json_encode($plugin, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $rawConfig = json_encode(
+            $this->manifestPreview($plugin),
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+        );
 
         $this->render('plugins/view', [
             'title' => $this->lang->t('plugins.plugin_title', ['name' => $name]),
@@ -158,42 +161,90 @@ class PluginAdminController extends BaseController
         return $templates;
     }
 
+    /**
+     * What the "plugin.json" tab shows: the manifest as it is on disk, i.e.
+     * defaults only. Values from the database are not dumped into the page and
+     * secret ones are masked — the screen is reachable from the admin panel and
+     * ends up in screenshots much more often than it should.
+     */
+    private function manifestPreview(array $plugin): array
+    {
+        unset($plugin['path']);
+
+        if (!empty($plugin['settings']) && is_array($plugin['settings'])) {
+            foreach ($plugin['settings'] as $index => $setting) {
+                if (!is_array($setting)) {
+                    continue;
+                }
+                unset($setting['from_db']);
+
+                $manifestValue = array_key_exists('manifest_value', $setting)
+                    ? $setting['manifest_value']
+                    : ($setting['value'] ?? null);
+                unset($setting['manifest_value']);
+
+                $setting['value'] = !empty($setting['secret']) && is_string($manifestValue) && $manifestValue !== ''
+                    ? '***'
+                    : $manifestValue;
+
+                $plugin['settings'][$index] = $setting;
+            }
+        }
+
+        return $plugin;
+    }
+
+    /**
+     * Сохранение настроек плагина.
+     *
+     * Значения теперь пишутся в таблицу plugin_settings, а не в plugin.json.
+     * Манифест — это код: он коммитится и уезжает деплоем. Персональные и
+     * секретные значения (ключ оплаты, ключ подписи) в нём жить не должны —
+     * именно так живой ключ ЮKassa годами ездил через git и бэкапы кода.
+     */
     private function handleSaveSettings(array $plugin, string $name): void
     {
-        $pluginJsonPath = $plugin['path'] . '/plugin.json';
-        if (!empty($plugin['settings'])) {
-            foreach ($plugin['settings'] as &$setting) {
-                $key = $setting['key'];
-                if ($setting['type'] === 'checkbox') {
-                    // Checkbox: unchecked = not present in POST = false
-                    $setting['value'] = isset($_POST['setting_' . $key]);
-                } elseif (isset($_POST['setting_' . $key])) {
-                    $setting['value'] = $_POST['setting_' . $key];
-                }
+        try {
+            $store = new \Core\PluginSettings($this->db);
+        } catch (\Throwable $e) {
+            $this->setFlash('error', $this->lang->t('plugins.settings_error') . ': ' . $e->getMessage());
+            return;
+        }
+
+        foreach ($plugin['settings'] ?? [] as $setting) {
+            if (!is_array($setting) || !isset($setting['key'])) {
+                continue;
             }
-            unset($setting);
+
+            $key = (string) $setting['key'];
+            $field = 'setting_' . $key;
+
+            if (!empty($setting['secret'])) {
+                // Empty submit means "leave as it is": the form never renders the
+                // current value, so it cannot be posted back. Clearing is an
+                // explicit checkbox, otherwise a masked field would overwrite
+                // the real key with nothing.
+                if (isset($_POST['clear_' . $field])) {
+                    $store->delete($name, $key);
+                    continue;
+                }
+                $posted = $_POST[$field] ?? '';
+                if (is_string($posted) && $posted !== '') {
+                    $store->set($name, $key, $posted);
+                }
+                continue;
+            }
+
+            if (($setting['type'] ?? 'text') === 'checkbox') {
+                $store->set($name, $key, isset($_POST[$field]) ? '1' : '0');
+                continue;
+            }
+
+            if (isset($_POST[$field])) {
+                $store->set($name, $key, (string) $_POST[$field]);
+            }
         }
-        // Save only original plugin.json fields (exclude runtime fields like 'path')
-        $saveData = [
-            'name' => $plugin['name'],
-            'version' => $plugin['version'],
-            'description' => $plugin['description'] ?? '',
-            'enabled' => $plugin['enabled'] ?? false,
-        ];
-        if (!empty($plugin['dependencies'])) {
-            $saveData['dependencies'] = $plugin['dependencies'];
-        }
-        if (!empty($plugin['settings'])) {
-            $saveData['settings'] = $plugin['settings'];
-        }
-        $saved = file_put_contents(
-            $pluginJsonPath,
-            json_encode($saveData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-        );
-        if ($saved !== false) {
-            $this->setFlash('success', $this->lang->t('plugins.settings_saved', ['name' => $name]));
-        } else {
-            $this->setFlash('error', $this->lang->t('plugins.settings_error'));
-        }
+
+        $this->setFlash('success', $this->lang->t('plugins.settings_saved', ['name' => $name]));
     }
 }

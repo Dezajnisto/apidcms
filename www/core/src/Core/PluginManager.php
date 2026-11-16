@@ -37,6 +37,9 @@ class PluginManager
     /** @var string */
     private string $pluginsDir;
 
+    /** Values from plugin_settings already overlaid on the manifests. */
+    private bool $settingsOverlaid = false;
+
     /**
      * Приватный конструктор — синглтон
      */
@@ -98,6 +101,15 @@ class PluginManager
         foreach ($registry as $name => $config) {
             $this->plugins[$name] = $config;
         }
+
+        // Values live in the database, not in the manifest (see
+        // Core\PluginSettings). Overlay them BEFORE init.php runs: a plugin may
+        // read its settings while loading. bootstrap.php calls loadPlugins()
+        // without a database, Admin\App and FrontController call it again with
+        // one — the overlay has to catch up on that second call, which is why
+        // it is not guarded by "already loaded".
+        $this->settingsOverlaid = false;
+        $this->overlaySettings();
 
         [$order, $problems] = $this->resolveLoadOrder($registry);
 
@@ -228,7 +240,9 @@ class PluginManager
         $name = $config['name'];
 
         if (!empty($this->loadedPlugins[$name])) {
-            $this->plugins[$name] = $config;
+            // Do NOT reset the registry entry here: it would drop the settings
+            // overlaid from the database (see overlaySettings). loadPlugins()
+            // and activate() already write the config where it belongs.
             return;
         }
 
@@ -250,21 +264,161 @@ class PluginManager
     }
 
     /**
-     * Сохранить plugin.json, не записывая в него служебные поля.
+     * Overlay stored settings on every loaded manifest.
+     *
+     * Runs after scanPlugins() and before init.php. Without a database (the
+     * first call from bootstrap.php) it does nothing: manifests stay as-is and
+     * the admin/front passes with a database fill them in.
+     */
+    private function overlaySettings(): void
+    {
+        if ($this->db === null || $this->settingsOverlaid) {
+            return;
+        }
+
+        try {
+            $store = new PluginSettings($this->db);
+        } catch (\Throwable $e) {
+            error_log('PluginManager: plugin_settings unavailable: ' . $e->getMessage());
+            $this->settingsOverlaid = true;
+            return;
+        }
+
+        foreach ($this->plugins as $name => $config) {
+            if (empty($config['settings']) || !is_array($config['settings'])) {
+                continue;
+            }
+
+            $adopted = [];
+            $stale = [];
+            $this->plugins[$name]['settings'] = $store->applyTo($name, $config['settings'], $adopted, $stale);
+
+            foreach ($stale as $key) {
+                error_log("PluginManager: {$name}.{$key} is a secret in plugin.json but the database already has a value — the file copy is ignored and removed");
+            }
+
+            if ($adopted || $stale) {
+                $blank = array_merge($adopted, $stale);
+
+                if ($adopted) {
+                    // A secret was still in the file: it is in the database now, so
+                    // blank it (best effort — on production plugins/ is not
+                    // writable for PHP and the deploy brings the blanked file
+                    // anyway). One error_log line per key, so it is visible that
+                    // the site was migrated and not silently reconfigured.
+                    foreach ($adopted as $key) {
+                        error_log("PluginManager: plugin_settings adopted {$name}.{$key} from plugin.json");
+                    }
+                }
+
+                if (!$this->writeManifest($name, $blank)) {
+                    error_log("PluginManager: could not blank secrets in {$name}/plugin.json (not writable) — remove them by hand");
+                } else {
+                    // Keep in-memory state honest: the file no longer holds the
+                    // secret, so a later activate()/deactivate() must not write
+                    // it back from the old manifest_value.
+                    foreach ($this->plugins[$name]['settings'] as $index => $setting) {
+                        if (in_array((string) ($setting['key'] ?? ''), $blank, true)) {
+                            $this->plugins[$name]['settings'][$index]['manifest_value'] = '';
+                        }
+                    }
+                }
+            }
+        }
+
+        $this->settingsOverlaid = true;
+    }
+
+    /**
+     * Загрузить плагины поверх уже прочитанных манифестов (для тестов).
+     */
+    public function reloadSettings(?Database $db = null): void
+    {
+        if ($db !== null) {
+            $this->db = $db;
+        }
+        $this->settingsOverlaid = false;
+        $this->overlaySettings();
+    }
+
+    /**
+     * Сохранить plugin.json, не записывая в него служебные поля и ЗНАЧЕНИЯ
+     * настроек.
      *
      * Раньше activate()/deactivate() писали в файл весь конфиг вместе с
      * абсолютным путём к каталогу плагина на ЭТОМ сервере. Путь уезжал в git
      * проекта (на bajto.ru так и лежит /home/c91469/... от старого хостинга)
      * и ничего не значил при следующем деплое.
+     *
+     * Теперь значения настроек в файл не попадают вообще: они живут в
+     * plugin_settings, а в манифесте остаётся значение по умолчанию. Иначе
+     * переключение галочки «включён» возвращало бы секретный ключ в файл —
+     * ровно та утечка, которую вынесли из манифеста.
+     *
+     * @param string[] $blankKeys keys whose value must be written empty
      */
-    private function saveConfig(array $config): void
+    private function saveConfig(array $config, array $blankKeys = []): void
     {
         $path = $config['path'];
-        unset($config['path']);
         file_put_contents(
             $path . '/plugin.json',
-            json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+            json_encode(
+                $this->manifestForSave($config, $blankKeys),
+                JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+            )
         );
+    }
+
+    /**
+     * Rewrite plugin.json for one plugin (used by the adoption path).
+     */
+    private function writeManifest(string $name, array $blankKeys = []): bool
+    {
+        $config = $this->plugins[$name] ?? null;
+        if (!$config || empty($config['path'])) {
+            return false;
+        }
+
+        $json = json_encode(
+            $this->manifestForSave($config, $blankKeys),
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+        );
+        if ($json === false) {
+            return false;
+        }
+
+        return @file_put_contents($config['path'] . '/plugin.json', $json) !== false;
+    }
+
+    /**
+     * Build the manifest as it is written to disk: no runtime fields, no
+     * values taken from the database — the file keeps what git keeps.
+     */
+    private function manifestForSave(array $config, array $blankKeys = []): array
+    {
+        unset($config['path']);
+
+        if (!empty($config['settings']) && is_array($config['settings'])) {
+            foreach ($config['settings'] as $index => $setting) {
+                if (!is_array($setting)) {
+                    continue;
+                }
+                unset($setting['from_db']);
+
+                if (array_key_exists('manifest_value', $setting)) {
+                    $setting['value'] = $setting['manifest_value'];
+                    unset($setting['manifest_value']);
+                }
+
+                if ($blankKeys && in_array((string) ($setting['key'] ?? ''), $blankKeys, true)) {
+                    $setting['value'] = '';
+                }
+
+                $config['settings'][$index] = $setting;
+            }
+        }
+
+        return $config;
     }
 
     /**
@@ -274,6 +428,7 @@ class PluginManager
      */
     public function getPlugins(): array
     {
+        $this->overlaySettings();
         return array_values($this->plugins);
     }
 
@@ -284,6 +439,7 @@ class PluginManager
      */
     public function getPlugin(string $name): ?array
     {
+        $this->overlaySettings();
         return $this->plugins[$name] ?? null;
     }
 
@@ -332,7 +488,7 @@ class PluginManager
         $config = $this->plugins[$name];
         $config['enabled'] = true;
 
-        // Сохраняем в plugin.json (без служебного path — см. saveConfig)
+        // Сохраняем в plugin.json (без служебного path и без значений — см. saveConfig)
         $this->saveConfig($config);
 
         // Загружаем init.php
@@ -371,7 +527,7 @@ class PluginManager
         $config = $this->plugins[$name];
         $config['enabled'] = false;
 
-        // Сохраняем в plugin.json (без служебного path — см. saveConfig)
+        // Сохраняем в plugin.json (без служебного path и без значений — см. saveConfig)
         $this->saveConfig($config);
 
         // Удаляем зарегистрированные хуки этого плагина

@@ -170,33 +170,54 @@
                 <input type="hidden" name="_action" value="save_settings">
 
                 {% for setting in settings %}
+                {# value may legitimately be empty (the owner cleared it), so the
+                   |default filter is not used here: it treats "" as "missing". #}
+                {% set val = setting.value is defined and setting.value is not null ? setting.value : (setting.default is defined ? setting.default : '') %}
+                {% set from_db = setting.from_db|default(false) %}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         {{ setting.label|default(setting.key) }}
                     </label>
 
-                    {% if setting.type == 'textarea' %}
+                    {% if setting.secret|default(false) %}
+                    {# Secrets are never rendered back into the page: an empty
+                       submit keeps the stored value, clearing is explicit. #}
+                    <input type="password" name="setting_{{ setting.key }}" value="" autocomplete="new-password"
+                           placeholder="{{ val is not empty ? lang('plugins.view.secret_set') : lang('plugins.view.secret_not_set') }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                    {% if val is not empty %}
+                    <label class="mt-2 flex items-center space-x-2 text-xs text-gray-600">
+                        <input type="checkbox" name="clear_setting_{{ setting.key }}" value="1"
+                               class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                        <span>{{ lang('plugins.view.secret_clear') }}</span>
+                    </label>
+                    {% endif %}
+                    {% elseif setting.type == 'textarea' %}
                     <textarea name="setting_{{ setting.key }}" rows="4"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">{{ setting.value|default(setting.default)|default('') }}</textarea>
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">{{ val }}</textarea>
                     {% elseif setting.type == 'number' %}
                     <input type="number" name="setting_{{ setting.key }}"
-                           value="{{ setting.value|default(setting.default)|default(0) }}"
+                           value="{{ val is same as('') ? 0 : val }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
                     {% elseif setting.type == 'checkbox' %}
                     <label class="flex items-center space-x-2">
                         <input type="checkbox" name="setting_{{ setting.key }}" value="1"
-                               {% if setting.value|default(setting.default) %}checked{% endif %}
+                               {% if val %}checked{% endif %}
                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         <span class="text-sm text-gray-600">{{ setting.description|default('') }}</span>
                     </label>
                     {% else %}
                     <input type="text" name="setting_{{ setting.key }}"
-                           value="{{ setting.value|default(setting.default)|default('') }}"
+                           value="{{ val }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
                     {% endif %}
 
                     {% if setting.description and setting.type != 'checkbox' %}
                     <p class="mt-1 text-xs text-gray-500">{{ setting.description }}</p>
+                    {% endif %}
+
+                    {% if from_db and not setting.secret|default(false) %}
+                    <p class="mt-1 text-xs text-gray-400"><i class="fas fa-database mr-1"></i>{{ lang('plugins.view.setting_from_db') }}</p>
                     {% endif %}
                 </div>
                 {% endfor %}

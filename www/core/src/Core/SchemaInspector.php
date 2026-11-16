@@ -39,7 +39,7 @@ class SchemaInspector {
     private const SYSTEM_TABLES = [
         'users', 'user_tokens',
         'entity_relations', 'visit_stats', 'table_meta', 'field_meta',
-        'api_idempotency', 'api_tokens',
+        'api_idempotency', 'api_tokens', 'plugin_settings',
         'sqlite_master', 'sqlite_sequence',
     ];
 

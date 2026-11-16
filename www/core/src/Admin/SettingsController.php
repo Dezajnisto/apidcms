@@ -20,7 +20,8 @@ class SettingsController extends BaseController {
 
             // Таблицы для выбора публичных (AI-контекст)
             $allTables = $this->db->getTables();
-            $blacklistedTables = ["sqlite_sequence", "system_settings", "users", "user_tokens"];
+            $blacklistedTables = ["sqlite_sequence", "system_settings", "users", "user_tokens",
+                "entity_relations", "visit_stats", "table_meta", "field_meta", "api_idempotency"];
             $selectableTables = [];
             foreach ($allTables as $t) {
                 if (!in_array($t, $blacklistedTables)) {

@@ -1,0 +1,156 @@
+{# twig #}
+{% extends "base.html.twig" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Навигация -->
+    <div class="mb-4 md:mb-6 flex flex-wrap items-center gap-3">
+        <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/structure') }}"
+           class="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition text-sm">
+            <i class="fas fa-arrow-left"></i>
+            <span>{{ lang('table.meta.back_to_structure') }}</span>
+        </a>
+        <a href="{{ admin_url('table/' ~ tableName|url_encode) }}"
+           class="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition text-sm">
+            <i class="fas fa-table"></i>
+            <span>{{ lang('table.meta.table_data') }}</span>
+        </a>
+    </div>
+
+    <div class="mb-4 md:mb-6">
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900">{{ title }}</h1>
+    </div>
+
+    {% if saved %}
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-check-circle"></i>
+                <span>{{ lang('table.meta.saved') }}</span>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if error is defined %}
+        <div class="mb-4 md:mb-6 p-3 md:p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>{{ error }}</span>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="mb-4 md:mb-6 p-3 md:p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+        <div class="flex items-start space-x-3">
+            <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+            <div class="text-blue-800">
+                <p>{{ lang('table.meta.intro') }}</p>
+                <p class="mt-2">{{ lang('table.meta.system_hint') }}</p>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ admin_url('table/' ~ tableName|url_encode ~ '/store-meta') }}" class="space-y-4 md:space-y-6">
+        <!-- Таблица -->
+        <div class="bg-white rounded-lg shadow-sm border">
+            <div class="px-4 md:px-6 py-3 md:py-4 border-b">
+                <h2 class="text-base md:text-lg font-semibold text-gray-900">{{ lang('table.meta.table_section') }}</h2>
+                <p class="text-xs text-gray-500 mt-1"><code>{{ tableName }}</code></p>
+            </div>
+            <div class="p-4 md:p-6 space-y-4">
+                <div>
+                    <label for="label" class="block text-sm font-medium text-gray-700 mb-2">{{ lang('table.meta.label') }}</label>
+                    <input type="text" id="label" name="label" value="{{ tableMeta.label ?? '' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                           placeholder="{{ lang('table.meta.label_placeholder') }}">
+                    <p class="mt-1 text-xs text-gray-500">{{ lang('table.meta.label_hint') }}</p>
+                </div>
+                <div>
+                    <label for="purpose" class="block text-sm font-medium text-gray-700 mb-2">{{ lang('table.meta.purpose') }}</label>
+                    <input type="text" id="purpose" name="purpose" value="{{ tableMeta.purpose ?? '' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                           placeholder="{{ lang('table.meta.purpose_placeholder') }}">
+                    <p class="mt-1 text-xs text-gray-500">{{ lang('table.meta.purpose_hint') }}</p>
+                </div>
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-2">{{ lang('table.meta.description') }}</label>
+                    <textarea id="description" name="description" rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                              placeholder="{{ lang('table.meta.description_placeholder') }}">{{ tableMeta.description ?? '' }}</textarea>
+                    <p class="mt-1 text-xs text-gray-500">{{ lang('table.meta.description_hint') }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Колонки -->
+        <div class="bg-white rounded-lg shadow-sm border">
+            <div class="px-4 md:px-6 py-3 md:py-4 border-b">
+                <h2 class="text-base md:text-lg font-semibold text-gray-900">{{ lang('table.meta.columns_section') }}</h2>
+                <p class="text-xs text-gray-500 mt-1">{{ lang('table.meta.columns_subtitle') }}</p>
+            </div>
+            <div class="p-4 md:p-6 space-y-6">
+                {% for column in structure %}
+                    {% set meta = fieldMeta[column.name] ?? {} %}
+                    <div class="border border-gray-200 rounded-lg p-3 md:p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <code class="text-sm font-medium text-gray-900">{{ column.name }}</code>
+                                <span class="text-xs text-gray-500">{{ column.type }}</span>
+                            </div>
+                            {% if column.name == 'id' or column.name == 'created_at' or column.name == 'updated_at' %}
+                                <span class="text-xs text-gray-400">{{ lang('table.meta.service_column') }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ lang('table.meta.col_label') }}</label>
+                                <input type="text" name="columns[{{ column.name }}][label]" value="{{ meta.label ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       placeholder="{{ lang('table.meta.col_label_placeholder') }}">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ lang('table.meta.col_format') }}</label>
+                                <input type="text" name="columns[{{ column.name }}][format]" value="{{ meta.format ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       placeholder="{{ lang('table.meta.col_format_placeholder') }}">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ lang('table.meta.col_enum') }}</label>
+                                <input type="text" name="columns[{{ column.name }}][enum]" value="{{ meta.enum ? meta.enum|join(', ') : '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       placeholder="{{ lang('table.meta.col_enum_placeholder') }}">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ lang('table.meta.col_example') }}</label>
+                                <input type="text" name="columns[{{ column.name }}][example]" value="{{ meta.example ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       placeholder="{{ lang('table.meta.col_example_placeholder') }}">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ lang('table.meta.col_description') }}</label>
+                                <input type="text" name="columns[{{ column.name }}][description]" value="{{ meta.description ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       placeholder="{{ lang('table.meta.col_description_placeholder') }}">
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button type="submit" class="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm">
+                <i class="fas fa-save"></i>
+                <span>{{ lang('table.meta.save') }}</span>
+            </button>
+            <a href="{{ admin_url('table/' ~ tableName|url_encode ~ '/structure') }}"
+               class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition text-sm">
+                {{ lang('table.meta.cancel') }}
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

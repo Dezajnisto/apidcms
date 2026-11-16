@@ -11,6 +11,8 @@ namespace Api;
 
 class ArticlesController {
 
+    use WriteSupport;
+
     /** @var \Core\Database */
     private $db;
 
@@ -111,19 +113,67 @@ class ArticlesController {
         $data['title'] = $title;
         $data['slug']  = $slug;
 
+        // Same contract as the table endpoints: types, enums, formats.
+        $validator = new \Core\RecordValidator($this->db, 'pages');
+        $errors = $validator->validate($data, false);
+        if ($errors) {
+            if ($this->dryRun()) {
+                $this->ok([
+                    'dry_run'      => true,
+                    'table'        => 'pages',
+                    'action'       => 'insert',
+                    'would_change' => false,
+                    'validation'   => $errors,
+                ]);
+            }
+            $this->validationFailed('pages', 'insert', $errors);
+        }
+        $data = $this->db->normalizeEmptyValues('pages', $validator->cast($data));
+
+        if ($this->dryRun()) {
+            $this->ok([
+                'dry_run'       => true,
+                'table'         => 'pages',
+                'action'        => 'insert',
+                'would_change'  => true,
+                'validation'    => [],
+                'changes'       => $this->describeChanges([], $data),
+                'affected_urls' => $this->affectedUrls('pages'),
+            ]);
+        }
+
+        $replay = $this->idempotentReplay('POST');
+        if ($replay !== null) {
+            $this->ok($replay['response'], $replay['status']);
+        }
+
         $cols  = array_keys($data);
         $ph    = array_fill(0, count($cols), '?');
         $values = array_values($data);
 
-        $this->db->query(
-            "INSERT INTO pages (" . implode(', ', array_map([$this, 'q'], $cols)) . ")
-             VALUES (" . implode(', ', $ph) . ")",
-            $values
-        );
+        $pdo = $this->db->getConnection();
+        $pdo->beginTransaction();
+        try {
+            $this->db->query(
+                "INSERT INTO pages (" . implode(', ', array_map([$this, 'q'], $cols)) . ")
+                 VALUES (" . implode(', ', $ph) . ")",
+                $values
+            );
+            $id = (int) $this->db->query("SELECT last_insert_rowid() id")->fetch()['id'];
+            $row = $this->db->getById('pages', $id) ?: $data;
+            $this->auditWrite('POST', 'pages', $id, ['after' => $row]);
+            $response = ['id' => $id, 'slug' => $slug, 'row' => $row];
+            $this->idempotentStore('POST', 201, $response);
+            $pdo->commit();
+        } catch (\PDOException $e) {
+            $pdo->rollBack();
+            $this->databaseError('pages', $e);
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            $this->err(500, 'internal_error', $e->getMessage());
+        }
 
-        $id = (int) $this->db->query("SELECT last_insert_rowid() id")->fetch()['id'];
-        http_response_code(201);
-        $this->ok(['id' => $id, 'slug' => $slug], 201);
+        $this->ok($response, 201);
     }
 
     /**
@@ -165,6 +215,48 @@ class ArticlesController {
             }
         }
 
+        $validator = new \Core\RecordValidator($this->db, 'pages');
+        $errors = $validator->validate($data, true);
+        if ($errors) {
+            if ($this->dryRun()) {
+                $this->ok([
+                    'dry_run'      => true,
+                    'table'        => 'pages',
+                    'id'           => (int) $target['id'],
+                    'action'       => 'update',
+                    'would_change' => false,
+                    'validation'   => $errors,
+                ]);
+            }
+            $this->validationFailed('pages', 'update', $errors);
+        }
+        $data = $this->db->normalizeEmptyValues('pages', $validator->cast($data));
+
+        $before = $this->db->getById('pages', (int) $target['id']) ?: [];
+        $after = $before;
+        foreach ($data as $col => $val) {
+            $after[$col] = $val;
+        }
+
+        if ($this->dryRun()) {
+            $this->ok([
+                'dry_run'       => true,
+                'table'         => 'pages',
+                'id'            => (int) $target['id'],
+                'action'        => 'update',
+                'would_change'  => true,
+                'validation'    => [],
+                'changes'       => \Core\Audit::changedFields($before, $after),
+                'row'           => $after,
+                'affected_urls' => $this->affectedUrls('pages'),
+            ]);
+        }
+
+        $replay = $this->idempotentReplay('PUT');
+        if ($replay !== null) {
+            $this->ok($replay['response'], $replay['status']);
+        }
+
         $setParts = [];
         $values   = [];
         foreach ($data as $col => $val) {
@@ -173,12 +265,36 @@ class ArticlesController {
         }
         $values[] = $target['id'];
 
-        $this->db->query(
-            "UPDATE pages SET " . implode(', ', $setParts) . ", updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-            $values
-        );
+        $pdo = $this->db->getConnection();
+        $pdo->beginTransaction();
+        try {
+            $this->db->query(
+                "UPDATE pages SET " . implode(', ', $setParts) . ", updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                $values
+            );
+            $changes = \Core\Audit::changedFields($before, $after);
+            $this->auditWrite('PUT', 'pages', (int) $target['id'], [
+                'before'  => $before,
+                'after'   => $after,
+                'changed' => $changes,
+            ]);
+            $response = [
+                'id'      => (int) $target['id'],
+                'slug'    => $data['slug'] ?? $slug,
+                'updated' => true,
+                'changed' => $changes,
+            ];
+            $this->idempotentStore('PUT', 200, $response);
+            $pdo->commit();
+        } catch (\PDOException $e) {
+            $pdo->rollBack();
+            $this->databaseError('pages', $e);
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            $this->err(500, 'internal_error', $e->getMessage());
+        }
 
-        $this->ok(['id' => $target['id'], 'slug' => $data['slug'] ?? $slug, 'updated' => true]);
+        $this->ok($response);
     }
 
     /**
@@ -189,9 +305,42 @@ class ArticlesController {
         if (!$target) {
             $this->notFound('Статья со slug "' . $slug . '" не найдена');
         }
-        $this->db->query("DELETE FROM pages WHERE id = ?", [$target['id']]);
-        http_response_code(204);
-        exit;
+        if ($this->dryRun()) {
+            $this->ok([
+                'dry_run'       => true,
+                'table'         => 'pages',
+                'id'            => (int) $target['id'],
+                'action'        => 'delete',
+                'would_change'  => true,
+                'validation'    => [],
+                'row'           => $this->db->getById('pages', (int) $target['id']),
+                'affected_urls' => $this->affectedUrls('pages'),
+            ]);
+        }
+
+        $replay = $this->idempotentReplay('DELETE');
+        if ($replay !== null) {
+            $this->ok($replay['response'], $replay['status']);
+        }
+
+        $row = $this->db->getById('pages', (int) $target['id']) ?: [];
+        $pdo = $this->db->getConnection();
+        $pdo->beginTransaction();
+        try {
+            $this->db->query("DELETE FROM pages WHERE id = ?", [$target['id']]);
+            $this->auditWrite('DELETE', 'pages', (int) $target['id'], ['before' => $row]);
+            $response = ['id' => (int) $target['id'], 'deleted' => true];
+            $this->idempotentStore('DELETE', 200, $response);
+            $pdo->commit();
+        } catch (\PDOException $e) {
+            $pdo->rollBack();
+            $this->databaseError('pages', $e);
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            $this->err(500, 'internal_error', $e->getMessage());
+        }
+
+        $this->ok($response);
     }
 
     // ── schema helpers ───────────────────────────────────

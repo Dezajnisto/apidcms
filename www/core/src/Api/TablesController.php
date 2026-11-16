@@ -11,10 +11,10 @@ namespace Api;
 
 class TablesController {
 
+    use WriteSupport;
+
     /** @var \Core\Database */
     private $db;
-
-    private const SKIP_PREFIXES = ['system_', 'plugin_', 'sqlite_'];
 
     public function __construct(\Core\Database $db) {
         $this->db = $db;
@@ -37,8 +37,10 @@ class TablesController {
                 'SELECT COUNT(*) c FROM ' . $this->q($name)
             )->fetch()['c'];
 
+            $meta = $this->db->getTableMeta($name);
             $result[] = [
                 'name'    => $name,
+                'label'   => $meta['label'] ?? null,
                 'rows'    => $rowCount,
                 'columns' => $colNames,
             ];
@@ -120,8 +122,16 @@ class TablesController {
     }
 
     /**
-     * POST /api/v1/tables/:table — вставить запись.
-     * Тело: {поле: значение, ...} — подхватываются только реальные колонки.
+     * POST /api/v1/tables/:table — create a record.
+     *
+     * Closed loop for an agent: the body is validated against the table
+     * (types, NOT NULL, defaults, enums, foreign keys, formats) and a bad
+     * value gets 422 with a field list instead of a 500 or, worse, a silent
+     * write of "1500 руб" into an INTEGER column.
+     *
+     * ?dry_run=1 — validate and report what would change, write nothing.
+     * Idempotency-Key — a retry returns the first response instead of
+     * creating a second row.
      */
     public function insert(string $tableName): void {
         $this->validateTable($tableName);
@@ -131,51 +141,76 @@ class TablesController {
             $this->err(400, 'bad_request', 'Тело должно быть JSON-объектом с полями таблицы');
         }
 
-        $cols = $this->db->getTableStructure($tableName);
-        $schemaMap = [];
-        foreach ($cols as $c) {
-            $schemaMap[$c['name']] = $c;
+        $validator = new \Core\RecordValidator($this->db, $tableName);
+        $errors = $validator->validate($body, false);
+        if ($errors) {
+            // A dry run is a question, not a write: answer with the violations
+            // instead of a 422, so one call tells the whole story.
+            if ($this->dryRun()) {
+                $this->ok([
+                    'dry_run'      => true,
+                    'table'        => $tableName,
+                    'action'       => 'insert',
+                    'would_change' => false,
+                    'validation'   => $errors,
+                ]);
+            }
+            $this->validationFailed($tableName, 'insert', $errors);
+        }
+        $data = $this->db->normalizeEmptyValues($tableName, $validator->cast($body));
+
+        if ($this->dryRun()) {
+            $this->ok([
+                'dry_run'       => true,
+                'table'         => $tableName,
+                'action'        => 'insert',
+                'would_change'  => true,
+                'validation'    => [],
+                'changes'       => $this->describeChanges([], $data),
+                'affected_urls' => $this->affectedUrls($tableName),
+            ]);
         }
 
-        $data = [];
-        foreach ($body as $field => $value) {
-            if ($field === 'id') continue;  // автоинкремент
-            if (!isset($schemaMap[$field])) continue;  // нет в схеме
-            $data[$field] = $value;
+        // Reply from the first attempt instead of writing a second row.
+        $replay = $this->idempotentReplay('POST');
+        if ($replay !== null) {
+            $this->ok($replay['response'], $replay['status']);
         }
 
-        if (empty($data)) {
-            $this->err(422, 'validation_error', 'Нет полей для вставки (все поля отфильтрованы по схеме)');
+        $pdo = $this->db->getConnection();
+        $pdo->beginTransaction();
+        try {
+            $id = (int) $this->db->insert($tableName, $data);
+            $row = $this->db->getById($tableName, $id) ?: $data;
+            $this->auditWrite('POST', $tableName, $id, ['after' => $row]);
+            $response = ['table' => $tableName, 'id' => $id, 'row' => $row];
+            $this->idempotentStore('POST', 201, $response);
+            $pdo->commit();
+        } catch (\PDOException $e) {
+            $pdo->rollBack();
+            $this->databaseError($tableName, $e);
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            $this->err(500, 'internal_error', $e->getMessage());
         }
 
-        $colNames = array_keys($data);
-        $placeholders = array_fill(0, count($colNames), '?');
-        $values = array_values($data);
-
-        $this->db->query(
-            'INSERT INTO ' . $this->q($tableName) .
-            ' (' . implode(', ', array_map([$this, 'q'], $colNames)) . ')' .
-            ' VALUES (' . implode(', ', $placeholders) . ')',
-            $values
-        );
-
-        $id = (int) $this->db->query('SELECT last_insert_rowid() id')->fetch()['id'];
-        http_response_code(201);
-        $this->ok(['table' => $tableName, 'id' => $id], 201);
+        $this->ok($response, 201);
     }
 
     /**
-     * PUT /api/v1/tables/:table/:id — обновить запись (частично).
-     * Тело: {поле: значение, ...} — только реальные колонки.
+     * PUT /api/v1/tables/:table/:id — update a record (partial).
+     *
+     * Same validation as POST, but only the fields that were sent are checked;
+     * required fields that are already set stay valid.
+     *
+     * ?dry_run=1 — show the resulting row and the diff, write nothing.
      */
     public function update(string $tableName, string $id): void {
         $this->validateTable($tableName);
         $idInt = (int) $id;
 
-        $exists = $this->db->query(
-            'SELECT id FROM ' . $this->q($tableName) . ' WHERE id = ?', [$idInt]
-        )->fetch();
-        if (!$exists) {
+        $before = $this->db->getById($tableName, $idInt);
+        if (!$before) {
             $this->err(404, 'not_found', "Запись id=$id в таблице \"$tableName\" не найдена");
         }
 
@@ -184,80 +219,155 @@ class TablesController {
             $this->err(400, 'bad_request', 'Тело должно быть JSON-объектом для обновления');
         }
 
-        $cols = $this->db->getTableStructure($tableName);
-        $schemaMap = [];
-        foreach ($cols as $c) {
-            $schemaMap[$c['name']] = $c;
+        $validator = new \Core\RecordValidator($this->db, $tableName);
+        $errors = $validator->validate($body, true, $before);
+        if ($errors) {
+            if ($this->dryRun()) {
+                $this->ok([
+                    'dry_run'      => true,
+                    'table'        => $tableName,
+                    'id'           => $idInt,
+                    'action'       => 'update',
+                    'would_change' => false,
+                    'validation'   => $errors,
+                ]);
+            }
+            $this->validationFailed($tableName, 'update', $errors);
         }
-
-        $data = [];
-        foreach ($body as $field => $value) {
-            if ($field === 'id') continue;  // PK не обновляем
-            if (!isset($schemaMap[$field])) continue;  // нет в схеме
-            $data[$field] = $value;
-        }
+        $data = $this->db->normalizeEmptyValues($tableName, $validator->cast($body));
 
         if (empty($data)) {
-            $this->err(422, 'validation_error', 'Нет полей для обновления (все поля отфильтрованы по схеме)');
+            $this->err(422, 'validation_failed', 'Нет полей для обновления');
         }
 
-        $setParts = [];
-        $values = [];
+        $after = $before;
         foreach ($data as $col => $val) {
-            $setParts[] = $this->q($col) . ' = ?';
-            $values[] = $val;
-        }
-        $values[] = $idInt;
-
-        // updated_at обновляем только если колонка существует
-        if (isset($schemaMap['updated_at'])) {
-            $setParts[] = 'updated_at = CURRENT_TIMESTAMP';
+            $after[$col] = $val;
         }
 
-        $this->db->query(
-            'UPDATE ' . $this->q($tableName) . ' SET ' . implode(', ', $setParts) . ' WHERE id = ?',
-            $values
-        );
+        if ($this->dryRun()) {
+            $this->ok([
+                'dry_run'       => true,
+                'table'         => $tableName,
+                'id'            => $idInt,
+                'action'        => 'update',
+                'would_change'  => true,
+                'validation'    => [],
+                'changes'       => \Core\Audit::changedFields($before, $after),
+                'row'           => $after,
+                'affected_urls' => $this->affectedUrls($tableName),
+            ]);
+        }
 
-        $this->ok(['table' => $tableName, 'id' => $idInt, 'updated' => true]);
+        $replay = $this->idempotentReplay('PUT');
+        if ($replay !== null) {
+            $this->ok($replay['response'], $replay['status']);
+        }
+
+        $pdo = $this->db->getConnection();
+        $pdo->beginTransaction();
+        try {
+            $this->db->update($tableName, $idInt, $data);
+            $changes = \Core\Audit::changedFields($before, $after);
+            $this->auditWrite('PUT', $tableName, $idInt, [
+                'before'  => $before,
+                'after'   => $after,
+                'changed' => $changes,
+            ]);
+            $response = [
+                'table'   => $tableName,
+                'id'      => $idInt,
+                'updated' => true,
+                'changed' => $changes,
+            ];
+            $this->idempotentStore('PUT', 200, $response);
+            $pdo->commit();
+        } catch (\PDOException $e) {
+            $pdo->rollBack();
+            $this->databaseError($tableName, $e);
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            $this->err(500, 'internal_error', $e->getMessage());
+        }
+
+        $this->ok($response);
     }
 
     /**
-     * DELETE /api/v1/tables/:table/:id — удалить запись.
+     * DELETE /api/v1/tables/:table/:id — delete a record.
+     *
+     * ?dry_run=1 — show which pages would lose this row, delete nothing. That
+     * is the answer to "I deleted it, so why is the page still the same?".
      */
     public function delete(string $tableName, string $id): void {
         $this->validateTable($tableName);
         $idInt = (int) $id;
 
-        $exists = $this->db->query(
-            'SELECT id FROM ' . $this->q($tableName) . ' WHERE id = ?', [$idInt]
-        )->fetch();
-        if (!$exists) {
+        $row = $this->db->getById($tableName, $idInt);
+        if (!$row) {
             $this->err(404, 'not_found', "Запись id=$id в таблице \"$tableName\" не найдена");
         }
 
-        $this->db->query('DELETE FROM ' . $this->q($tableName) . ' WHERE id = ?', [$idInt]);
-        http_response_code(204);
-        exit;
+        if ($this->dryRun()) {
+            $this->ok([
+                'dry_run'       => true,
+                'table'         => $tableName,
+                'id'            => $idInt,
+                'action'        => 'delete',
+                'would_change'  => true,
+                'validation'    => [],
+                'row'           => $row,
+                'affected_urls' => $this->affectedUrls($tableName),
+            ]);
+        }
+
+        $replay = $this->idempotentReplay('DELETE');
+        if ($replay !== null) {
+            $this->ok($replay['response'], $replay['status']);
+        }
+
+        $pdo = $this->db->getConnection();
+        $pdo->beginTransaction();
+        try {
+            $this->db->delete($tableName, $idInt);
+            $this->auditWrite('DELETE', $tableName, $idInt, ['before' => $row]);
+            $response = ['table' => $tableName, 'id' => $idInt, 'deleted' => true];
+            $this->idempotentStore('DELETE', 200, $response);
+            $pdo->commit();
+        } catch (\PDOException $e) {
+            $pdo->rollBack();
+            $this->databaseError($tableName, $e);
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            $this->err(500, 'internal_error', $e->getMessage());
+        }
+
+        $this->ok($response);
     }
 
     /**
-     * GET /api/v1/tables/:table/schema — структура таблицы.
+     * GET /api/v1/tables/:table/schema — structure of one table.
+     *
+     * Shape comes from PRAGMA, meaning from table_meta/field_meta, limits from
+     * CHECK constraints, links from PRAGMA foreign_key_list + entity_relations.
      */
     public function schema(string $tableName): void {
         $this->validateTable($tableName);
-        $cols = $this->db->getTableStructure($tableName);
-        // Привести к читаемому виду
-        $columns = array_map(function($c) {
-            return [
-                'name'    => $c['name'],
-                'type'    => $c['type'],
-                'pk'      => (bool) $c['pk'],
-                'notnull' => (bool) $c['notnull'],
-                'default' => $c['dflt_value'],
-            ];
-        }, $cols);
-        $this->ok(['table' => $tableName, 'columns' => $columns]);
+        $inspector = new \Core\SchemaInspector($this->db);
+        $this->ok($inspector->tableSchema($tableName));
+    }
+
+    /**
+     * GET /api/v1/tables/:table/json-schema — JSON Schema of one table.
+     *
+     * The same rules the write endpoints enforce, expressed as JSON Schema
+     * (draft 2020-12) with apidcms extensions: labels, formats, references,
+     * enum values and relations. An agent can validate locally before POSTing.
+     */
+    public function jsonSchema(string $tableName): void {
+        $this->validateTable($tableName);
+        $validator = new \Core\RecordValidator($this->db, $tableName);
+        $this->ok($validator->jsonSchema());
     }
 
     // ── helpers ────────────────────────────────────────
@@ -275,12 +385,7 @@ class TablesController {
     }
 
     private function isSystem(string $name): bool {
-        foreach (self::SKIP_PREFIXES as $pfx) {
-            if (strpos($name, $pfx) === 0) {
-                return true;
-            }
-        }
-        return in_array($name, ['sqlite_master', 'sqlite_sequence'], true);
+        return \Core\SchemaInspector::isSystemTable($name);
     }
 
     private function isTextType(string $type): bool {

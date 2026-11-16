@@ -232,6 +232,8 @@ class HomeController extends BaseController {
             
             // Delete table
             $this->db->dropTable($table);
+            // Metadata must not outlive the table
+            $this->db->deleteMeta($table);
             
             // Redirect to home with message
             $this->redirect("/tables?table_deleted=1");

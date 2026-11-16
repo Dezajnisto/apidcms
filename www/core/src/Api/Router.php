@@ -24,11 +24,13 @@ class Router {
      * Входная точка. Разбирает URI и вызывает нужный контроллер.
      */
     public function dispatch(): void {
-        // Заголовки
+        // Headers
         header_remove('X-Powered-By');
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
         header('Access-Control-Allow-Headers: Authorization, Content-Type');
+        // Never let a caller mistake this for a stable contract: v1 is preview.
+        header('X-apidcms-api: v1-preview');
 
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             http_response_code(204);
@@ -52,21 +54,152 @@ class Router {
         $parts = $path !== '' ? explode('/', $path) : [];
         $this->segments = array_pad($parts, 3, null);
 
-        // Auth — на всё, кроме OPTIONS и GET system/info
-        $resource = $this->segments[0];
-        $needsAuth = !($resource === 'system' && $_SERVER['REQUEST_METHOD'] === 'GET');
+        // Auth — everything except OPTIONS and the public discovery endpoints
+        // (GET /api/v1 and GET /api/v1/system/*).
+        $resource = $this->segments[0] ?? '';
+        if ($resource === null) {
+            $resource = '';
+        }
+        $needsAuth = !(
+            ($resource === '' || $resource === null || $resource === 'system')
+            && $_SERVER['REQUEST_METHOD'] === 'GET'
+        );
         if ($needsAuth) {
             (new Auth($this->db))->require();
         }
 
-        // Диспетчеризация
+        // Dispatch
         match ($resource) {
-            'system'   => $this->systemInfo(),
-            'articles' => $this->articles(),
-            'tables'   => $this->tables(),
-            ''         => $this->systemInfo(),
-            default    => $this->err(404, 'not_found', "Ресурс '$resource' не найден"),
+            'system'     => $this->systemInfo(),
+            'schema'     => $this->schema(),
+            'navigation' => $this->navigation(),
+            'relations'  => $this->relations(),
+            'articles'   => $this->articles(),
+            'tables'     => $this->tables(),
+            'audit'      => $this->audit(),
+            'templates'  => $this->notImplemented('templates', 'GET/PUT /api/v1/templates/{name} is planned, see the roadmap step 5'),
+            'mcp'        => $this->notImplemented('mcp', '/mcp is served outside /api/v1 and is not implemented yet (roadmap step 4)'),
+            ''           => $this->index(),
+            default      => $this->err(404, 'not_found', "Ресурс '$resource' не найден"),
         };
+    }
+
+    // ── /api/v1 — discovery ────────────────────────────
+
+    /**
+     * Public index: what this CMS is, what the API can do, what is not ready.
+     *
+     * An agent that knows only the domain must be able to start here and walk
+     * to /api/v1/schema in one more call.
+     */
+    private function index(): void {
+        $version = $this->readVersion();
+        $title = $this->setting('site_title');
+
+        $this->ok([
+            'cms'          => 'apidcms',
+            'version'      => $version,
+            'api_version'  => 'v1',
+            'status'       => 'preview',
+            'site'         => [
+                'title'    => $title,
+                'language' => $this->setting('site_language'),
+            ],
+            'generated_at' => date('c'),
+            'capabilities' => $this->capabilities(),
+            'notes'        => [
+                'status "preview" means the contract may change; responses are never complete by default.',
+                'start with GET /api/v1/schema for the whole project in one call.',
+                'endpoints marked "planned" answer 501 not_implemented, not 404.',
+            ],
+        ]);
+    }
+
+    /**
+     * Machine-readable feature list: what works now, what is planned.
+     * "planned" paths answer 501 so an agent does not look for a typo.
+     */
+    private function capabilities(): array {
+        return [
+            ['name' => 'system.info',     'methods' => ['GET'], 'path' => '/api/v1/system/info',   'status' => 'ready'],
+            ['name' => 'schema',          'methods' => ['GET'], 'path' => '/api/v1/schema',        'status' => 'ready'],
+            ['name' => 'navigation',      'methods' => ['GET'], 'path' => '/api/v1/navigation',    'status' => 'ready'],
+            ['name' => 'relations',       'methods' => ['GET'], 'path' => '/api/v1/relations',     'status' => 'ready'],
+            ['name' => 'tables.list',     'methods' => ['GET'], 'path' => '/api/v1/tables',        'status' => 'ready'],
+            ['name' => 'tables.records',  'methods' => ['GET', 'POST', 'PUT', 'DELETE'], 'path' => '/api/v1/tables/{table}[/{id}]', 'status' => 'ready'],
+            ['name' => 'tables.schema',   'methods' => ['GET'], 'path' => '/api/v1/tables/{table}/schema', 'status' => 'ready'],
+            ['name' => 'tables.json_schema', 'methods' => ['GET'], 'path' => '/api/v1/tables/{table}/json-schema', 'status' => 'ready'],
+            ['name' => 'articles',        'methods' => ['GET', 'POST', 'PUT', 'DELETE'], 'path' => '/api/v1/articles[/{slug}]', 'status' => 'ready'],
+            ['name' => 'write.validation', 'methods' => [], 'path' => null,                   'status' => 'ready'],
+            ['name' => 'write.dry_run',   'methods' => [], 'path' => null,                   'status' => 'ready'],
+            ['name' => 'write.idempotency', 'methods' => [], 'path' => null,                 'status' => 'ready'],
+            ['name' => 'audit',           'methods' => ['GET'], 'path' => '/api/v1/audit',       'status' => 'ready'],
+            ['name' => 'tokens.scopes',   'methods' => [], 'path' => null,                   'status' => 'planned'],
+            ['name' => 'templates',       'methods' => ['GET', 'PUT'], 'path' => '/api/v1/templates/{name}', 'status' => 'planned'],
+            ['name' => 'mcp',             'methods' => [], 'path' => '/mcp',                  'status' => 'planned'],
+        ];
+    }
+
+    // ── /api/v1/schema, /navigation, /relations ────────
+
+    private function schema(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->err(405, 'method_not_allowed', 'Schema is read-only');
+        }
+        $inspector = new \Core\SchemaInspector($this->db);
+        $schema = $inspector->projectSchema();
+        $schema['version'] = $this->readVersion();
+        $schema['site'] = [
+            'title'    => $this->setting('site_title'),
+            'language' => $this->setting('site_language'),
+        ];
+        $this->ok($schema);
+    }
+
+    private function navigation(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->err(405, 'method_not_allowed', 'Navigation is read-only');
+        }
+        $inspector = new \Core\SchemaInspector($this->db);
+        $pages = $inspector->navigationGraph();
+        $this->ok(['pages' => $pages, 'total' => count($pages)]);
+    }
+
+    private function relations(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->err(405, 'method_not_allowed', 'Relations are read-only');
+        }
+        $table = $this->segments[1];
+        $inspector = new \Core\SchemaInspector($this->db);
+        if ($table !== null && !\Core\SchemaInspector::isSystemTable($table) && !$this->db->tableExists($table)) {
+            $this->err(404, 'not_found', "Таблица \"$table\" не существует");
+        }
+        $rows = $inspector->relations($table);
+        $this->ok(['relations' => $rows, 'total' => count($rows)]);
+    }
+
+    // ── /api/v1/audit ──────────────────────────────────
+
+    private function audit(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->err(405, 'method_not_allowed', 'Audit log is read-only');
+        }
+        $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 50;
+        $table = isset($_GET['table']) ? trim((string) $_GET['table']) : null;
+        $rowId = isset($_GET['id']) ? (int) $_GET['id'] : null;
+        $audit = new \Core\Audit($this->db);
+        $entries = $audit->recent($limit, $table);
+        if ($rowId !== null) {
+            $entries = array_values(array_filter($entries, function ($entry) use ($rowId) {
+                return (int) ($entry['row_id'] ?? 0) === $rowId;
+            }));
+        }
+        $this->ok([
+            'entries' => $entries,
+            'total'   => $audit->count($table),
+            'limit'   => max(1, min(500, $limit)),
+            'table'   => $table,
+        ]);
     }
 
     // ── /api/v1/system/info ────────────────────────────
@@ -80,6 +213,7 @@ class Router {
         $this->ok([
             'cms'        => 'apidcms',
             'version'    => $version,
+            'status'     => 'preview',
             'php'        => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
             'site_title' => $title ? $title['setting_value'] : '',
             'time'       => date('c'),
@@ -131,12 +265,14 @@ class Router {
                 exit;
             }
 
-            if ($_SERVER['REQUEST_METHOD'] === 'PUT' && $name && $id && $id !== 'schema') {
+            $readOnlyIds = ['schema', 'json-schema'];
+
+            if ($_SERVER['REQUEST_METHOD'] === 'PUT' && $name && $id && !in_array($id, $readOnlyIds, true)) {
                 $ctrl->update($name, $id);
                 exit;
             }
 
-            if ($_SERVER['REQUEST_METHOD'] === 'DELETE' && $name && $id && $id !== 'schema') {
+            if ($_SERVER['REQUEST_METHOD'] === 'DELETE' && $name && $id && !in_array($id, $readOnlyIds, true)) {
                 $ctrl->delete($name, $id);
                 exit;
             }
@@ -148,6 +284,8 @@ class Router {
             // GET: остались только GET-запросы (POST/PUT/DELETE уже вышли выше)
             if ($id === 'schema' && $name) {
                 $ctrl->schema($name);
+            } elseif ($id === 'json-schema' && $name) {
+                $ctrl->jsonSchema($name);
             } elseif ($id && $name) {
                 $ctrl->getById($name, $id);
             } elseif ($name) {
@@ -168,6 +306,37 @@ class Router {
             return trim(file_get_contents($f));
         }
         return '0.0.0';
+    }
+
+    /** Read one system_settings value, '' when unset. */
+    private function setting(string $key): string {
+        try {
+            $row = $this->db->query(
+                "SELECT setting_value FROM system_settings WHERE setting_key = ?", [$key]
+            )->fetch();
+            return $row ? (string) $row['setting_value'] : '';
+        } catch (\Throwable $e) {
+            return '';
+        }
+    }
+
+    /**
+     * 501 for endpoints that exist in the roadmap but not in code yet.
+     * Deliberately NOT 404: an agent must not go looking for a typo in a path
+     * that will appear later.
+     */
+    private function notImplemented(string $what, string $hint = ''): void {
+        http_response_code(501);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'error' => [
+                'code'    => 'not_implemented',
+                'message' => "$what is not implemented in this version",
+                'hint'    => $hint,
+            ],
+            'status' => 'preview',
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
     }
 
     private function ok(array $payload, int $http = 200): void {

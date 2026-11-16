@@ -1,3 +1,57 @@
+## 2026-11-16 — v2.4.0 — API для агента: preview, /schema, семантика таблиц, проверка записи
+
+### Добавлено
+- `GET /api/v1` — анонимный индекс API: `{cms, version, api_version, status: "preview", site, capabilities}`, каждый путь помечен `ready` или `planned`
+- Заголовок `X-apidcms-api: v1-preview` на всех ответах API
+- `GET /api/v1/schema` — весь проект одним ответом: таблицы, колонки (тип, NOT NULL, default, enum из `CHECK`), метаданные, внешние ключи, связи many-to-many, граф страниц
+- `GET /api/v1/navigation` — граф страниц из `navigation.page_config`, разобранный: `slug`, `url`, `type`, `template`, `source_table`, `filters`, `get_filters`, `items_per_page`, `sort`, `page_config_error`
+- `GET /api/v1/relations[/{table}]` — связи many-to-many из `entity_relations`
+- `GET /api/v1/tables/{table}/schema` отдаёт метаданные, enum, внешние ключи и связи (прежние поля сохранены)
+- `GET /api/v1/tables/{table}/json-schema` — JSON Schema таблицы (draft 2020-12) с расширениями: подписи, форматы, enum, ссылки на связанные таблицы
+- `table_meta` / `field_meta` — семантика поверх PRAGMA: название и назначение таблицы, подпись, пояснение, формат, пример и допустимые значения колонки
+- `Core\SchemaInspector` — общий слой описания проекта (PRAGMA + CHECK + метаданные + связи + граф страниц), используется API и админкой
+- `Core\RecordValidator` — генерация JSON Schema и проверка записи: тип по affinity, NOT NULL, default, enum (`field_meta` или `CHECK`), внешние ключи, формат (`integer`, `money`, `date`, `url`, `email`, `slug`, …), длина `VARCHAR(n)`
+- `422 validation_failed` с машинночитаемым списком `{column, rule, got, expected}` на `POST`/`PUT` — вместо `500` с текстом исключения
+- Коды ошибок БД: `conflict` (409), `foreign_key_violation` (409), `notnull_violation` (422), `database_error` (422)
+- `?dry_run=1` на `POST`/`PUT`/`DELETE` — `{would_change, changes, row, affected_urls}`, база не меняется; `affected_urls` — страницы, которые показывают эту таблицу
+- `Idempotency-Key` на записи — повтор возвращает первый ответ (`Idempotent-Replay: true`) и не создаёт вторую запись
+- `system_audit` — журнал записей через API: метод, путь, таблица, `row_id`, IP, диф; чистка старше 90 дней
+- `GET /api/v1/audit?limit=&table=&id=` — что записал агент
+- Админка: кнопка «Семантика» на странице структуры таблицы, форма описания таблицы и всех её колонок
+- `Database`: `getTableMeta`, `setTableMeta`, `getFieldMeta`, `setFieldMeta`, `deleteMeta`, `ensureMetaTables`
+- `Api\WriteSupport` — общая обвязка записи API (валидация, dry-run, аудит, идемпотентность) для таблиц и статей
+- Автосоздание `table_meta`, `field_meta`, `system_audit`, `api_idempotency` при первом обращении — обновление сайта без ручной миграции
+
+### Изменено
+- `/api/v1` без ресурса отдаёт индекс возможностей вместо копии `system/info`
+- `/api/v1` и `/api/v1/system/*` доступны анонимно (discovery); остальные пути — по токену
+- Запланированные пути (`templates`, `mcp`) отвечают `501 not_implemented` с подсказкой, а не `404`
+- `POST`/`PUT` не принимают молча незнакомые поля: `unknown_column` вместо тихого отбрасывания (опечатка в имени поля больше не теряет данные)
+- `POST` в таблицу проверяет обязательные поля заранее, до обращения к базе
+- `PUT` в ответе отдаёт `changed` — какие колонки изменились
+- `DELETE` больше не отвечает `204` без тела: `200 {deleted: true}` (нужно для идемпотентного повтора)
+- `GET /api/v1/tables` включает подпись таблицы из метаданных
+- Внутренние таблицы (`entity_relations`, `visit_stats`, `table_meta`, `field_meta`, `api_idempotency`) закрыты для API и AI-помощника
+- Удаление таблицы или колонки удаляет её метаданные
+- Пустые значения метаданных не сохраняются: `null` в `/schema` значит «не описано»
+
+### Изменённые файлы
+- `core/src/Api/Router.php` — индекс API, header, маршруты `/schema`, `/navigation`, `/relations`, `/audit`, `json-schema`, `501` для запланированного
+- `core/src/Api/TablesController.php` — валидация, dry-run, аудит, идемпотентность, `jsonSchema()`
+- `core/src/Api/ArticlesController.php` — то же для статей (`pages`)
+- `core/src/Api/WriteSupport.php` — общая обвязка записи
+- `core/src/Api/Idempotency.php` — кэш повторов по `Idempotency-Key`
+- `core/src/Core/RecordValidator.php` — JSON Schema и проверка записи
+- `core/src/Core/Audit.php` — журнал `system_audit`
+- `core/src/Core/SchemaInspector.php` — новый класс описания проекта
+- `core/src/Core/Database.php` — метаданные таблиц и колонок
+- `core/src/Admin/TableController.php`, `core/src/Admin/HomeController.php`, `core/src/Admin/App.php` — форма «Семантика», очистка метаданных
+- `core/src/Front/FrontController.php`, `core/src/Admin/SettingsController.php` — внутренние таблицы убраны из контекста AI
+- `core/views/admin/table/meta.html.twig`, `core/views/admin/table/structure.html.twig` — UI описания
+- `core/init_system_tables.php` — таблицы `table_meta`, `field_meta`, `system_audit`, `api_idempotency`
+- `core/lang/ru.json`, `core/lang/en.json` — 32 ключа
+- `core/VERSION`
+
 ## 2026-11-11 — v2.3.0 — robots.txt и sitemap.xml, исправлен FOREIGN KEY при сохранении
 
 ### Добавлено

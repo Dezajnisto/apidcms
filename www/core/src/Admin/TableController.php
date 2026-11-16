@@ -547,13 +547,100 @@ class TableController extends BaseController {
         
         // Get table structure
         $structure = $this->db->getTableStructure($table);
+        $tableMeta = $this->db->getTableMeta($table) ?? [];
+        $fieldMeta = $this->db->getFieldMeta($table);
+        $described = 0;
+        foreach ($structure as $col) {
+            if (!empty($fieldMeta[$col['name']]['label']) || !empty($fieldMeta[$col['name']]['description'])) {
+                $described++;
+            }
+        }
         
         $this->render('table/structure', [
             'tableName' => $table,
             'structure' => $structure,
+            'tableMeta' => $tableMeta,
+            'fieldMeta' => $fieldMeta,
+            'described' => $described,
             'title' => $this->lang->t('table.structure_title', ['table' => $table]),
             'get' => $_GET
         ]);
+    }
+
+    /**
+     * Semantic metadata form: what the table and its columns MEAN.
+     *
+     * This is the part PRAGMA cannot answer (label, purpose, format, enum) and
+     * the part /api/v1/schema serves to agents.
+     *
+     * @param string $table Table name
+     */
+    public function metaForm($table) {
+        if (!in_array($table, $this->db->getTables())) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
+            ]);
+            return;
+        }
+
+        $this->render('table/meta', [
+            'tableName'   => $table,
+            'structure'   => $this->db->getTableStructure($table),
+            'tableMeta'   => $this->db->getTableMeta($table) ?? [],
+            'fieldMeta'   => $this->db->getFieldMeta($table),
+            'saved'       => isset($_GET['saved']),
+            'title'       => $this->lang->t('table.meta.title', ['table' => $table]),
+        ]);
+    }
+
+    /**
+     * Save semantic metadata submitted by metaForm().
+     *
+     * @param string $table Table name
+     */
+    public function saveMeta($table) {
+        if (!in_array($table, $this->db->getTables())) {
+            $this->render('error/404', [
+                'message' => $this->lang->t('table.table_not_found', ['table' => $table])
+            ]);
+            return;
+        }
+
+        try {
+            $this->db->setTableMeta($table, [
+                'label'       => $_POST['label'] ?? null,
+                'description' => $_POST['description'] ?? null,
+                'purpose'     => $_POST['purpose'] ?? null,
+            ]);
+
+            $columnMeta = $_POST['columns'] ?? [];
+            foreach ($this->db->getTableStructure($table) as $col) {
+                $name = $col['name'];
+                $data = $columnMeta[$name] ?? [];
+                $this->db->setFieldMeta($table, $name, [
+                    'label'       => $data['label'] ?? null,
+                    'description' => $data['description'] ?? null,
+                    'format'      => $data['format'] ?? null,
+                    'example'     => $data['example'] ?? null,
+                    'enum'        => $data['enum'] ?? null,
+                ]);
+            }
+
+            $this->redirect('/table/' . urlencode($table) . '/meta?saved=1');
+        } catch (Exception $e) {
+            $this->render('table/meta', [
+                'tableName' => $table,
+                'structure' => $this->db->getTableStructure($table),
+                'tableMeta' => [
+                    'label'       => $_POST['label'] ?? null,
+                    'description' => $_POST['description'] ?? null,
+                    'purpose'     => $_POST['purpose'] ?? null,
+                ],
+                'fieldMeta' => $this->db->getFieldMeta($table),
+                'error'     => $e->getMessage(),
+                'title'     => $this->lang->t('table.meta.title', ['table' => $table]),
+            ]);
+        }
     }
 
     /**
@@ -668,6 +755,8 @@ class TableController extends BaseController {
             
             // Delete column
             $this->db->deleteColumn($table, $column);
+            // Column metadata would otherwise outlive the column itself
+            $this->db->deleteMeta($table, $column);
             
             // Redirect to structure page
             $this->redirect("/table/{$table}/structure?column_deleted=1");

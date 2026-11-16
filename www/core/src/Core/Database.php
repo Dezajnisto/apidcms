@@ -601,5 +601,212 @@ class Database {
             throw new Exception("Ошибка при удалении колонки: " . $e->getMessage());
         }
     }
+
+    /**
+     * Ensure the semantic metadata tables exist.
+     *
+     * They are created by init_system_tables.php for new installs; existing
+     * sites get them lazily here, so upgrading does not require a manual
+     * migration step. Cached per request in a static flag.
+     */
+    public function ensureMetaTables() {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        $this->pdo->exec('CREATE TABLE IF NOT EXISTS table_meta (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            "table" TEXT NOT NULL UNIQUE,
+            label TEXT,
+            description TEXT,
+            purpose TEXT,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )');
+        $this->pdo->exec('CREATE TABLE IF NOT EXISTS field_meta (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            "table" TEXT NOT NULL,
+            "column" TEXT NOT NULL,
+            label TEXT,
+            description TEXT,
+            format TEXT,
+            example TEXT,
+            "enum" TEXT,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE("table", "column")
+        )');
+        $done = true;
+    }
+
+    /**
+     * Table-level semantics: {label, description, purpose} or null if unset.
+     */
+    public function getTableMeta($tableName) {
+        $this->ensureMetaTables();
+        $row = $this->query(
+            'SELECT label, description, purpose, updated_at FROM table_meta WHERE "table" = ?',
+            [$tableName]
+        )->fetch();
+        if (!$row) {
+            return null;
+        }
+        return [
+            'label'       => $row['label'],
+            'description' => $row['description'],
+            'purpose'     => $row['purpose'],
+            'updated_at'  => $row['updated_at'],
+        ];
+    }
+
+    /**
+     * Store table-level semantics. Empty values are stored as NULL.
+     *
+     * @param array $meta keys: label, description, purpose
+     */
+    public function setTableMeta($tableName, array $meta) {
+        $this->ensureMetaTables();
+        $this->query(
+            'INSERT INTO table_meta ("table", label, description, purpose, updated_at)
+             VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+             ON CONFLICT("table") DO UPDATE SET
+                label = excluded.label,
+                description = excluded.description,
+                purpose = excluded.purpose,
+                updated_at = CURRENT_TIMESTAMP',
+            [
+                $tableName,
+                $this->cleanMetaValue($meta['label'] ?? null),
+                $this->cleanMetaValue($meta['description'] ?? null),
+                $this->cleanMetaValue($meta['purpose'] ?? null),
+            ]
+        );
+        return true;
+    }
+
+    /**
+     * Column-level semantics for one table, keyed by column name.
+     *
+     * @return array ['price' => ['label' => ..., 'description' => ...,
+     *                'format' => ..., 'example' => ..., 'enum' => [...]], ...]
+     */
+    public function getFieldMeta($tableName) {
+        $this->ensureMetaTables();
+        $rows = $this->query(
+            'SELECT "column", label, description, format, example, "enum"
+               FROM field_meta WHERE "table" = ?',
+            [$tableName]
+        )->fetchAll();
+        $result = [];
+        foreach ($rows as $r) {
+            $entry = [
+                'label'       => $r['label'],
+                'description' => $r['description'],
+                'format'      => $r['format'],
+                'example'     => $r['example'],
+                'enum'        => $this->decodeEnum($r['enum']),
+            ];
+            // Rows written by older versions may be entirely empty: treat
+            // them as "not described" and do not report them.
+            if ($entry['label'] === null && $entry['description'] === null
+                && $entry['format'] === null && $entry['example'] === null
+                && $entry['enum'] === null) {
+                continue;
+            }
+            $result[$r['column']] = $entry;
+        }
+        return $result;
+    }
+
+    /**
+     * Store column-level semantics.
+     *
+     * @param array $meta keys: label, description, format, example, enum
+     *                    (enum may be an array of allowed values or a
+     *                    comma-separated string)
+     */
+    public function setFieldMeta($tableName, $columnName, array $meta) {
+        $this->ensureMetaTables();
+        $label       = $this->cleanMetaValue($meta['label'] ?? null);
+        $description = $this->cleanMetaValue($meta['description'] ?? null);
+        $format      = $this->cleanMetaValue($meta['format'] ?? null);
+        $example     = $this->cleanMetaValue($meta['example'] ?? null);
+        $enum = $meta['enum'] ?? null;
+        if (is_array($enum)) {
+            $enum = array_values(array_filter(array_map('trim', $enum), fn($v) => $v !== ''));
+            $enum = $enum ? json_encode($enum, JSON_UNESCAPED_UNICODE) : null;
+        } elseif (is_string($enum) && trim($enum) !== '') {
+            $parts = array_values(array_filter(array_map('trim', explode(',', $enum)), fn($v) => $v !== ''));
+            $enum = $parts ? json_encode($parts, JSON_UNESCAPED_UNICODE) : null;
+        } else {
+            $enum = null;
+        }
+
+        // Nothing described → do not keep an empty row, so /schema shows
+        // "null = not described yet" instead of a row full of nulls.
+        if ($label === null && $description === null && $format === null
+            && $example === null && $enum === null) {
+            $this->query('DELETE FROM field_meta WHERE "table" = ? AND "column" = ?', [$tableName, $columnName]);
+            return true;
+        }
+
+        $this->query(
+            'INSERT INTO field_meta ("table", "column", label, description, format, example, "enum", updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+             ON CONFLICT("table", "column") DO UPDATE SET
+                label = excluded.label,
+                description = excluded.description,
+                format = excluded.format,
+                example = excluded.example,
+                "enum" = excluded.enum,
+                updated_at = CURRENT_TIMESTAMP',
+            [$tableName, $columnName, $label, $description, $format, $example, $enum]
+        );
+        return true;
+    }
+
+    /**
+     * Drop metadata rows of a deleted table or column (housekeeping).
+     */
+    public function deleteMeta($tableName, $columnName = null) {
+        $this->ensureMetaTables();
+        if ($columnName === null) {
+            $this->query('DELETE FROM table_meta WHERE "table" = ?', [$tableName]);
+            $this->query('DELETE FROM field_meta WHERE "table" = ?', [$tableName]);
+            return true;
+        }
+        $this->query('DELETE FROM field_meta WHERE "table" = ? AND "column" = ?', [$tableName, $columnName]);
+        return true;
+    }
+
+    /**
+     * Decode field_meta.enum (JSON array) into a PHP array.
+     *
+     * @return array|null null when no enum is stored
+     */
+    private function decodeEnum($raw) {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded)) {
+            return array_values($decoded);
+        }
+        // Tolerate a plain comma-separated string stored by hand
+        $parts = array_values(array_filter(array_map('trim', explode(',', $raw)), fn($v) => $v !== ''));
+        return $parts ?: null;
+    }
+
+    /**
+     * Normalize a metadata value: trim, empty string becomes NULL.
+     */
+    private function cleanMetaValue($value) {
+        if ($value === null) {
+            return null;
+        }
+        if (is_array($value)) {
+            $value = implode(',', $value);
+        }
+        $value = trim((string) $value);
+        return $value === '' ? null : $value;
+    }
 }
 ?>

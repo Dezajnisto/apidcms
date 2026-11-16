@@ -127,6 +127,73 @@ echo "[OK] entity_relations\n";
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_er_lookup ON entity_relations(source_table, source_id, relation_name)");
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_er_reverse ON entity_relations(relation_name, target_id, source_table)");
 
+// 10. Table semantics: what a table and a column MEAN, not just their shape.
+// PRAGMA gives the form (type, null, default); this gives the meaning (label,
+// purpose, format, enum). Used by /api/v1/schema and the table constructor UI.
+// Also created lazily by Core\SchemaInspector::ensureMetaTables() for sites
+// that upgrade without re-running this script.
+$pdo->exec('
+    CREATE TABLE IF NOT EXISTS table_meta (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        "table" TEXT NOT NULL UNIQUE,
+        label TEXT,
+        description TEXT,
+        purpose TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+');
+echo "[OK] table_meta\n";
+
+$pdo->exec('
+    CREATE TABLE IF NOT EXISTS field_meta (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        "table" TEXT NOT NULL,
+        "column" TEXT NOT NULL,
+        label TEXT,
+        description TEXT,
+        format TEXT,
+        example TEXT,
+        "enum" TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE("table", "column")
+    )
+');
+echo "[OK] field_meta\n";
+
+// 11. Audit trail of API writes: who changed what, when, from where.
+// Also created lazily by Core\Audit.
+$pdo->exec('
+    CREATE TABLE IF NOT EXISTS system_audit (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        actor TEXT,
+        token_id INTEGER,
+        method TEXT NOT NULL,
+        path TEXT,
+        table_name TEXT,
+        row_id INTEGER,
+        ip TEXT,
+        diff TEXT
+    )
+');
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_audit_created ON system_audit(created_at)");
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_audit_table ON system_audit(table_name, row_id)");
+echo "[OK] system_audit\n";
+
+// 12. Idempotency-Key replay cache (24h), also created lazily by Api\Idempotency.
+$pdo->exec('
+    CREATE TABLE IF NOT EXISTS api_idempotency (
+        key TEXT PRIMARY KEY,
+        method TEXT NOT NULL,
+        path TEXT,
+        status INTEGER NOT NULL,
+        response TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+');
+$pdo->exec("CREATE INDEX IF NOT EXISTS idx_idem_created ON api_idempotency(created_at)");
+echo "[OK] api_idempotency\n";
+
 
 echo "\n=== Базовые настройки ===\n";
 

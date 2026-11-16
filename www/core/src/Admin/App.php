@@ -77,6 +77,8 @@ class App {
         
         // Управление структурой таблиц
         $this->addRoute('/table/{table}/structure', 'TableController', 'structure');
+        $this->addRoute('/table/{table}/meta', 'TableController', 'metaForm');
+        $this->addRoute('/table/{table}/store-meta', 'TableController', 'saveMeta');
         $this->addRoute('/table/{table}/add-column', 'TableController', 'addColumnForm');
         $this->addRoute('/table/{table}/store-column', 'TableController', 'addColumn');
         $this->addRoute('/table/{table}/delete-column/{column}', 'TableController', 'deleteColumn');

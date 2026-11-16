@@ -142,6 +142,39 @@ class Database {
     public function quoteIdentifier($identifier) {
         return '"' . str_replace('"', '""', $identifier) . '"';
     }
+
+    /**
+     * PRAGMA отдаёт DEFAULT как текст SQL, а не как значение: у строкового
+     * дефолта кавычки остаются внутри литерала ('active', "active", `active`,
+     * [active]). Если подставить такую строку в json-schema, агент запишет в
+     * базу значение вместе с кавычками; если подставить в новое определение
+     * колонки — DEFAULT задвоится.
+     *
+     * Поэтому нормализация общая: строковый литерал разворачиваем в значение,
+     * выражения (CURRENT_TIMESTAMP, NULL) и числа оставляем как есть.
+     */
+    public static function normalizeDefault($raw) {
+        if ($raw === null) {
+            return null;
+        }
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        // В DDL SQLite все четыре вида кавычек дают строковый литерал:
+        // DEFAULT 'active' / "active" / `active` / [active] — это одно и то же.
+        $first = $raw[0];
+        $last  = substr($raw, -1);
+        $pairs = ["'" => "'", '"' => '"', '`' => '`', '[' => ']'];
+        if (strlen($raw) >= 2 && isset($pairs[$first]) && $last === $pairs[$first]) {
+            $inner = substr($raw, 1, -1);
+            // Удвоенная кавычка внутри литерала — это сама кавычка.
+            return str_replace($first . $first, $first, $inner);
+        }
+
+        return $raw;
+    }
     
     /**
      * Получить список всех таблиц в базе данных
@@ -556,8 +589,12 @@ class Database {
                     $definition .= " NOT NULL";
                 }
                 if ($col['dflt_value'] !== null) {
-                    $dflt = $col['dflt_value'];
+                    // Значение, а не текст SQL: иначе строковый дефолт получит
+                    // вторую пару кавычек и в базе окажется '"'active'"'.
+                    $dflt = self::normalizeDefault($col['dflt_value']);
                     if (preg_match('/^(CURRENT_TIMESTAMP|CURRENT_DATE|CURRENT_TIME|NULL)$/i', $dflt)) {
+                        $definition .= " DEFAULT " . $dflt;
+                    } elseif (is_numeric($dflt)) {
                         $definition .= " DEFAULT " . $dflt;
                     } else {
                         $definition .= " DEFAULT " . $this->pdo->quote($dflt);

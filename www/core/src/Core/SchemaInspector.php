@@ -90,7 +90,7 @@ class SchemaInspector {
                 'type'        => $col['type'],
                 'pk'          => (bool) $col['pk'],
                 'notnull'     => (bool) $col['notnull'],
-                'default'     => $col['dflt_value'],
+                'default'     => Database::normalizeDefault($col['dflt_value']),
                 'enum'        => $enum,
                 'label'       => $fm['label'] ?? null,
                 'description' => $fm['description'] ?? null,

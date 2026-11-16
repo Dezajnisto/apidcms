@@ -214,6 +214,13 @@ class AIController extends BaseController {
         $tables = $this->db->getTables();
         $result = [];
         foreach ($tables as $tableName) {
+            // Служебные таблицы в дамп не попадают — ни плагинные, ни куки,
+            // ни служебные таблицы чужих инструментов (_litestream_*).
+            // Раньше в промпт уезжали users, user_tokens, system_settings
+            // и plugin_*: модель видела служебное как данные сайта.
+            if (\Core\SchemaInspector::isSystemTable($tableName)) {
+                continue;
+            }
             $structure = $this->db->getTableStructure($tableName);
             $columns = array_map(function($col) {
                 return $col["name"] . " (" . $col["type"] . ")";
@@ -247,8 +254,11 @@ class AIController extends BaseController {
 
             $useTools = $this->setting("ai_assistant_tools", "1") === "1";
 
+            $meta = [];
             if ($useTools) {
-                $response = $this->assistantWithTools($message, $currentPage);
+                $result = $this->assistantWithTools($message, $currentPage);
+                $response = $result["text"];
+                $meta = ["steps" => $result["steps"], "usage" => $result["usage"]];
             } else {
                 $response = $this->assistantWithDocs($message, $currentPage);
             }
@@ -260,11 +270,11 @@ class AIController extends BaseController {
             $parsedown = new \Parsedown();
             $responseHtml = $parsedown->text($response);
 
-            $this->jsonResponse([
+            $this->jsonResponse(array_merge([
                 "response" => $response,
                 "response_html" => $responseHtml,
                 "mode" => $useTools ? "tools" : "docs",
-            ]);
+            ], $meta));
         } catch (Exception $e) {
             $this->jsonResponse(["error" => $e->getMessage()], 500);
         }
@@ -295,12 +305,18 @@ class AIController extends BaseController {
 
         $maxSteps = max(1, min(10, (int) $this->setting("ai_assistant_max_steps", "6")));
         $lastText = "";
+        $steps = 0;
+        $usage = ["prompt_tokens" => 0, "completion_tokens" => 0, "total_tokens" => 0];
 
         for ($step = 0; $step < $maxSteps; $step++) {
             $result = $this->ai->chatWithTools($messages, $definitions, $systemPrompt, 0.3, 3000);
+            $steps++;
+            foreach ($usage as $k => $v) {
+                $usage[$k] = $v + (int) ($result["usage"][$k] ?? 0);
+            }
 
             if (empty($result["tool_calls"])) {
-                return (string) ($result["content"] ?? "");
+                return ["text" => (string) ($result["content"] ?? ""), "usage" => $usage, "steps" => $steps];
             }
 
             if (!empty($result["content"])) {
@@ -337,9 +353,13 @@ class AIController extends BaseController {
 
         // Ran out of steps: still return something usable instead of an error.
         if ($lastText !== "") {
-            return $lastText;
+            return ["text" => $lastText, "usage" => $usage, "steps" => $steps];
         }
-        return "Не удалось завершить ответ за {$maxSteps} шагов. Уточните вопрос.";
+        return [
+            "text"  => "Не удалось завершить ответ за {$maxSteps} шагов. Уточните вопрос.",
+            "usage" => $usage,
+            "steps" => $steps,
+        ];
     }
 
     /**

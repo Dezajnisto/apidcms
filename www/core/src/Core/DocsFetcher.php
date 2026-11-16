@@ -190,7 +190,10 @@ class DocsFetcher
         $kb .= "Use this documentation as your primary knowledge source for apidcms questions.\n\n";
 
         foreach ($bySection as $section => $docs) {
-            $sectionTitle = $sections[$section]['title'] ?? mb_convert_case($section, MB_CASE_TITLE, 'UTF-8');
+            // Заголовки в манифесте локализованы ({"ru": ..., "en": ...}): без
+            // localeValue() PHP превращает массив в строку и печатает
+            // «Array to string conversion» — то есть ломает JSON-ответ.
+            $sectionTitle = $this->localeValue($sections[$section]['title'] ?? $section);
             $kb .= "--- {$sectionTitle} ---\n\n";
 
             foreach ($docs as $doc) {
@@ -201,7 +204,7 @@ class DocsFetcher
                 }
 
                 $content = $this->stripFrontmatter($content);
-                $title = $doc['title'] ?? '';
+                $title = $this->localeValue($doc['title'] ?? '');
                 $kb .= "## {$title}\n\n";
                 $kb .= trim($content) . "\n\n";
                 $loaded++;

@@ -160,6 +160,10 @@ class AI {
             "content"       => $message["content"] ?? null,
             "tool_calls"    => $message["tool_calls"] ?? [],
             "finish_reason" => $data["choices"][0]["finish_reason"] ?? null,
+            // Расход по одному шагу. Ассистент на tools делает несколько шагов
+            // за один вопрос, поэтому без этого нельзя ни сложить стоимость,
+            // ни проверить, что режим реально дешевле дампа документации.
+            "usage"         => $data["usage"] ?? null,
         ];
     }
 

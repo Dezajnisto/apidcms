@@ -139,7 +139,7 @@ class AgentTools {
             ],
             [
                 'name'        => 'relations.list',
-                'description' => 'Many-to-many relations stored in entity_relations, optionally for one table.',
+                'description' => 'Many-to-many relations between records, optionally for one table.',
                 'inputSchema' => [
                     'type'       => 'object',
                     'properties' => ['table' => ['type' => 'string']],

@@ -21,6 +21,16 @@ class SchemaInspector {
     private const SYSTEM_PREFIXES = ['system_', 'plugin_', 'sqlite_'];
 
     /**
+     * Инфраструктурные таблицы, которые заводят чужие инструменты: они лежат
+     * в той же базе, но не являются данными сайта. Litestream (репликация
+     * SQLite) держит _litestream_lock/_litestream_seq — агенту они не нужны,
+     * а в ответе /schema и в описании таблиц для ассистента выглядели как
+     * обычные таблицы сайта. Всё, что начинается с подчёркивания, — такое же
+     * служебное, как sqlite_*.
+     */
+    private const SYSTEM_PREFIXES_EXTRA = ['_'];
+
+    /**
      * Tables the API and the AI never touch: internal state of the CMS.
      * entity_relations, visit_stats and the meta tables are machinery: an
      * agent reads relations through /api/v1/relations and meanings through
@@ -45,6 +55,11 @@ class SchemaInspector {
 
     public static function isSystemTable(string $name): bool {
         foreach (self::SYSTEM_PREFIXES as $prefix) {
+            if (strpos($name, $prefix) === 0) {
+                return true;
+            }
+        }
+        foreach (self::SYSTEM_PREFIXES_EXTRA as $prefix) {
             if (strpos($name, $prefix) === 0) {
                 return true;
             }

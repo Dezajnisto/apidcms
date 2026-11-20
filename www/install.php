@@ -5,7 +5,7 @@
  * CLI: php install.php [--auto]
  * Web: open /install.php in browser
  */
-define('INSTALLER_VERSION', '1.2.0');
+define('INSTALLER_VERSION', '1.2.1');
 $isCLI = (php_sapi_name() === 'cli');
 
 function i_log(string $msg): void { echo "  $msg\n"; if (ob_get_level()) { ob_flush(); flush(); } }
@@ -31,15 +31,25 @@ function find_composer(): ?string {
 }
 
 function run_install(array $opts): bool {
+    // install.php лежит в веб-корне (www/), а данные проекта — уровнем выше:
+    //   <project>/www/index.php   ← веб-корень
+    //   <project>/config, /storage, /themes, /tmp   ← корень проекта
+    // Ядро читает их по PROJECT_ROOT (= <project>), см. bootstrap.php:
+    // STORAGE_PATH = PROJECT_ROOT/storage, CONFIG_PATH = PROJECT_ROOT/config.
+    // Пока эти два корня были одним ($root), установщик создавал ВТОРОЙ набор
+    // каталогов внутри www/ (www/config/admin.php с паролём админки,
+    // www/storage/database/cms.db, www/themes/default/front) — ядро их никогда
+    // не читало, и сайт оставался с паролём admin/admin из дефолтного конфига.
     $root = realpath(__DIR__);
-    $core = getenv('APIDCMS_CORE') ?: (is_dir($root.'/core') ? realpath($root.'/core') : (is_dir(dirname($root).'/core') ? realpath(dirname($root).'/core') : $root));
+    $projectRoot = dirname($root);
+    $core = getenv('APIDCMS_CORE') ?: (is_dir($root.'/core') ? realpath($root.'/core') : (is_dir($projectRoot.'/core') ? realpath($projectRoot.'/core') : $root));
     $core = rtrim($core, '/');
     i_step("Environment"); if (!check_env()) return false;
     i_step("Structure");
     foreach (['/config','/storage/database','/storage/cache/twig','/storage/css','/storage/uploads','/storage/logs','/tmp/php/sessions','/themes/default/front','/themes/default/admin'] as $d) {
-        $p = $root.$d; if (!is_dir($p)) @mkdir($p, 0755, true);
+        $p = $projectRoot.$d; if (!is_dir($p)) @mkdir($p, 0755, true);
     }
-    @file_put_contents($root.'/storage/uploads/.gitkeep',''); @file_put_contents($root.'/storage/logs/.gitkeep','');
+    @file_put_contents($projectRoot.'/storage/uploads/.gitkeep',''); @file_put_contents($projectRoot.'/storage/logs/.gitkeep','');
 
     // .htaccess — main routing (Apache)
     $htaccessPath = $root.'/.htaccess';
@@ -51,13 +61,10 @@ function run_install(array $opts): bool {
         i_ok(".htaccess exists");
     }
 
-    } else {
-        i_ok("admin/index.php exists");
-    }
     i_ok("Directories created");
 
     // Default custom.css — user-editable via admin panel
-    $customCssPath = $root . '/storage/css/custom.css';
+    $customCssPath = $projectRoot . '/storage/css/custom.css';
     if (!file_exists($customCssPath)) {
         $customCss = base64_decode('LyogZGVmYXVsdCBjdXN0b20uY3NzIOKAlCDRg9C/0YDQsNCy0LvRj9C10YLRgdGPINGH0LXRgNC10Lcg0L/QsNC90LXQu9GMINCw0LTQvNC40L3QuNGB0YLRgNCw0YLQvtGA0LAKICog0JjQt9C80LXQvdGP0LnRgtC1LCDRgdC+0YXRgNCw0L3Rj9C50YLQtSDQvtGA0LjQs9C40L3QsNC7INC4INC90LUg0YPRgtGA0LDRgtC40YLQtSDQv9GA0Lgg0L7QsdC90L7QstC70LXQvdC40Lgg0Y/QtNGA0LAKICovCgovKiDQntGB0L3QvtCy0L3Ri9C1INC+0YLRgdGC0YPQv9GLICovCm1haW4gewogICAgcGFkZGluZzogMCAxcmVtOwp9CgovKiDQotC40L/QvtCz0YDQsNGE0LjQutCwICovCmFydGljbGUgewogICAgbWF4LXdpZHRoOiA4MDBweDsKICAgIG1hcmdpbjogMCBhdXRvOwogICAgcGFkZGluZzogMnJlbSAxcmVtOwp9CgovKiDQkdC70L7QsyDQuCDQv9GD0L3QutGC0Ysg0YHQv9C40YHQutCwICovCi5jb250ZW50LWxpc3QgewogICAgbWF4LXdpZHRoOiA4MDBweDsKICAgIG1hcmdpbjogMCBhdXRvOwogICAgcGFkZGluZzogMXJlbTsKfQouY29udGVudC1pdGVtIHsKICAgIG1hcmdpbi1ib3R0b206IDJyZW07CiAgICBwYWRkaW5nOiAxLjVyZW07CiAgICBiYWNrZ3JvdW5kOiAjZmZmOwogICAgYm9yZGVyLXJhZGl1czogOHB4OwogICAgYm94LXNoYWRvdzogMCAxcHggM3B4IHJnYmEoMCwwLDAsMC4wOCk7Cn0KLml0ZW0tdGl0bGUgewogICAgZm9udC1zaXplOiAxLjI1cmVtOwogICAgbWFyZ2luOiAwIDAgMC43NXJlbTsKfQouaXRlbS10aXRsZSBhIHsKICAgIHRleHQtZGVjb3JhdGlvbjogbm9uZTsKICAgIGNvbG9yOiAjMWExYTFhOwp9Ci5pdGVtLW1ldGEgewogICAgY29sb3I6ICM4ODg7CiAgICBmb250LXNpemU6IDAuOXJlbTsKICAgIG1hcmdpbi1ib3R0b206IDAuNzVyZW07Cn0KLml0ZW0tZXhjZXJwdCB7CiAgICBjb2xvcjogIzY2NjsKICAgIGxpbmUtaGVpZ2h0OiAxLjY7Cn0KCi8qINCn0YLQtdC90LjQtSDRgdC+0LPQu9Cw0YjQtdC90LjQuSAqLwouYnRuIHsKICAgIGRpc3BsYXk6IGlubGluZS1ibG9jazsKICAgIHBhZGRpbmc6IDhweCAyMHB4OwogICAgYmFja2dyb3VuZDogIzhiNWNmNjsKICAgIGNvbG9yOiAjZmZmOwogICAgYm9yZGVyLXJhZGl1czogNnB4OwogICAgdGV4dC1kZWNvcmF0aW9uOiBub25lOwogICAgZm9udC13ZWlnaHQ6IDYwMDsKfQouYnRuOmhvdmVyIHsKICAgIGJhY2tncm91bmQ6ICM3YzNhZWQ7Cn0K');
         file_put_contents($customCssPath, $customCss);
@@ -68,7 +75,7 @@ function run_install(array $opts): bool {
 
     // Copy default templates from core to project (editable by user)
     $templatesSrc = $core . '/views/front';
-    $templatesDst = $root . '/themes/default/front';
+    $templatesDst = $projectRoot . '/themes/default/front';
     if (is_dir($templatesSrc) && !is_dir($templatesDst)) {
         mkdir($templatesDst, 0755, true);
         $copied = 0;
@@ -93,7 +100,7 @@ function run_install(array $opts): bool {
     }
 
     i_step("Config");
-    $adminConfigPath = $root.'/config/admin.php';
+    $adminConfigPath = $projectRoot.'/config/admin.php';
     if (file_exists($adminConfigPath)) {
         $existing = include $adminConfigPath;
         if (!is_array($existing)) $existing = [];
@@ -112,9 +119,9 @@ function run_install(array $opts): bool {
         file_put_contents($adminConfigPath, "<?php\nreturn ['security'=>['admin_username'=>'".addslashes($opts['username'])."','admin_password'=>'".addslashes($opts['password'])."','session_timeout'=>3600],'ai'=>['api_key'=>'".addslashes($opts['api_key'])."','model'=>'".addslashes($opts['model'])."']];\n");
         i_ok("config/admin.php created");
     }
-    if (!file_exists($root.'/config/front.php')) {
+    if (!file_exists($projectRoot.'/config/front.php')) {
         $c = "<?php\nreturn ['site_title' => 'My Site', 'site_description' => '', 'theme' => ['active' => 'default']];\n";
-        file_put_contents($root.'/config/front.php',$c);
+        file_put_contents($projectRoot.'/config/front.php',$c);
         i_ok("config/front.php created");
     } else i_ok("config/front.php exists");
     i_step("Dependencies");
@@ -127,7 +134,7 @@ function run_install(array $opts): bool {
     $init = file_exists($root.'/init_system_tables.php') ? $root.'/init_system_tables.php' : $core.'/init_system_tables.php';
     if (file_exists($init)) { define('INSTALL_MODE',true); require $init; i_ok("Database initialized"); }
     else { i_err("init_system_tables.php not found"); return false; }
-    if ($opts['seed']) add_seed($root);
+    if ($opts['seed']) add_seed($projectRoot);
     return true;
 }
 

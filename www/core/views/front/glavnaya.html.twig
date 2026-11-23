@@ -320,15 +320,9 @@
             <div class="text-center lg:text-left">
                 <h3 class="font-heading text-3xl font-bold mb-4">{{ items[51].title }}</h3>
                 <p class="text-xl mb-8">{{ items[51].description }}</p>
-                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-1 shadow-2xl border border-white/20">
-                    <iframe 
-                        src="https://crm.dezajno.ru?entryPoint=leadCaptureForm&id=682d85c5dd17627ff" 
-                        width="100%" 
-                        height="400" 
-                        style="border: none; border-radius: 16px;"
-                        scrolling="no">
-                    </iframe>
-                </div>
+                {# Формы в поставке ядра нет: она зависит от сайта. Свою форму
+                   собирают в админке (/admin/forms) и вставляют сюда — либо
+                   ставят кнопку, ведущую на страницу контактов. #}
             </div>
         </div>
     </div>

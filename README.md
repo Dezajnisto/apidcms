@@ -58,7 +58,7 @@ copy it over), then clear the Twig cache and OPcache. Keep `config/`, `themes/`,
 
 ## Documentation
 
-[apidcms.dezajno.ru/en/docs](https://apidcms.dezajno.ru/en/docs)
+[apidcms.ru/en/docs](https://apidcms.ru/en/docs)
 
 ## License
 
@@ -119,7 +119,7 @@ php -S localhost:8000
 
 ## Документация
 
-[apidcms.dezajno.ru/docs](https://apidcms.dezajno.ru/docs)
+[apidcms.ru/docs](https://apidcms.ru/docs)
 
 ## Лицензия
 

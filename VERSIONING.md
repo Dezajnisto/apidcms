@@ -12,14 +12,14 @@ apidcms follows **Semantic Versioning** (SemVer): `MAJOR.MINOR.PATCH`
 
 ## Sources of truth
 
-1. **Changelog DB** (`changelog` table on apidcms.dezajno.ru) — canonical version history
+1. **Changelog DB** (`changelog` table on apidcms.ru) — canonical version history
 2. **Git tags** — mirror the same versions on the repository
 3. **VERSION file** — single-line file with current version, updated on each release
 4. **install.php** — `INSTALLER_VERSION` constant, updated on each release
 
 ## Release checklist
 
-- [ ] Add entry to `changelog` table on apidcms.dezajno.ru
+- [ ] Add entry to `changelog` table on apidcms.ru
 - [ ] Update `VERSION` file
 - [ ] Update `INSTALLER_VERSION` in `install.php`
 - [ ] Update `www/CHANGELOG.md`

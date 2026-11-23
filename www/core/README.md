@@ -49,7 +49,7 @@ project/
 
 ## Документация
 
-[apidcms.dezajno.ru/docs](https://apidcms.dezajno.ru/docs)
+[apidcms.ru/docs](https://apidcms.ru/docs)
 
 ## Лицензия
 
@@ -104,7 +104,7 @@ project/
 
 ### Documentation
 
-[apidcms.dezajno.ru/docs](https://apidcms.dezajno.ru/docs)
+[apidcms.ru/docs](https://apidcms.ru/docs)
 
 ### License
 

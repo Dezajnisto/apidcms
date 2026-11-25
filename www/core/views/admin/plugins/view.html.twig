@@ -206,6 +206,13 @@
                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         <span class="text-sm text-gray-600">{{ setting.description|default('') }}</span>
                     </label>
+                    {% elseif setting.type == 'select' %}
+                    <select name="setting_{{ setting.key }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        {% for opt_value, opt_label in setting.options|default({}) %}
+                        <option value="{{ opt_value }}" {% if val ~ '' == opt_value ~ '' %}selected{% endif %}>{{ opt_label }}</option>
+                        {% endfor %}
+                    </select>
                     {% else %}
                     <input type="text" name="setting_{{ setting.key }}"
                            value="{{ val }}"

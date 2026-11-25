@@ -352,6 +352,18 @@
                     <span class="nav-text">{{ lang('sidebar.settings') }}</span>
                 </a>
 
+                <!-- Пункты меню от плагинов (фильтр admin.menu) -->
+                {% for item in admin_menu_extra|default([]) %}
+                <a href="{{ item.url }}"
+                   class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition {{ current_section == item.section|default('') ? 'bg-gray-700' : '' }}">
+                    <i class="{{ item.icon|default('fas fa-puzzle-piece') }} w-5 text-center"></i>
+                    <span class="nav-text">{{ item.title }}</span>
+                    {% if item.badge|default(0) > 0 %}
+                    <span class="ml-auto inline-block py-0.5 px-2 text-xs leading-4 font-medium bg-red-500 text-white rounded-full">{{ item.badge }}</span>
+                    {% endif %}
+                </a>
+                {% endfor %}
+
                 <!-- Выход -->
                 <a href="{{ admin_url('logout') }}" 
                    class="flex items-center space-x-3 p-3 rounded-lg hover:bg-red-600 transition bg-red-700 mt-auto"

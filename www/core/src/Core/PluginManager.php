@@ -444,6 +444,17 @@ class PluginManager
     }
 
     /**
+     * Соединение с БД, с которым загружались плагины.
+     *
+     * Плагинам нужен тот же PDO, что у ядра: своё соединение — это второй
+     * коннект на каждый запрос и отдельный набор блокировок SQLite.
+     */
+    public function getDatabase(): ?Database
+    {
+        return $this->db;
+    }
+
+    /**
      * Get plugin-to-tables mapping from plugin.json declarations
      *
      * @return array<string, string[]> [plugin_name => [table1, table2, ...]]

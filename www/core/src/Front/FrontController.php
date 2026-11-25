@@ -786,7 +786,18 @@ class FrontController {
             // PluginManager не инициализирован — ok
         }
         
-        echo $this->twig->render($template, $data);
+        $html = $this->twig->render($template, $data);
+
+        // Хук: готовый HTML перед отдачей браузеру. Плагинам (виджеты, счётчики)
+        // нужен именно он: править шаблоны каждой темы они не могут.
+        try {
+            $pm = \Core\PluginManager::getInstance();
+            $html = $pm->applyFilters('front.output', $html, $this);
+        } catch (\Throwable $e) {
+            // PluginManager не инициализирован — ok
+        }
+
+        echo $html;
         
         // ДОБАВЛЕНО: завершаем выполнение после успешного рендеринга
         exit;
@@ -1848,6 +1859,14 @@ private function handleFormSubmission() {
             // Missing template — 404 instead of a 500 with a stack trace
             $this->show404();
             return;
+        }
+
+        // Хук: готовый HTML перед отдачей браузеру (тот же, что в render())
+        try {
+            $pm = \Core\PluginManager::getInstance();
+            $output = $pm->applyFilters('front.output', $output, $this);
+        } catch (\Throwable $e) {
+            // PluginManager не инициализирован — ok
         }
 
         header('Content-Type: ' . $contentType);

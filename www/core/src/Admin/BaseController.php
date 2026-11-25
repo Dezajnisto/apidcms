@@ -75,6 +75,16 @@ class BaseController {
 
         // Base template global
         $this->twig->addGlobal('base_template', 'base.html.twig');
+
+        // Хук: плагин может добавить пути к своим шаблонам и Twig-функции.
+        // Без него админ-страницам плагинов негде жить: BaseController создаёт
+        // загрузчик только по admin_views ядра.
+        try {
+            $pm = \Core\PluginManager::getInstance();
+            $pm->doAction('admin.twig.init', $this, $this->twig);
+        } catch (\Throwable $e) {
+            // PluginManager не инициализирован — ok
+        }
     }
     
     /**
@@ -107,7 +117,8 @@ class BaseController {
             '_GET' => $_GET,
             'site_favicon' => $favicon,
             'admin_lang' => $this->lang->getLocale(),
-            'lang_all' => $this->lang->all()
+            'lang_all' => $this->lang->all(),
+            'admin_menu_extra' => $this->getMenuExtra(),
         ];
         
         $templateData = array_merge($globalData, $data);
@@ -121,35 +132,73 @@ class BaseController {
     }
 
     /**
+     * Дополнительные пункты бокового меню от плагинов.
+     *
+     * Фильтр admin.menu был описан в документации и уже использовался
+     * плагинами, но в шаблоне не применялся — пункты молча терялись.
+     *
+     * @return array<int, array{title:string,url:string,icon?:string,section?:string,badge?:int}>
+     */
+    private function getMenuExtra(): array
+    {
+        try {
+            $pm = \Core\PluginManager::getInstance();
+            $items = $pm->applyFilters('admin.menu', []);
+            if (!is_array($items)) {
+                return [];
+            }
+
+            // Плагины задают 'order' в манифесте пункта — без сортировки
+            // порядок зависел бы от порядка загрузки плагинов.
+            usort($items, function ($a, $b) {
+                return ((int) ($a['order'] ?? 50)) <=> ((int) ($b['order'] ?? 50));
+            });
+
+            return $items;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
      * Determine current section for menu highlighting
      */
     private function getCurrentSection() {
         $path = $_SERVER['REQUEST_URI'] ?? '';
-        
+        $section = 'home';
+
         if (strpos($path, '/templates') !== false) {
-            return 'templates';
+            $section = 'templates';
         } elseif (strpos($path, '/tables') !== false ||
-                strpos($path, '/table/') !== false || 
+                strpos($path, '/table/') !== false ||
                 strpos($path, '/create-table') !== false ||
                 strpos($path, '/store-table') !== false) {
-            return 'tables';
+            $section = 'tables';
         } elseif (strpos($path, '/filemanager') !== false) {
-            return 'filemanager';
+            $section = 'filemanager';
         } elseif (strpos($path, '/notifications') !== false) {
-            return 'notifications';
+            $section = 'notifications';
         } elseif (strpos($path, '/plugins') !== false) {
-            return 'plugins';
+            $section = 'plugins';
         } elseif (strpos($path, '/stats') !== false) {
-            return 'stats';
+            $section = 'stats';
         } elseif (strpos($path, '/cache') !== false) {
-            return 'cache';
+            $section = 'cache';
         } elseif (strpos($path, '/design') !== false) {
-            return 'design';
+            $section = 'design';
         } elseif (strpos($path, '/settings') !== false) {
-            return 'settings';
-        } else {
-            return 'home';
+            $section = 'settings';
         }
+
+        // Хук: плагин подсвечивает свой пункт меню (свои URL ядро не знает)
+        try {
+            $pm = \Core\PluginManager::getInstance();
+            $section = $pm->applyFilters('admin.current_section', $section, $path);
+        } catch (\Throwable $e) {
+            // ok
+        }
+
+        return $section;
     }
     
     /**

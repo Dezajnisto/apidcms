@@ -172,6 +172,15 @@ class App {
         $this->addRoute('/settings/save-site', 'SettingsController', 'saveSiteSetting');
         $this->addRoute('/settings/save-multiple', 'SettingsController', 'saveSettings');
         $this->addRoute('/settings/delete', 'SettingsController', 'deleteSetting');
+
+        // Хук: маршруты плагинов. Плагин получает App и вызывает addRoute()
+        // со своим классом (namespace через обратный слеш — см. callController).
+        try {
+            $pm = \Core\PluginManager::getInstance();
+            $pm->doAction('admin.routes', $this);
+        } catch (\Throwable $e) {
+            // PluginManager не инициализирован — ok
+        }
     }
     
     /**
@@ -316,6 +325,22 @@ class App {
      * @param array $params Параметры
      */
     private function callController($controllerName, $actionName, $params = []) {
+        // Контроллер плагина: имя содержит namespace (Plugins\\Foo\\BarController).
+        // Файл такого контроллера грузит сам плагин — автозагрузчик ядра знает
+        // только свои префиксы.
+        if (strpos($controllerName, '\\') !== false) {
+            $fullClassName = ltrim($controllerName, '\\');
+            if (!class_exists($fullClassName)) {
+                die("Класс {$fullClassName} не найден (контроллер плагина)");
+            }
+            $controller = new $fullClassName($this);
+            if (!method_exists($controller, $actionName)) {
+                die("Метод {$actionName} не найден в контроллере {$fullClassName}");
+            }
+            call_user_func_array([$controller, $actionName], $params);
+            return;
+        }
+
         // Используем ADMIN_APP_PATH из конфигурации вместо старой APP_PATH
         $adminAppPath = $this->config['paths']['admin_src'];
         $controllerFile = $adminAppPath . '/' . $controllerName . '.php';

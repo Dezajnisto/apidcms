@@ -243,7 +243,6 @@ $settings = [
     // Assistant works through tools (schema.get, records.*, docs.*) instead of
     // carrying the whole documentation and a table dump in every prompt.
     // Set to 0 to fall back to the old behaviour.
-    ['ai_assistant_tools', '1', 'string'],
     ['ai_assistant_max_steps', '6', 'string'],
     ['ai_prompt_css', 'Ты — CSS-эксперт. Создавай современный CSS (flexbox, grid, custom properties). Отвечай ТОЛЬКО CSS-кодом без пояснений.', 'string'],
 
@@ -256,9 +255,9 @@ $settings = [
     ['ai_frontend_personality', null, 'string'],
     ['ai_public_tables', null, 'string'],
     ['ai_sample_limit', '50', 'string'],
-    ['ai_template_max_size', '0', 'string'],
-    ['ai_template_total_max', '0', 'string'],
-    ['ai_css_max_size', '0', 'string'],
+    ['ai_template_max_size', '20000', 'string'],
+    ['ai_template_total_max', '60000', 'string'],
+    ['ai_css_max_size', '20000', 'string'],
     ['stats_enabled', '0', 'string'],
     ['stats_retention_days', '30', 'string'],
     

@@ -1287,5 +1287,22 @@
   "table.meta.col_description_placeholder": "Price in rubles, VAT excluded",
   "table.meta.save": "Save",
   "table.meta.cancel": "Cancel",
-  "table.meta.saved": "Semantics saved"
+  "table.meta.saved": "Semantics saved",
+  "settings.ai_context_limits": "AI context size",
+  "settings.ai_context_limits_hint": "How many templates and how much CSS travel to the model with each question. Empty or 0 means the built-in limit; -1 means no limit. The prompt grows with the site silently, so a limit is on by default.",
+  "settings.ai_template_max_size": "Max template size",
+  "settings.ai_template_max_size_hint": "Bytes per .twig file (0 — built-in, -1 — no limit)",
+  "settings.ai_template_total_max": "Total template budget",
+  "settings.ai_template_total_max_hint": "Sum across all templates (0 — built-in, -1 — no limit)",
+  "settings.ai_css_max_size": "Max CSS size",
+  "settings.ai_css_max_size_hint": "Bytes of custom.css (0 — built-in, -1 — no limit)",
+  "settings.bytes_label": "bytes",
+  "settings.ai_context_now": "What goes to the model now",
+  "settings.ai_context_now_hint": "Measured on the current site files: theme templates (with a core fallback) and custom.css.",
+  "settings.ai_context_theme": "Theme",
+  "settings.ai_context_templates": "Templates",
+  "settings.ai_context_css": "CSS",
+  "settings.ai_context_total": "Total per request",
+  "settings.ai_context_truncated": "truncated by the limit",
+  "settings.ai_context_tokens": "tokens"
 }

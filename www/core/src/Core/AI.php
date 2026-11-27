@@ -424,59 +424,6 @@ MSG;
     }
 
     /**
-     * Универсальный AI-ассистент для админки
-     *
-     * @param string $userMessage Запрос пользователя
-     * @param array  $context     Контекст (текущая страница, таблицы и т.д.)
-     * @return string Ответ ассистента
-     */
-    public function assistant($userMessage, $context = [], $customPrompt = "") {
-        $systemPrompt = <<<PROMPT
-Ты — AI-ассистент, встроенный в панель управления CMS apidcms на PHP+SQLite.
-
-ТВОИ ВОЗМОЖНОСТИ:
-1. Помогать с Twig-шаблонами (синтаксис, отладка, создание)
-2. Советовать структуры таблиц
-3. Помогать с SQL-запросами
-4. Отвечать на вопросы по PHP, HTML, CSS, JS
-5. Подсказывать по настройке сайта и плагинов
-6. Отвечать на вопросы по apidcms — у тебя есть полная документация системы
-
-Отвечай на русском языке, кратко и по делу.
-Если нужно показать код — оформляй его в markdown-блоки.
-Если вопрос касается apidcms — используй документацию ниже как источник.
-PROMPT;
-
-        if (!empty($customPrompt)) {
-            $systemPrompt .= "\n\nДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ:\n" . $customPrompt;
-        }
-
-        // Add apidcms documentation as knowledge base
-        if (!empty($context["docs"])) {
-            $systemPrompt .= "\n\nДОКУМЕНТАЦИЯ APIDCMS (используй как источник знаний):\n" . $context["docs"];
-        }
-
-        // Добавляем контекст о сайте
-        if (!empty($context["tables"])) {
-            $systemPrompt .= "\n\nТАБЛИЦЫ В БАЗЕ ДАННЫХ:\n";
-            foreach ($context["tables"] as $table) {
-                $systemPrompt .= "- {$table["name"]}: " . implode(", ", $table["columns"]) . "\n";
-            }
-        }
-
-        // CSS: available styles
-        if (!empty($context["css"])) {
-            $systemPrompt .= "\n\nДОСТУПНЫЕ CSS-КЛАССЫ (custom.css сайта):\n" . $context["css"] . "\n";
-        }
-
-        $messages = [
-            ["role" => "user", "content" => $userMessage]
-        ];
-
-        return $this->chat($messages, $systemPrompt, 0.7, 4096);
-    }
-
-    /**
      * Generate CSS code based on description
      *
      * @param string $userPrompt  Description of desired CSS

@@ -52,23 +52,6 @@ class DocsFetcher
         }
     }
 
-    /**
-     * Resolve a localised value (plain string or {"ru":"...", "en":"..."} object).
-     * Backward-compatible: plain strings pass through unchanged.
-     *
-     * @param string|array $value
-     * @return string
-     */
-    private function localeValue($value)
-    {
-        if (is_string($value)) {
-            return $value;
-        }
-        if (is_array($value)) {
-            return $value[$this->lang] ?? $value['ru'] ?? reset($value) ?? '';
-        }
-        return '';
-    }
 
     /**
      * Set current language for {lang} placeholder resolution.
@@ -253,77 +236,6 @@ class DocsFetcher
         return $body === false ? null : $body;
     }
 
-    /**
-     * Strip YAML front-matter from markdown
-     *
-     * @param string $content
-     * @return string
-     */
-    private function stripFrontmatter($content)
-    {
-        if (preg_match('/^---\s*\n.*?\n---\s*\n/s', $content, $m)) {
-            return substr($content, strlen($m[0]));
-        }
-
-        return $content;
-    }
-
-    /**
-     * Get full knowledge base: all docs formatted for AI context
-     *
-     * Loads every doc listed in the manifest, grouped by section.
-     * Falls back gracefully if GitHub is unreachable.
-     *
-     * @return string Formatted documentation text
-     */
-    public function getKnowledgeBase()
-    {
-        $manifest = $this->getManifest();
-        if (!$manifest || empty($manifest['docs'])) {
-            return "[Documentation unavailable - could not fetch manifest]\n";
-        }
-
-        $sections = $manifest['sections'] ?? [];
-        $bySection = [];
-        $loaded = 0;
-        $failed = 0;
-
-        foreach ($manifest['docs'] as $doc) {
-            $section = $doc['section'] ?? 'other';
-            $bySection[$section][] = $doc;
-        }
-
-        $kb = "=== APIDCMS DOCUMENTATION ===\n";
-        $kb .= "Use this documentation as your primary knowledge source for apidcms questions.\n\n";
-
-        foreach ($bySection as $section => $docs) {
-            // Заголовки в манифесте локализованы ({"ru": ..., "en": ...}): без
-            // localeValue() PHP превращает массив в строку и печатает
-            // «Array to string conversion» — то есть ломает JSON-ответ.
-            $sectionTitle = $this->localeValue($sections[$section]['title'] ?? $section);
-            $kb .= "--- {$sectionTitle} ---\n\n";
-
-            foreach ($docs as $doc) {
-                $content = $this->getDocContent($doc['content_url']);
-                if ($content === null) {
-                    $failed++;
-                    continue;
-                }
-
-                $content = $this->stripFrontmatter($content);
-                $title = $this->localeValue($doc['title'] ?? '');
-                $kb .= "## {$title}\n\n";
-                $kb .= trim($content) . "\n\n";
-                $loaded++;
-            }
-        }
-
-        if ($failed > 0) {
-            $kb .= "[Loaded {$loaded} docs, {$failed} failed]\n\n";
-        }
-
-        return $kb;
-    }
 
     /**
      * Invalidate all cached docs (force re-fetch on next request)

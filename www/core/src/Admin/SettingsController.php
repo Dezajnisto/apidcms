@@ -117,17 +117,60 @@ class SettingsController extends BaseController {
                 }
             }
 
+            // Сколько контекста реально уходит в AI: объём промпта не должен
+            // быть невидимым. Лимиты читаем теми же правилами, что AIController.
+            $aiContext = null;
+            try {
+                $flat = [];
+                foreach ($systemSettings as $row) {
+                    $flat[(string) $row["key"]] = $row["value"];
+                }
+                $limits = [
+                    "template_max_size" => $this->limitValue($flat, "ai_template_max_size", \Core\AIContext::DEFAULT_TEMPLATE_MAX),
+                    "template_total_max" => $this->limitValue($flat, "ai_template_total_max", \Core\AIContext::DEFAULT_TEMPLATE_TOTAL),
+                    "css_max_size" => $this->limitValue($flat, "ai_css_max_size", \Core\AIContext::DEFAULT_CSS_MAX),
+                ];
+                $aiContext = \Core\AIContext::summary(
+                    $limits["template_max_size"],
+                    $limits["template_total_max"],
+                    $limits["css_max_size"]
+                );
+                $aiContext["limits"] = $limits;
+            } catch (\Throwable $e) {
+                $aiContext = null;
+            }
+
             $this->render("settings/index", [
                 "title" => $this->lang->t('settings.page_title'),
                 "system_settings" => $systemSettings,
                 "all_tables" => $selectableTables,
-                "blacklisted_tables" => $blacklistedTables
+                "blacklisted_tables" => $blacklistedTables,
+                "ai_context" => $aiContext
             ]);
         } catch (Exception $e) {
             $this->render("error/404", [
                 "message" => $this->lang->t('settings.load_error') . ' ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Значение лимита из списка настроек: пусто или 0 — встроенный лимит,
+     * -1 — без ограничения. Те же правила, что в Admin\AIController.
+     *
+     * @param array $settings строки system_settings (ключ => значение)
+     */
+    private function limitValue(array $settings, string $key, int $default): int
+    {
+        $raw = trim((string) ($settings[$key] ?? ""));
+        if ($raw === "") {
+            return $default;
+        }
+        $value = (int) $raw;
+        if ($value === -1) {
+            return 0;
+        }
+        return $value > 0 ? $value : $default;
     }
 
     /**

@@ -49,11 +49,18 @@ class AIController extends BaseController {
             "css" => $s->get("ai_prompt_css", ""),
         ];
 
-        // AI context size limits (0 = unlimited)
+        // Лимиты контекста AI.
+        //
+        // Раньше значением по умолчанию был 0 = «без ограничения», и это был
+        // не выбор владельца, а дефолт поставки: промпт рос вместе с сайтом
+        // (на bajto custom.css — 88 КБ в каждый запрос). Теперь:
+        //   пусто или 0 → встроенный разумный лимит;
+        //   -1          → осознанно без ограничения;
+        //   N > 0       → N байт.
         $this->contextLimits = [
-            "template_max_size" => (int)($s->get("ai_template_max_size", "0")),
-            "template_total_max" => (int)($s->get("ai_template_total_max", "0")),
-            "css_max_size" => (int)($s->get("ai_css_max_size", "0")),
+            "template_max_size" => $this->limitSetting($s, "ai_template_max_size", \Core\AIContext::DEFAULT_TEMPLATE_MAX),
+            "template_total_max" => $this->limitSetting($s, "ai_template_total_max", \Core\AIContext::DEFAULT_TEMPLATE_TOTAL),
+            "css_max_size" => $this->limitSetting($s, "ai_css_max_size", \Core\AIContext::DEFAULT_CSS_MAX),
         ];
     }
 
@@ -62,139 +69,39 @@ class AIController extends BaseController {
     private $contextLimits = [];
 
     /**
-     * Get key Twig templates for AI context (HTML structure for CSS, style reference)
+     * Разобрать настройку лимита.
+     *
+     * Пусто или 0 — встроенный лимит по умолчанию (0 в поставке означал «без
+     * ограничения», и это было ошибкой: промпт рос незаметно). Осознанно без
+     * ограничения — минус один.
      */
-    private function getTemplatesContext(): array {
-        $templates = [];
-        // Configurable limits (0 = unlimited)
-        $maxSize = $this->contextLimits["template_max_size"] ?? 0;
-        $totalMax = $this->contextLimits["template_total_max"] ?? 0;
-        $total = 0;
-
-        try {
-            $rootPath = $this->app->getConfig()['paths']['root'];
-
-            // Project frontend templates (overrides)
-            $projectViews = $rootPath . '/front/app/views';
-            // Core frontend templates (fallback)
-            $coreViews = $rootPath . '/core/views/front';
-            // Also check old-style core path
-            $coreViewsAlt = $rootPath . '/core_lib/front/app/views';
-
-            // Priority: project views first (actual active templates)
-            $viewDirs = [];
-            if (is_dir($projectViews)) $viewDirs[] = $projectViews;
-            if (is_dir($coreViews)) $viewDirs[] = $coreViews;
-            if (is_dir($coreViewsAlt)) $viewDirs[] = $coreViewsAlt;
-
-            // Key templates to include (most relevant for CSS/structure)
-            $keyTemplates = [
-                'base.html.twig',
-                'page.html.twig',
-                'home.html.twig',
-                'glavnaya.html.twig',
-                'blog.html.twig',
-                'blog/list.html.twig',
-                'blog/single.html.twig',
-                'blog_single.html.twig',
-                'single.html.twig',
-                'post.html.twig',
-                'form.html.twig',
-                'form/_base.html.twig',
-                'form/default.html.twig',
-                'search.html.twig',
-                '404.html.twig',
-                'external.html.twig',
-            ];
-
-            foreach ($keyTemplates as $name) {
-                if ($totalMax > 0 && $total >= $totalMax) break;
-
-                foreach ($viewDirs as $dir) {
-                    $file = $dir . '/' . $name;
-                    if (file_exists($file)) {
-                        $content = file_get_contents($file);
-                        if (!empty(trim($content))) {
-                            if ($maxSize > 0 && strlen($content) > $maxSize) {
-                                $content = substr($content, 0, $maxSize)
-                                    . "\n{# ... truncated for AI context #}";
-                            }
-                            $templates[$name] = $content;
-                            $total += strlen($content);
-                        }
-                        break; // Found in first matching dir
-                    }
-                }
-            }
-
-            // Also include subdirectory templates (blog/, form/fields/)
-            $subDirs = ['blog', 'form', 'form/fields'];
-            foreach ($subDirs as $sub) {
-                if ($totalMax > 0 && $total >= $totalMax) break;
-                foreach ($viewDirs as $dir) {
-                    $subPath = $dir . '/' . $sub;
-                    if (is_dir($subPath)) {
-                        $files = glob($subPath . '/*.twig');
-                        if ($files) {
-                            foreach ($files as $file) {
-                                if ($totalMax > 0 && $total >= $totalMax) break;
-                                $name = $sub . '/' . basename($file);
-                                if (isset($templates[$name])) continue;
-                                $content = file_get_contents($file);
-                                if (!empty(trim($content))) {
-                                    if ($maxSize > 0 && strlen($content) > $maxSize) {
-                                        $content = substr($content, 0, $maxSize)
-                                            . "\n{# ... truncated #}";
-                                    }
-                                    $templates[$name] = $content;
-                                    $total += strlen($content);
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-        } catch (\Throwable $e) {
-            // Templates not available - continue without
+    private function limitSetting($settings, string $key, int $default): int {
+        $raw = trim((string) $settings->get($key, ""));
+        if ($raw === "") {
+            return $default;
         }
-
-        return $templates;
+        $value = (int) $raw;
+        if ($value === -1) {
+            return 0;   // 0 в остальном коде = без лимита
+        }
+        return $value > 0 ? $value : $default;
     }
 
     /**
-     * Get custom CSS content for AI context
+     * Шаблоны темы сайта (с добором из ядра) для контекста AI.
+     */
+    private function getTemplatesContext(): array {
+        return \Core\AIContext::templates(
+            $this->contextLimits["template_max_size"] ?? 0,
+            $this->contextLimits["template_total_max"] ?? 0
+        );
+    }
+
+    /**
+     * CSS сайта для контекста AI.
      */
     private function getCssContext(): string {
-        $maxSize = $this->contextLimits["css_max_size"] ?? 0;
-
-        try {
-            $rootPath = $this->app->getConfig()['paths']['root'];
-
-            // Try project CSS paths (themes first, then legacy)
-            $cssPaths = [
-                $rootPath . '/themes/default/assets/css/custom.css',
-                $rootPath . '/storage/css/custom.css',
-                $rootPath . '/assets/css/custom.css',
-            ];
-
-            foreach ($cssPaths as $path) {
-                if (file_exists($path)) {
-                    $content = file_get_contents($path);
-                    if (!empty(trim($content))) {
-                        if ($maxSize > 0 && strlen($content) > $maxSize) {
-                            $content = substr($content, 0, $maxSize)
-                                . "\n/* ... truncated for AI context */";
-                        }
-                        return $content;
-                    }
-                }
-            }
-        } catch (\Throwable $e) {
-            // CSS not available - continue without
-        }
-
-        return "";
+        return \Core\AIContext::css($this->contextLimits["css_max_size"] ?? 0);
     }
 
     /**
@@ -252,16 +159,14 @@ class AIController extends BaseController {
                 $this->jsonResponse(["error" => $this->lang->t("common.empty_request")], 400);
             }
 
-            $useTools = $this->setting("ai_assistant_tools", "1") === "1";
-
-            $meta = [];
-            if ($useTools) {
-                $result = $this->assistantWithTools($message, $currentPage);
-                $response = $result["text"];
-                $meta = ["steps" => $result["steps"], "usage" => $result["usage"]];
-            } else {
-                $response = $this->assistantWithDocs($message, $currentPage);
-            }
+            // Единственный режим — tools. Раньше был второй, «docs»: он отдавал
+            // весь корпус документации (222 КБ, ~74k токенов) в КАЖДЫЙ запрос,
+            // плюс дамп таблиц и custom.css. Настройка ai_assistant_tools его
+            // включала, но она же и маскировала: по умолчанию tools, поэтому
+            // цена второго режима никому не бросалась в глаза.
+            $result = $this->assistantWithTools($message, $currentPage);
+            $response = $result["text"];
+            $meta = ["steps" => $result["steps"], "usage" => $result["usage"]];
 
             // Convert Markdown to HTML for chat UI rendering
             if (!class_exists('\\Parsedown')) {
@@ -273,7 +178,7 @@ class AIController extends BaseController {
             $this->jsonResponse(array_merge([
                 "response" => $response,
                 "response_html" => $responseHtml,
-                "mode" => $useTools ? "tools" : "docs",
+                "mode" => "tools",
             ], $meta));
         } catch (Exception $e) {
             $this->jsonResponse(["error" => $e->getMessage()], 500);
@@ -407,34 +312,6 @@ class AIController extends BaseController {
         return substr($json, 0, $limit)
             . "\n… [результат обрезан: " . strlen($json) . " байт. Запросите меньше данных: "
             . "укажите tables, limit или конкретный slug.]";
-    }
-
-    /**
-     * Legacy mode: full documentation and a table dump in the system prompt.
-     * Kept for ai_assistant_tools=0 and as a fallback when tools are unavailable.
-     */
-    private function assistantWithDocs($message, $currentPage) {
-        $tablesContext = $this->getTablesContext();
-
-        // Load apidcms documentation as AI knowledge base
-        $docsContext = "";
-        try {
-            $docsFetcher = new \Core\DocsFetcher();
-            $docsFetcher->setLang($this->setting("admin_language", "ru") ?: "ru");
-            $docsKb = $docsFetcher->getKnowledgeBase();
-            if (!empty($docsKb)) {
-                $docsContext = $docsKb;
-            }
-        } catch (\Throwable $e) {
-            // Docs loading is optional - fallback to no documentation
-        }
-
-        return $this->ai->assistant($message, [
-            "tables" => $tablesContext,
-            "current_page" => $currentPage,
-            "docs" => $docsContext,
-            "css" => $this->getCssContext()
-        ], $this->aiPrompts["assistant"] ?? "");
     }
 
     /**

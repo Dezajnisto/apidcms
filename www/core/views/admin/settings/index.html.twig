@@ -265,6 +265,48 @@
                 <div class="mt-6 border-t pt-4">
                     <h3 class="text-sm font-semibold text-gray-700 mb-3">{{ lang('settings.ai_context_limits') }}</h3>
                     <p class="text-xs text-gray-400 mb-3">{{ lang('settings.ai_context_limits_hint') }}</p>
+
+                    {% if ai_context %}
+                    {# Сколько реально уходит в модель. Считается по файлам сайта,
+                       а не по настройкам: иначе объём промпта невидим. #}
+                    <div class="mb-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
+                        <div class="font-medium text-gray-700 mb-1">{{ lang('settings.ai_context_now') }}</div>
+                        <div class="text-gray-400 mb-2">{{ lang('settings.ai_context_now_hint') }}</div>
+                        <table class="w-full">
+                            <tbody>
+                                <tr>
+                                    <td class="py-0.5">{{ lang('settings.ai_context_theme') }}</td>
+                                    <td class="py-0.5 text-right font-mono">{{ ai_context.theme }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-0.5">{{ lang('settings.ai_context_templates') }}</td>
+                                    <td class="py-0.5 text-right font-mono">
+                                        {{ ai_context.templates_count }} шт · {{ ai_context.templates_sent }} {{ lang('settings.bytes_label') }}
+                                        {% if ai_context.templates_truncated %}
+                                        <span class="text-amber-600">({{ lang('settings.ai_context_truncated') }})</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="py-0.5">{{ lang('settings.ai_context_css') }}</td>
+                                    <td class="py-0.5 text-right font-mono">
+                                        {{ ai_context.css_sent }} {{ lang('settings.bytes_label') }}
+                                        {% if ai_context.css_sent < ai_context.css_on_disk %}
+                                        <span class="text-amber-600">/ {{ ai_context.css_on_disk }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr class="border-t border-gray-200">
+                                    <td class="py-1 font-medium text-gray-700">{{ lang('settings.ai_context_total') }}</td>
+                                    <td class="py-1 text-right font-mono font-medium text-gray-700">
+                                        {{ ai_context.total_sent }} {{ lang('settings.bytes_label') }}
+                                        ≈ {{ (ai_context.total_sent / 3)|round }} {{ lang('settings.ai_context_tokens') }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
                     <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-4 mb-3">
                         <div class="sm:w-48 sm:pt-1">
                             <label class="text-sm font-medium text-gray-700">{{ lang('settings.ai_template_max_size') }}</label>
@@ -276,7 +318,7 @@
                                 <input type="hidden" name="setting_type" value="string">
                                 <input type="number" name="setting_value"
                                        value="{% for s in system_settings %}{% if s.key == 'ai_template_max_size' %}{{ s.value }}{% endif %}{% endfor %}"
-                                       min="0" class="w-32 px-3 py-1 border border-gray-300 rounded text-sm">
+                                       min="-1" class="w-32 px-3 py-1 border border-gray-300 rounded text-sm">
                                 <span class="text-xs text-gray-400">{{ lang('settings.bytes_label') }}</span>
                                 <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs">
                                     <i class="fas fa-save"></i>
@@ -295,7 +337,7 @@
                                 <input type="hidden" name="setting_type" value="string">
                                 <input type="number" name="setting_value"
                                        value="{% for s in system_settings %}{% if s.key == 'ai_template_total_max' %}{{ s.value }}{% endif %}{% endfor %}"
-                                       min="0" class="w-32 px-3 py-1 border border-gray-300 rounded text-sm">
+                                       min="-1" class="w-32 px-3 py-1 border border-gray-300 rounded text-sm">
                                 <span class="text-xs text-gray-400">{{ lang('settings.bytes_label') }}</span>
                                 <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs">
                                     <i class="fas fa-save"></i>
@@ -314,7 +356,7 @@
                                 <input type="hidden" name="setting_type" value="string">
                                 <input type="number" name="setting_value"
                                        value="{% for s in system_settings %}{% if s.key == 'ai_css_max_size' %}{{ s.value }}{% endif %}{% endfor %}"
-                                       min="0" class="w-32 px-3 py-1 border border-gray-300 rounded text-sm">
+                                       min="-1" class="w-32 px-3 py-1 border border-gray-300 rounded text-sm">
                                 <span class="text-xs text-gray-400">{{ lang('settings.bytes_label') }}</span>
                                 <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs">
                                     <i class="fas fa-save"></i>

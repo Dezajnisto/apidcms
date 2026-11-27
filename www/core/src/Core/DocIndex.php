@@ -2,14 +2,14 @@
 /**
  * Core\DocIndex — the documentation as data, not as a prompt dump.
  *
- * DocsFetcher::getKnowledgeBase() loads every doc and formats it for a prompt
- * (~58k tokens per assistant message). That is why the built-in assistant is
- * expensive: it pays for the whole library on every question.
+ * The old assistant loaded every doc and pasted it into the prompt (~74k
+ * tokens per message): it paid for the whole library on every question. That
+ * path is gone — DocsFetcher::getKnowledgeBase() and the "docs" assistant mode
+ * were removed in 2.8.2, so nothing sends the library any more.
  *
- * This class keeps the same JSONL-free approach but exposes the library as an
- * index: a cheap table of contents, plus one document on demand. MCP resources
- * and the assistant's tools both talk to it, so a question costs one or two
- * documents instead of forty.
+ * This class exposes the library as an index: a cheap table of contents, plus
+ * one document on demand. MCP resources and the assistant's tools both talk to
+ * it, so a question costs one or two documents instead of forty.
  */
 
 namespace Core;

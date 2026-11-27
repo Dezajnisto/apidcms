@@ -40,6 +40,9 @@ class PluginManager
     /** Values from plugin_settings already overlaid on the manifests. */
     private bool $settingsOverlaid = false;
 
+    /** Кеш состояния «включён/выключен» на время запроса. */
+    private ?array $stateCache = null;
+
     /**
      * Приватный конструктор — синглтон
      */
@@ -95,6 +98,11 @@ class PluginManager
             return;
         }
 
+        // Состояние «включён» берётся из состояния САЙТА (см. stateFile) и
+        // перекрывает значение из файла — ДО resolveLoadOrder: порядок загрузки
+        // зависит от того, какие плагины включены. Файл остаётся значением
+        // по умолчанию, то есть тем, что шипится в git.
+
         // Регистрируем все плагины сразу: админке нужен полный список, а
         // проверка зависимостей больше не зависит от того, что успело
         // загрузиться до текущего момента.
@@ -139,6 +147,7 @@ class PluginManager
         $dirs = glob($this->pluginsDir . '/*', GLOB_ONLYDIR) ?: [];
         sort($dirs); // одинаковая выборка при одинаковых данных
 
+        $state = $this->readState();
         $registry = [];
         foreach ($dirs as $pluginDir) {
             $pluginJson = $pluginDir . '/plugin.json';
@@ -149,6 +158,17 @@ class PluginManager
             $config = json_decode((string) file_get_contents($pluginJson), true);
             if (!$config || empty($config['name'])) {
                 continue;
+            }
+
+            // Запомнить значение из файла: оно понадобится, если файл придётся
+            // перезаписать (вымарывание секретов, writeManifest). Иначе в файл
+            // уедет состояние сайта — ровно тот дрейф, от которого уходим.
+            $config['manifest_enabled'] = !empty($config['enabled']);
+
+            // Состояние сайта (storage/database/plugins-state.json) важнее
+            // значения из файла: файл — то, что шипится, оно лишь по умолчанию.
+            if (array_key_exists($config['name'], $state)) {
+                $config['enabled'] = $state[$config['name']];
             }
 
             $config['path'] = $pluginDir;
@@ -330,6 +350,116 @@ class PluginManager
     }
 
     /**
+     * Файл состояния плагинов этого сайта.
+     *
+     * Почему не plugin.json и не БД:
+     *   - plugin.json — это КОД: он в git и уезжает деплоем. Пока галочка
+     *     «включён» жила там, каждая перезапись расходилась с HEAD, и деплой
+     *     отказывал на проверке «файлы, которые правит CMS» — до --force;
+     *   - БД не годится: bootstrap.php грузит плагины ДО подключения и не знает,
+     *     что включено. Проверено на стенде: состояние в БД читается только со
+     *     второго вызова loadPlugins, а init.php к тому моменту уже выполнен —
+     *     выключение из админки не срабатывало.
+     *
+     * storage/database исключён из деплоя и попадает в бэкапы вместе с БД,
+     * поэтому состояние сайта живёт там же, где данные сайта.
+     */
+    private function stateFile(): ?string
+    {
+        if (!defined('STORAGE_PATH')) {
+            return null;
+        }
+
+        return STORAGE_PATH . '/database/plugins-state.json';
+    }
+
+    /**
+     * Состояние плагинов, заданное на сайте: имя => включён.
+     *
+     * @return array<string, bool>
+     */
+    private function readState(): array
+    {
+        if ($this->stateCache !== null) {
+            return $this->stateCache;
+        }
+
+        $this->stateCache = [];
+        $file = $this->stateFile();
+        if ($file === null || !is_file($file)) {
+            return $this->stateCache;
+        }
+
+        $raw = @file_get_contents($file);
+        $data = $raw === false ? null : json_decode($raw, true);
+        if (!is_array($data)) {
+            // Битый файл не должен ронять сайт: работаем по значениям из
+            // манифестов, но говорим об этом — иначе выключенный плагин тихо
+            // включится обратно и никто не поймёт почему.
+            error_log('PluginManager: не читается ' . $file . ' — состояние плагинов взято из манифестов');
+            return $this->stateCache;
+        }
+
+        foreach ($data as $name => $enabled) {
+            $this->stateCache[(string) $name] = (bool) $enabled;
+        }
+
+        return $this->stateCache;
+    }
+
+    private function writeState(string $name, bool $enabled): bool
+    {
+        $file = $this->stateFile();
+        if ($file === null) {
+            return false;
+        }
+
+        $state = $this->readState();
+        $state[$name] = $enabled;
+
+        $dir = dirname($file);
+        if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
+            return false;
+        }
+
+        $json = json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        if ($json === false) {
+            return false;
+        }
+
+        // Через временный файл и rename: половина записанного JSON означает
+        // «все плагины по умолчанию», то есть сюрприз после обрыва записи.
+        $tmp = $file . '.tmp';
+        if (@file_put_contents($tmp, $json, LOCK_EX) === false) {
+            return false;
+        }
+        if (!@rename($tmp, $file)) {
+            @unlink($tmp);
+            return false;
+        }
+
+        $this->stateCache = $state;
+        return true;
+    }
+
+    /**
+     * Запомнить состояние «включён/выключен» для ЭТОГО сайта.
+     */
+    private function storeEnabled(string $name, bool $enabled): void
+    {
+        if ($this->writeState($name, $enabled)) {
+            return;
+        }
+
+        // Некуда писать (нет storage или он только на чтение) — остаётся файл
+        // плагина. Это уже дрейф кода, поэтому в лог, а не молча.
+        error_log("PluginManager: состояние '{$name}' не сохранено в storage — пишу в plugin.json");
+        if (isset($this->plugins[$name])) {
+            $this->saveConfig($this->plugins[$name]);
+        }
+    }
+
+    /**
      * Загрузить плагины поверх уже прочитанных манифестов (для тестов).
      */
     public function reloadSettings(?Database $db = null): void
@@ -398,6 +528,14 @@ class PluginManager
     {
         unset($config['path']);
 
+        // Состояние «включён» живёт в storage (см. stateFile), а не в plugin.json:
+        // в файл возвращаем то, что в нём было. Иначе галочка из админки уезжает
+        // в git-файл — именно от этого дрейфа ушли.
+        if (array_key_exists('manifest_enabled', $config)) {
+            $config['enabled'] = $config['manifest_enabled'];
+            unset($config['manifest_enabled']);
+        }
+
         if (!empty($config['settings']) && is_array($config['settings'])) {
             foreach ($config['settings'] as $index => $setting) {
                 if (!is_array($setting)) {
@@ -429,7 +567,19 @@ class PluginManager
     public function getPlugins(): array
     {
         $this->overlaySettings();
-        return array_values($this->plugins);
+        return array_map([$this, 'publicShape'], array_values($this->plugins));
+    }
+
+    /**
+     * Копия конфига без служебных полей.
+     *
+     * manifest_enabled нужен только внутри (чтобы вернуть в файл исходное
+     * значение), а наружу его отдавать незачем: это не часть манифеста.
+     */
+    private function publicShape(array $config): array
+    {
+        unset($config['manifest_enabled']);
+        return $config;
     }
 
     /**
@@ -440,7 +590,7 @@ class PluginManager
     public function getPlugin(string $name): ?array
     {
         $this->overlaySettings();
-        return $this->plugins[$name] ?? null;
+        return isset($this->plugins[$name]) ? $this->publicShape($this->plugins[$name]) : null;
     }
 
     /**
@@ -498,14 +648,15 @@ class PluginManager
 
         $config = $this->plugins[$name];
         $config['enabled'] = true;
+        $this->plugins[$name] = $config;
 
-        // Сохраняем в plugin.json (без служебного path и без значений — см. saveConfig)
-        $this->saveConfig($config);
+        // Состояние живёт в storage (см. stateFile), а не в plugin.json: файл
+        // коммитится, и перезапись на каждой галочке ломала деплой —
+        // серверная копия расходилась с HEAD (задача 577).
+        $this->storeEnabled($name, true);
 
         // Загружаем init.php
         $this->loadPlugin($config);
-
-        $this->plugins[$name] = $config;
 
         // Запускаем миграции (только если есть DB)
         if ($this->db !== null) {
@@ -537,14 +688,13 @@ class PluginManager
 
         $config = $this->plugins[$name];
         $config['enabled'] = false;
+        $this->plugins[$name] = $config;
 
-        // Сохраняем в plugin.json (без служебного path и без значений — см. saveConfig)
-        $this->saveConfig($config);
+        // Состояние — в storage, файл не трогаем (см. stateFile и activate).
+        $this->storeEnabled($name, false);
 
         // Удаляем зарегистрированные хуки этого плагина
         $this->removePluginHooks($name);
-
-        $this->plugins[$name] = $config;
 
         return true;
     }
